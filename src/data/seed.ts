@@ -1,0 +1,388 @@
+import type { SeedData } from "./types";
+
+export const SEED_NOW = new Date("2026-11-05T09:30:00").getTime();
+
+const MIN = 60 * 1000;
+const HOUR = 60 * MIN;
+const DAY = 24 * HOUR;
+const now = SEED_NOW;
+
+export const seedData: SeedData = {
+  cluster: {
+    name: "qoder-rabbit",
+    node: "rabbit@qoder-mq-01",
+    version: "4.1.2",
+    erlang: "27.1.2",
+    startedAt: now - (26 * DAY + 4 * HOUR + 12 * MIN),
+    trends: {
+      ready: 4.2,
+      unacked: -8.1,
+      consumers: 1.8,
+      connections: 0,
+      queues: 7.4,
+      exchanges: 0,
+    },
+  },
+
+  nodes: [
+    {
+      name: "rabbit@qoder-mq-01",
+      type: "disc",
+      uptime: 26 * DAY + 4 * HOUR + 12 * MIN,
+      memory: 1.82,
+      memoryMax: 8,
+      diskFree: 42.6,
+      diskMax: 100,
+      fd: 128,
+      fdMax: 65536,
+      sockets: 96,
+      processes: 512,
+      cpu: 12,
+      running: true,
+    },
+    {
+      name: "rabbit@qoder-mq-02",
+      type: "disc",
+      uptime: 26 * DAY + 4 * HOUR + 10 * MIN,
+      memory: 1.46,
+      memoryMax: 8,
+      diskFree: 41.9,
+      diskMax: 100,
+      fd: 112,
+      fdMax: 65536,
+      sockets: 84,
+      processes: 468,
+      cpu: 9,
+      running: true,
+    },
+    {
+      name: "rabbit@qoder-mq-03",
+      type: "ram",
+      uptime: 12 * DAY + 7 * HOUR + 41 * MIN,
+      memory: 2.08,
+      memoryMax: 8,
+      diskFree: 38.2,
+      diskMax: 100,
+      fd: 143,
+      fdMax: 65536,
+      sockets: 108,
+      processes: 604,
+      cpu: 17,
+      running: true,
+    },
+  ],
+
+  ports: [
+    { port: 5672, protocol: "AMQP 0-9-1", tls: false, nodes: 3, context: "amqp" },
+    { port: 5671, protocol: "AMQP 0-9-1", tls: true, nodes: 1, context: "amqp/ssl" },
+    { port: 15672, protocol: "HTTP API", tls: false, nodes: 1, context: "management" },
+    { port: 15692, protocol: "Prometheus", tls: false, nodes: 1, context: "metrics" },
+    { port: 1883, protocol: "MQTT", tls: false, nodes: 2, context: "mqtt" },
+    { port: 5552, protocol: "Stream", tls: false, nodes: 3, context: "stream" },
+  ],
+
+  vhosts: [
+    { name: "/", description: "Default virtual host", tracing: false },
+    { name: "staging", description: "Pre-production workloads", tracing: false },
+    { name: "analytics", description: "Event ingestion and rollups", tracing: true },
+  ],
+
+  queues: [
+    {
+      name: "orders.created", vhost: "/", type: "classic", durable: true, autoDelete: false,
+      exclusive: false, state: "running", ready: 1284, unacked: 12, consumers: 4,
+      publishRate: 42.8, deliverRate: 39.2, ackRate: 38.9, redelivered: 3, memory: 2.4,
+      policy: "orders-dlx", args: { "x-queue-type": "classic" }, created: now - 94 * DAY,
+    },
+    {
+      name: "orders.processed", vhost: "/", type: "quorum", durable: true, autoDelete: false,
+      exclusive: false, state: "running", ready: 86, unacked: 0, consumers: 2,
+      publishRate: 16.6, deliverRate: 16.1, ackRate: 16.0, redelivered: 0, memory: 1.1,
+      policy: null, args: { "x-queue-type": "quorum" }, created: now - 94 * DAY,
+    },
+    {
+      name: "payments.authorized", vhost: "/", type: "quorum", durable: true, autoDelete: false,
+      exclusive: false, state: "running", ready: 420, unacked: 3, consumers: 2,
+      publishRate: 21.4, deliverRate: 19.8, ackRate: 19.4, redelivered: 1, memory: 1.7,
+      policy: null, args: { "x-queue-type": "quorum" }, created: now - 88 * DAY,
+    },
+    {
+      name: "payments.capture", vhost: "/", type: "classic", durable: true, autoDelete: false,
+      exclusive: false, state: "running", ready: 0, unacked: 0, consumers: 2,
+      publishRate: 8.2, deliverRate: 8.2, ackRate: 8.2, redelivered: 0, memory: 0.4,
+      policy: null, args: {}, created: now - 88 * DAY,
+    },
+    {
+      name: "notifications.email", vhost: "/", type: "classic", durable: true, autoDelete: false,
+      exclusive: false, state: "running", ready: 1250, unacked: 8, consumers: 6,
+      publishRate: 31.2, deliverRate: 29.4, ackRate: 29.0, redelivered: 6, memory: 3.1,
+      policy: "email-retry", args: {}, created: now - 74 * DAY,
+    },
+    {
+      name: "notifications.push", vhost: "/", type: "classic", durable: true, autoDelete: false,
+      exclusive: false, state: "running", ready: 312, unacked: 0, consumers: 6,
+      publishRate: 14.8, deliverRate: 14.2, ackRate: 14.1, redelivered: 0, memory: 0.8,
+      policy: null, args: {}, created: now - 74 * DAY,
+    },
+    {
+      name: "inventory.sync", vhost: "/", type: "quorum", durable: true, autoDelete: false,
+      exclusive: false, state: "degraded", ready: 5420, unacked: 40, consumers: 3,
+      publishRate: 12.1, deliverRate: 9.8, ackRate: 9.6, redelivered: 12, memory: 8.6,
+      policy: null, args: { "x-queue-type": "quorum" }, created: now - 61 * DAY,
+    },
+    {
+      name: "search.index", vhost: "/", type: "stream", durable: true, autoDelete: false,
+      exclusive: false, state: "running", ready: 9820, unacked: 0, consumers: 2,
+      publishRate: 56.3, deliverRate: 54.0, ackRate: 54.0, redelivered: 0, memory: 14.2,
+      policy: null, args: { "x-max-age": "7D" }, created: now - 45 * DAY,
+    },
+    {
+      name: "dead-letter.orders", vhost: "/", type: "classic", durable: true, autoDelete: false,
+      exclusive: false, state: "idle", ready: 64, unacked: 0, consumers: 0,
+      publishRate: 0.8, deliverRate: 0.8, ackRate: 0.7, redelivered: 0, memory: 0.2,
+      policy: null, args: {}, created: now - 90 * DAY,
+    },
+    {
+      name: "audit.log", vhost: "/", type: "quorum", durable: true, autoDelete: false,
+      exclusive: false, state: "running", ready: 120, unacked: 0, consumers: 1,
+      publishRate: 3.4, deliverRate: 3.3, ackRate: 3.3, redelivered: 0, memory: 4.8,
+      policy: "audit-retention", args: { "x-queue-type": "quorum" }, created: now - 61 * DAY,
+    },
+    {
+      name: "session.events", vhost: "/", type: "classic", durable: true, autoDelete: false,
+      exclusive: false, state: "running", ready: 0, unacked: 0, consumers: 1,
+      publishRate: 4.6, deliverRate: 4.6, ackRate: 4.6, redelivered: 0, memory: 0.1,
+      policy: null, args: {}, created: now - 30 * DAY,
+    },
+    {
+      name: "image.resize", vhost: "staging", type: "classic", durable: true, autoDelete: false,
+      exclusive: false, state: "running", ready: 18, unacked: 2, consumers: 1,
+      publishRate: 1.2, deliverRate: 1.1, ackRate: 1.1, redelivered: 0, memory: 0.3,
+      policy: "ha-staging", args: {}, created: now - 12 * DAY,
+    },
+    {
+      name: "billing.invoices", vhost: "staging", type: "quorum", durable: true, autoDelete: false,
+      exclusive: false, state: "running", ready: 34, unacked: 0, consumers: 1,
+      publishRate: 2.3, deliverRate: 2.2, ackRate: 2.2, redelivered: 0, memory: 0.5,
+      policy: "ha-staging", args: { "x-queue-type": "quorum" }, created: now - 12 * DAY,
+    },
+    {
+      name: "analytics.clicks", vhost: "analytics", type: "stream", durable: true, autoDelete: false,
+      exclusive: false, state: "running", ready: 182340, unacked: 0, consumers: 1,
+      publishRate: 120.4, deliverRate: 118.9, ackRate: 118.9, redelivered: 0, memory: 86.4,
+      policy: null, args: { "x-max-age": "30D" }, created: now - 18 * DAY,
+    },
+    {
+      name: "metrics.rollup", vhost: "analytics", type: "classic", durable: true, autoDelete: false,
+      exclusive: false, state: "running", ready: 0, unacked: 0, consumers: 1,
+      publishRate: 0.4, deliverRate: 0.4, ackRate: 0.4, redelivered: 0, memory: 0.1,
+      policy: "stream-rollup", args: {}, created: now - 18 * DAY,
+    },
+  ],
+
+  exchanges: [
+    { name: "", vhost: "/", type: "direct", durable: true, autoDelete: false, internal: false, publishRate: 4.2, deliverRate: 4.0, args: {} },
+    { name: "amq.direct", vhost: "/", type: "direct", durable: true, autoDelete: false, internal: false, publishRate: 0, deliverRate: 0, args: {} },
+    { name: "amq.fanout", vhost: "/", type: "fanout", durable: true, autoDelete: false, internal: false, publishRate: 0, deliverRate: 0, args: {} },
+    { name: "amq.topic", vhost: "/", type: "topic", durable: true, autoDelete: false, internal: false, publishRate: 12.6, deliverRate: 12.4, args: {} },
+    { name: "amq.headers", vhost: "/", type: "headers", durable: true, autoDelete: false, internal: false, publishRate: 0, deliverRate: 0, args: {} },
+    { name: "amq.rabbitmq.trace", vhost: "/", type: "topic", durable: true, autoDelete: false, internal: true, publishRate: 0, deliverRate: 0, args: {} },
+    { name: "orders", vhost: "/", type: "topic", durable: true, autoDelete: false, internal: false, publishRate: 59.4, deliverRate: 55.7, args: { "alternate-exchange": "dead-letter" } },
+    { name: "payments", vhost: "/", type: "direct", durable: true, autoDelete: false, internal: false, publishRate: 29.6, deliverRate: 28.4, args: {} },
+    { name: "notifications", vhost: "/", type: "fanout", durable: true, autoDelete: false, internal: false, publishRate: 46.0, deliverRate: 43.8, args: {} },
+    { name: "dead-letter", vhost: "/", type: "fanout", durable: true, autoDelete: false, internal: false, publishRate: 0.8, deliverRate: 0.8, args: {} },
+    { name: "audit", vhost: "/", type: "topic", durable: true, autoDelete: false, internal: false, publishRate: 3.4, deliverRate: 3.3, args: {} },
+    { name: "staging.orders", vhost: "staging", type: "topic", durable: true, autoDelete: false, internal: false, publishRate: 3.5, deliverRate: 3.3, args: {} },
+    { name: "analytics.ingest", vhost: "analytics", type: "topic", durable: true, autoDelete: false, internal: false, publishRate: 120.8, deliverRate: 119.3, args: {} },
+  ],
+
+  bindings: [
+    { source: "orders", vhost: "/", destination: "orders.created", destType: "queue", routingKey: "orders.created", args: {} },
+    { source: "orders", vhost: "/", destination: "orders.processed", destType: "queue", routingKey: "orders.processed", args: {} },
+    { source: "orders", vhost: "/", destination: "audit.log", destType: "queue", routingKey: "orders.#", args: {} },
+    { source: "payments", vhost: "/", destination: "payments.authorized", destType: "queue", routingKey: "authorize", args: {} },
+    { source: "payments", vhost: "/", destination: "payments.capture", destType: "queue", routingKey: "capture", args: {} },
+    { source: "notifications", vhost: "/", destination: "notifications.email", destType: "queue", routingKey: "", args: {} },
+    { source: "notifications", vhost: "/", destination: "notifications.push", destType: "queue", routingKey: "", args: {} },
+    { source: "dead-letter", vhost: "/", destination: "dead-letter.orders", destType: "queue", routingKey: "", args: {} },
+    { source: "audit", vhost: "/", destination: "audit.log", destType: "queue", routingKey: "audit.#", args: {} },
+    { source: "", vhost: "/", destination: "inventory.sync", destType: "queue", routingKey: "inventory.sync", args: {} },
+    { source: "", vhost: "/", destination: "session.events", destType: "queue", routingKey: "session.events", args: {} },
+    { source: "amq.topic", vhost: "/", destination: "search.index", destType: "queue", routingKey: "search.*", args: {} },
+    { source: "staging.orders", vhost: "staging", destination: "image.resize", destType: "queue", routingKey: "image.resize", args: {} },
+    { source: "staging.orders", vhost: "staging", destination: "billing.invoices", destType: "queue", routingKey: "billing.invoice", args: {} },
+    { source: "analytics.ingest", vhost: "analytics", destination: "analytics.clicks", destType: "queue", routingKey: "clicks.#", args: {} },
+    { source: "analytics.ingest", vhost: "analytics", destination: "metrics.rollup", destType: "queue", routingKey: "metrics.#", args: {} },
+  ],
+
+  consumers: [
+    { tag: "ctag-orders-00", queue: "orders.created", channel: "c1.1", connection: "c1", ackRequired: true, exclusive: false, prefetch: 32, since: now - 134 * MIN },
+    { tag: "ctag-orders-01", queue: "orders.created", channel: "c2.1", connection: "c2", ackRequired: true, exclusive: false, prefetch: 64, since: now - 242 * MIN },
+    { tag: "ctag-orders-02", queue: "orders.created", channel: "c9.1", connection: "c9", ackRequired: true, exclusive: false, prefetch: 32, since: now - 68 * MIN },
+    { tag: "ctag-orders-03", queue: "orders.created", channel: "c9.2", connection: "c9", ackRequired: true, exclusive: false, prefetch: 32, since: now - 68 * MIN },
+    { tag: "ctag-processed-00", queue: "orders.processed", channel: "c2.2", connection: "c2", ackRequired: true, exclusive: false, prefetch: 64, since: now - 242 * MIN },
+    { tag: "ctag-processed-01", queue: "orders.processed", channel: "c9.2", connection: "c9", ackRequired: true, exclusive: false, prefetch: 32, since: now - 68 * MIN },
+    { tag: "ctag-payments-auth-00", queue: "payments.authorized", channel: "c3.1", connection: "c3", ackRequired: true, exclusive: false, prefetch: 10, since: now - 52 * MIN },
+    { tag: "ctag-payments-auth-01", queue: "payments.authorized", channel: "c3.1", connection: "c3", ackRequired: true, exclusive: false, prefetch: 10, since: now - 52 * MIN },
+    { tag: "ctag-capture-00", queue: "payments.capture", channel: "c3.2", connection: "c3", ackRequired: true, exclusive: false, prefetch: 10, since: now - 52 * MIN },
+    { tag: "ctag-capture-01", queue: "payments.capture", channel: "c1.6", connection: "c1", ackRequired: true, exclusive: false, prefetch: 0, since: now - 134 * MIN },
+    { tag: "ctag-email-00", queue: "notifications.email", channel: "c1.1", connection: "c1", ackRequired: true, exclusive: false, prefetch: 32, since: now - 134 * MIN },
+    { tag: "ctag-email-01", queue: "notifications.email", channel: "c1.1", connection: "c1", ackRequired: true, exclusive: false, prefetch: 32, since: now - 134 * MIN },
+    { tag: "ctag-email-02", queue: "notifications.email", channel: "c2.3", connection: "c2", ackRequired: true, exclusive: false, prefetch: 16, since: now - 242 * MIN },
+    { tag: "ctag-email-03", queue: "notifications.email", channel: "c5.1", connection: "c5", ackRequired: true, exclusive: false, prefetch: 20, since: now - 451 * MIN },
+    { tag: "ctag-email-04", queue: "notifications.email", channel: "c5.1", connection: "c5", ackRequired: true, exclusive: false, prefetch: 20, since: now - 451 * MIN },
+    { tag: "ctag-email-05", queue: "notifications.email", channel: "c5.2", connection: "c5", ackRequired: true, exclusive: false, prefetch: 20, since: now - 451 * MIN },
+    { tag: "ctag-push-00", queue: "notifications.push", channel: "c1.2", connection: "c1", ackRequired: true, exclusive: false, prefetch: 16, since: now - 134 * MIN },
+    { tag: "ctag-push-01", queue: "notifications.push", channel: "c1.2", connection: "c1", ackRequired: true, exclusive: false, prefetch: 16, since: now - 134 * MIN },
+    { tag: "ctag-push-02", queue: "notifications.push", channel: "c1.2", connection: "c1", ackRequired: true, exclusive: false, prefetch: 16, since: now - 134 * MIN },
+    { tag: "ctag-push-03", queue: "notifications.push", channel: "c5.1", connection: "c5", ackRequired: true, exclusive: false, prefetch: 20, since: now - 451 * MIN },
+    { tag: "ctag-push-04", queue: "notifications.push", channel: "c5.1", connection: "c5", ackRequired: true, exclusive: false, prefetch: 20, since: now - 451 * MIN },
+    { tag: "ctag-push-05", queue: "notifications.push", channel: "c5.2", connection: "c5", ackRequired: true, exclusive: false, prefetch: 20, since: now - 451 * MIN },
+    { tag: "ctag-inventory-00", queue: "inventory.sync", channel: "c2.1", connection: "c2", ackRequired: true, exclusive: false, prefetch: 64, since: now - 242 * MIN },
+    { tag: "ctag-inventory-01", queue: "inventory.sync", channel: "c2.4", connection: "c2", ackRequired: true, exclusive: false, prefetch: 0, since: now - 242 * MIN },
+    { tag: "ctag-inventory-02", queue: "inventory.sync", channel: "c9.3", connection: "c9", ackRequired: true, exclusive: false, prefetch: 32, since: now - 68 * MIN },
+    { tag: "ctag-search-00", queue: "search.index", channel: "c4.1", connection: "c4", ackRequired: false, exclusive: false, prefetch: 100, since: now - 19 * MIN },
+    { tag: "ctag-search-01", queue: "search.index", channel: "c4.3", connection: "c4", ackRequired: false, exclusive: false, prefetch: 100, since: now - 19 * MIN },
+    { tag: "ctag-audit-00", queue: "audit.log", channel: "c5.2", connection: "c5", ackRequired: true, exclusive: false, prefetch: 20, since: now - 451 * MIN },
+    { tag: "ctag-session-00", queue: "session.events", channel: "c6.1", connection: "c6", ackRequired: true, exclusive: false, prefetch: 0, since: now - 4 * MIN },
+    { tag: "ctag-resize-00", queue: "image.resize", channel: "c6.1", connection: "c6", ackRequired: true, exclusive: false, prefetch: 0, since: now - 4 * MIN },
+    { tag: "ctag-invoice-00", queue: "billing.invoices", channel: "c3.1", connection: "c3", ackRequired: true, exclusive: false, prefetch: 10, since: now - 52 * MIN },
+    { tag: "ctag-clicks-00", queue: "analytics.clicks", channel: "c4.2", connection: "c4", ackRequired: false, exclusive: false, prefetch: 500, since: now - 19 * MIN },
+    { tag: "ctag-rollup-00", queue: "metrics.rollup", channel: "c4.2", connection: "c4", ackRequired: true, exclusive: false, prefetch: 500, since: now - 19 * MIN },
+  ],
+
+  connections: [
+    { id: "c1", name: "web-frontend-1", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-01", protocol: "AMQP 0-9-1", ssl: false, channels: 6, state: "running", from: "10.12.4.21:51244", peer: "10.12.0.12:5672", connectedAt: now - 134 * MIN, heartbeat: 60, recvRate: 18.4, sendRate: 3.2, client: "rabbitmq-js/7.1.0" },
+    { id: "c2", name: "worker-pool-3", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-02", protocol: "AMQP 0-9-1", ssl: false, channels: 4, state: "running", from: "10.12.5.8:40322", peer: "10.12.0.12:5672", connectedAt: now - 242 * MIN, heartbeat: 60, recvRate: 24.1, sendRate: 11.6, client: "pika/1.3.2" },
+    { id: "c3", name: "billing-svc", user: "billing_svc", vhost: "/", node: "rabbit@qoder-mq-03", protocol: "AMQP 0-9-1", ssl: true, channels: 2, state: "running", from: "10.12.6.33:55110", peer: "10.12.0.12:5671", connectedAt: now - 52 * MIN, heartbeat: 30, recvRate: 9.7, sendRate: 2.4, client: "aio-pika/9.4.1" },
+    { id: "c4", name: "analytics-etl", user: "analytics_etl", vhost: "analytics", node: "rabbit@qoder-mq-01", protocol: "AMQP 0-9-1", ssl: false, channels: 3, state: "running", from: "10.12.7.2:33812", peer: "10.12.0.12:5672", connectedAt: now - 19 * MIN, heartbeat: 60, recvRate: 3.4, sendRate: 42.8, client: "go-amqp/1.6.0" },
+    { id: "c5", name: "notifier", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-02", protocol: "AMQP 0-9-1", ssl: false, channels: 2, state: "running", from: "10.12.5.19:60210", peer: "10.12.0.12:5672", connectedAt: now - 451 * MIN, heartbeat: 60, recvRate: 1.8, sendRate: 0.9, client: "amqplib/0.10.5" },
+    { id: "c6", name: "staging-ci", user: "deploy-bot", vhost: "staging", node: "rabbit@qoder-mq-03", protocol: "AMQP 0-9-1", ssl: false, channels: 1, state: "running", from: "10.12.9.14:47120", peer: "10.12.0.12:5672", connectedAt: now - 4 * MIN, heartbeat: 20, recvRate: 0.6, sendRate: 0.2, client: "qoder-runner/2.1" },
+    { id: "c7", name: "management-ui", user: "admin", vhost: "/", node: "rabbit@qoder-mq-01", protocol: "HTTP", ssl: true, channels: 2, state: "running", from: "127.0.0.1:49812", peer: "127.0.0.1:15672", connectedAt: now - 26 * MIN, heartbeat: 0, recvRate: 0.1, sendRate: 0.3, client: "qoder-rabbit-ui/1.0" },
+    { id: "c8", name: "grafana-scraper", user: "monitoring", vhost: "/", node: "rabbit@qoder-mq-01", protocol: "HTTP", ssl: true, channels: 1, state: "running", from: "10.12.10.5:51902", peer: "127.0.0.1:15672", connectedAt: now - 724 * MIN, heartbeat: 0, recvRate: 0.2, sendRate: 0.1, client: "prometheus/2.54" },
+    { id: "c9", name: "orders-edge", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-03", protocol: "AMQP 0-9-1", ssl: false, channels: 3, state: "running", from: "10.12.4.40:50002", peer: "10.12.0.12:5672", connectedAt: now - 68 * MIN, heartbeat: 60, recvRate: 14.9, sendRate: 4.1, client: "amqplib/0.10.5" },
+  ],
+
+  channels: [
+    { id: "c1.1", number: 1, connection: "c1", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-01", prefetch: 32, unacked: 8, consumers: 4, state: "running", publishRate: 12.4, deliverRate: 11.9, confirmMode: true, transactional: false },
+    { id: "c1.2", number: 2, connection: "c1", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-01", prefetch: 16, unacked: 2, consumers: 6, state: "running", publishRate: 21.8, deliverRate: 20.4, confirmMode: true, transactional: false },
+    { id: "c1.3", number: 3, connection: "c1", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-01", prefetch: 0, unacked: 0, consumers: 0, state: "idle", publishRate: 1.2, deliverRate: 0, confirmMode: false, transactional: false },
+    { id: "c1.4", number: 4, connection: "c1", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-01", prefetch: 32, unacked: 1, consumers: 2, state: "running", publishRate: 4.2, deliverRate: 4.1, confirmMode: true, transactional: false },
+    { id: "c1.5", number: 5, connection: "c1", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-01", prefetch: 32, unacked: 1, consumers: 0, state: "running", publishRate: 6.4, deliverRate: 0.8, confirmMode: true, transactional: false },
+    { id: "c1.6", number: 6, connection: "c1", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-01", prefetch: 0, unacked: 0, consumers: 1, state: "running", publishRate: 0, deliverRate: 1.1, confirmMode: false, transactional: false },
+    { id: "c2.1", number: 1, connection: "c2", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-02", prefetch: 64, unacked: 12, consumers: 3, state: "running", publishRate: 2.1, deliverRate: 16.8, confirmMode: true, transactional: false },
+    { id: "c2.2", number: 2, connection: "c2", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-02", prefetch: 64, unacked: 0, consumers: 2, state: "running", publishRate: 0.4, deliverRate: 8.4, confirmMode: true, transactional: false },
+    { id: "c2.3", number: 3, connection: "c2", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-02", prefetch: 16, unacked: 0, consumers: 1, state: "running", publishRate: 0.2, deliverRate: 5.4, confirmMode: false, transactional: false },
+    { id: "c2.4", number: 4, connection: "c2", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-02", prefetch: 0, unacked: 0, consumers: 0, state: "idle", publishRate: 0, deliverRate: 0, confirmMode: false, transactional: false },
+    { id: "c3.1", number: 1, connection: "c3", user: "billing_svc", vhost: "/", node: "rabbit@qoder-mq-03", prefetch: 10, unacked: 3, consumers: 2, state: "running", publishRate: 6.2, deliverRate: 9.6, confirmMode: true, transactional: false },
+    { id: "c3.2", number: 2, connection: "c3", user: "billing_svc", vhost: "/", node: "rabbit@qoder-mq-03", prefetch: 10, unacked: 0, consumers: 0, state: "running", publishRate: 3.4, deliverRate: 0, confirmMode: true, transactional: false },
+    { id: "c4.1", number: 1, connection: "c4", user: "analytics_etl", vhost: "analytics", node: "rabbit@qoder-mq-01", prefetch: 100, unacked: 0, consumers: 2, state: "running", publishRate: 0.2, deliverRate: 41.2, confirmMode: false, transactional: false },
+    { id: "c4.2", number: 2, connection: "c4", user: "analytics_etl", vhost: "analytics", node: "rabbit@qoder-mq-01", prefetch: 500, unacked: 0, consumers: 1, state: "running", publishRate: 0.1, deliverRate: 78.4, confirmMode: false, transactional: false },
+    { id: "c4.3", number: 3, connection: "c4", user: "analytics_etl", vhost: "analytics", node: "rabbit@qoder-mq-01", prefetch: 0, unacked: 0, consumers: 0, state: "idle", publishRate: 0, deliverRate: 0, confirmMode: false, transactional: false },
+    { id: "c5.1", number: 1, connection: "c5", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-02", prefetch: 20, unacked: 0, consumers: 6, state: "running", publishRate: 0.1, deliverRate: 12.3, confirmMode: false, transactional: false },
+    { id: "c5.2", number: 2, connection: "c5", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-02", prefetch: 20, unacked: 8, consumers: 1, state: "running", publishRate: 0.1, deliverRate: 9.1, confirmMode: false, transactional: false },
+    { id: "c6.1", number: 1, connection: "c6", user: "deploy-bot", vhost: "staging", node: "rabbit@qoder-mq-03", prefetch: 0, unacked: 0, consumers: 1, state: "running", publishRate: 0.4, deliverRate: 0.4, confirmMode: false, transactional: false },
+    { id: "c7.1", number: 1, connection: "c7", user: "admin", vhost: "/", node: "rabbit@qoder-mq-01", prefetch: 0, unacked: 0, consumers: 0, state: "idle", publishRate: 0, deliverRate: 0, confirmMode: false, transactional: false },
+    { id: "c7.2", number: 2, connection: "c7", user: "admin", vhost: "/", node: "rabbit@qoder-mq-01", prefetch: 0, unacked: 0, consumers: 0, state: "idle", publishRate: 0, deliverRate: 0, confirmMode: false, transactional: false },
+    { id: "c8.1", number: 1, connection: "c8", user: "monitoring", vhost: "/", node: "rabbit@qoder-mq-01", prefetch: 0, unacked: 0, consumers: 0, state: "idle", publishRate: 0, deliverRate: 0, confirmMode: false, transactional: false },
+    { id: "c9.1", number: 1, connection: "c9", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-03", prefetch: 32, unacked: 5, consumers: 2, state: "running", publishRate: 7.8, deliverRate: 10.2, confirmMode: true, transactional: false },
+    { id: "c9.2", number: 2, connection: "c9", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-03", prefetch: 32, unacked: 0, consumers: 1, state: "running", publishRate: 4.6, deliverRate: 5.8, confirmMode: true, transactional: false },
+    { id: "c9.3", number: 3, connection: "c9", user: "app_worker", vhost: "/", node: "rabbit@qoder-mq-03", prefetch: 0, unacked: 0, consumers: 0, state: "idle", publishRate: 0, deliverRate: 0, confirmMode: false, transactional: false },
+  ],
+
+  users: [
+    { username: "admin", tags: ["administrator"], vhosts: ["*"], hash: "rabbit_password_hashing_sha256" },
+    { username: "guest", tags: ["administrator"], vhosts: ["/"], hash: "rabbit_password_hashing_sha256" },
+    { username: "app_worker", tags: ["management", "policymaker"], vhosts: ["/", "staging"], hash: "rabbit_password_hashing_sha256" },
+    { username: "billing_svc", tags: ["management"], vhosts: ["/"], hash: "rabbit_password_hashing_sha256" },
+    { username: "analytics_etl", tags: ["management"], vhosts: ["analytics"], hash: "rabbit_password_hashing_sha256" },
+    { username: "monitoring", tags: ["monitoring"], vhosts: ["/"], hash: "rabbit_password_hashing_sha256" },
+    { username: "deploy-bot", tags: ["management", "policymaker"], vhosts: ["staging"], hash: "rabbit_password_hashing_sha256" },
+  ],
+
+  policies: [
+    {
+      name: "orders-dlx", vhost: "/", pattern: "^orders\\.", applyTo: "queues", priority: 2,
+      definition: { "dead-letter-exchange": "dead-letter", "message-ttl": 86400000 },
+    },
+    {
+      name: "email-retry", vhost: "/", pattern: "^notifications\\.email$", applyTo: "queues", priority: 0,
+      definition: { "max-length": 50000, overflow: "reject-publish" },
+    },
+    {
+      name: "audit-retention", vhost: "/", pattern: "^audit\\.", applyTo: "queues", priority: 1,
+      definition: { "max-length": 500000 },
+    },
+    {
+      name: "ha-staging", vhost: "staging", pattern: ".*", applyTo: "queues", priority: 0,
+      definition: { "ha-mode": "all", "ha-sync-mode": "automatic" },
+    },
+    {
+      name: "stream-rollup", vhost: "analytics", pattern: "^metrics\\.", applyTo: "queues", priority: 1,
+      definition: { "max-length-bytes": 1073741824 },
+    },
+  ],
+
+  operatorPolicies: [
+    {
+      name: "operator-email-cap", vhost: "/", pattern: "^notifications\\.", applyTo: "queues", priority: 10,
+      definition: { "max-length": 100000, overflow: "reject-publish" },
+    },
+    {
+      name: "operator-audit-retention", vhost: "/", pattern: "^audit\\.", applyTo: "queues", priority: 10,
+      definition: { "max-length": 250000 },
+    },
+  ],
+
+  limits: [
+    { vhost: "/", maxConnections: 1024, maxQueues: 2048 },
+    { vhost: "staging", maxConnections: 256, maxQueues: 512 },
+    { vhost: "analytics", maxConnections: 512, maxQueues: 1024 },
+  ],
+
+  flags: [
+    { name: "rabbitmq_management", enabled: true, stability: "stable", desc: "Management plugin and HTTP API" },
+    { name: "rabbitmq_quorum_queue", enabled: true, stability: "stable", desc: "Replicated, durable queues for critical workloads" },
+    { name: "rabbitmq_stream", enabled: true, stability: "stable", desc: "Stream protocol and stream queues" },
+    { name: "rabbitmq_stream_management", enabled: true, stability: "stable", desc: "Management integration for stream queues" },
+    { name: "rabbitmq_shovels", enabled: true, stability: "stable", desc: "Move messages between brokers" },
+    { name: "rabbitmq_consistent_hash_exchange", enabled: true, stability: "stable", desc: "Consistent hash exchange routing" },
+    { name: "rabbitmq_mqtt", enabled: true, stability: "stable", desc: "MQTT protocol adapter" },
+    { name: "rabbitmq_amqp1_0", enabled: false, stability: "experimental", desc: "AMQP 1.0 protocol adapter" },
+    { name: "rabbitmq_web_mqtt", enabled: false, stability: "experimental", desc: "MQTT over WebSocket transport" },
+  ],
+
+  deprecatedFeatures: [
+    {
+      name: "amqp_address_v1", phase: "denied_by_default", inUse: false,
+      desc: "The version 1 AMQP 0-9-1 address format is denied by default. Use AMQP address v2.",
+    },
+    {
+      name: "classic_queue_mirroring", phase: "removed", inUse: false,
+      desc: "Classic mirrored queues were removed in RabbitMQ 4.0. Use quorum queues or streams for replication.",
+    },
+    {
+      name: "global_qos", phase: "removed", inUse: false,
+      desc: "Global QoS was removed in RabbitMQ 4.0. Set prefetch per consumer instead.",
+    },
+    {
+      name: "management_metrics_collection", phase: "permitted_by_default", inUse: false,
+      desc: "Legacy management metrics collection is deprecated in favour of the Prometheus plugin.",
+    },
+    {
+      name: "ram_node_type", phase: "permitted_by_default", inUse: true,
+      desc: "RAM nodes are deprecated. Use disk nodes only.",
+    },
+    {
+      name: "transient_nonexcl_queues", phase: "permitted_by_default", inUse: false,
+      desc: "Queues that are both non-durable and non-exclusive are deprecated. Use durable queues with a TTL.",
+    },
+  ],
+
+  events: [
+    { id: "event-1", type: "warn", title: "Queue depth threshold reached", detail: "inventory.sync crossed 5,000 ready messages", time: now - 2 * MIN },
+    { id: "event-2", type: "info", title: "Messages published", detail: "staging-ci published 250 messages to staging.orders", time: now - 6 * MIN },
+    { id: "event-3", type: "ok", title: "Node rejoined the cluster", detail: "rabbit@qoder-mq-03 came back into service", time: now - 21 * MIN },
+    { id: "event-4", type: "info", title: "Policy updated", detail: "audit-retention now applies to 1 queue", time: now - 38 * MIN },
+  ],
+};
