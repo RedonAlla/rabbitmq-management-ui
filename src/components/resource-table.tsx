@@ -10,6 +10,7 @@ import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
 import { Frame, FrameFooter, FramePanel } from "@/components/reui/frame";
 import { RegionError } from "@/components/region-states";
+import { cn } from "@/lib/utils";
 
 interface ResourceTableProps<TData extends object> {
   data: TData[];
@@ -24,6 +25,7 @@ interface ResourceTableProps<TData extends object> {
   noun?: string;
   showPagination?: boolean;
   footerExtra?: ReactNode;
+  embedded?: boolean;
 }
 
 export function ResourceTable<TData extends object>({
@@ -39,6 +41,7 @@ export function ResourceTable<TData extends object>({
   noun = "rows",
   showPagination = true,
   footerExtra,
+  embedded = false,
 }: ResourceTableProps<TData>) {
   const table = useTable({
     features: dataGridFeatures,
@@ -57,6 +60,21 @@ export function ResourceTable<TData extends object>({
     );
   }
 
+  const footer = (
+    <FrameFooter
+      className={cn(
+        "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between",
+        embedded && "border-t border-border"
+      )}
+    >
+      <span className="text-xs text-muted-foreground">
+        {data.length} {data.length === 1 ? noun.replace(/s$/, "") : noun}
+        {footerExtra ? <span className="ml-2 text-muted-foreground/70">{footerExtra}</span> : null}
+      </span>
+      {showPagination ? <DataGridPagination sizes={[10, 20, 50]} /> : null}
+    </FrameFooter>
+  );
+
   return (
     <DataGrid
       table={table}
@@ -67,20 +85,23 @@ export function ResourceTable<TData extends object>({
       tableLayout={{ dense: true, headerBackground: true, headerSticky: true, width: "auto" }}
       tableClassNames={{ base: minWidth }}
     >
-      <Frame spacing="sm" className="min-w-0">
-        <FramePanel className="p-0">
+      {embedded ? (
+        <>
           <DataGridScrollArea>
             <DataGridTable />
           </DataGridScrollArea>
-        </FramePanel>
-        <FrameFooter className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-xs text-muted-foreground">
-            {data.length} {data.length === 1 ? noun.replace(/s$/, "") : noun}
-            {footerExtra ? <span className="ml-2 text-muted-foreground/70">{footerExtra}</span> : null}
-          </span>
-          {showPagination ? <DataGridPagination sizes={[10, 20, 50]} /> : null}
-        </FrameFooter>
-      </Frame>
+          {footer}
+        </>
+      ) : (
+        <Frame spacing="sm" className="min-w-0">
+          <FramePanel className="p-0">
+            <DataGridScrollArea>
+              <DataGridTable />
+            </DataGridScrollArea>
+          </FramePanel>
+          {footer}
+        </Frame>
+      )}
     </DataGrid>
   );
 }

@@ -8,7 +8,6 @@ import {
   TimerIcon,
   UsersIcon,
 } from "lucide-react";
-import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/reui/badge";
 import { Frame, FramePanel } from "@/components/reui/frame";
 import { IconTile } from "@/components/reui/icon-tile";
@@ -17,10 +16,8 @@ import { KpiCard, KpiGrid } from "@/components/kpi";
 import { PageHeader } from "@/components/page-header";
 import { Progress } from "@/components/ui/progress";
 import { ChartPanel } from "@/components/chart-panel";
-import { ResourceTable } from "@/components/resource-table";
 import { RegionError } from "@/components/region-states";
 import { SectionFrame } from "@/components/detail";
-import { StateBadge } from "@/components/badges";
 import { useDialogs } from "@/components/dialogs/dialogs-provider";
 import { useCluster } from "@/store/cluster";
 import { useRoute, routeHref } from "@/lib/router";
@@ -33,9 +30,8 @@ import {
   fmtDuration,
   pct,
 } from "@/lib/format";
-import type { Queue, RangeKey } from "@/data/types";
-import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
-import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import type { RangeKey } from "@/data/types";
+import { QueuesNeedAttention } from "./overview/QueuesNeedAttention";
 
 const EVENT_TONE: Record<string, string> = {
   warn: "bg-warning",
@@ -67,42 +63,6 @@ export function OverviewView() {
     const last = points[points.length - 1]?.publish ?? 0;
     return first > 0 ? ((last - first) / first) * 100 : 0;
   }, [points]);
-
-  const columns = useMemo<ColumnDef<DataGridFeatures, Queue>[]>(
-    () => [
-      {
-        accessorKey: "name",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Queue" />,
-        cell: ({ row }) => (
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate font-medium">{row.original.name}</span>
-            <span className="text-xs text-muted-foreground">{row.original.vhost}</span>
-          </div>
-        ),
-      },
-      {
-        accessorKey: "state",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="State" />,
-        cell: ({ row }) => <StateBadge state={row.original.state} />,
-      },
-      {
-        accessorKey: "ready",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Ready" />,
-        cell: ({ row }) => <span className="data-cell">{fmtInt(row.original.ready)}</span>,
-      },
-      {
-        accessorKey: "unacked",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Unacked" />,
-        cell: ({ row }) => <span className="data-cell">{fmtInt(row.original.unacked)}</span>,
-      },
-      {
-        accessorKey: "consumers",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Consumers" />,
-        cell: ({ row }) => <span className="data-cell">{row.original.consumers}</span>,
-      },
-    ],
-    []
-  );
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -238,32 +198,7 @@ export function OverviewView() {
       </div>
 
       <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] xl:items-start">
-        <div className="flex min-w-0 flex-col gap-2">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <h2 className="text-sm font-semibold">Queues needing attention</h2>
-              <p className="text-xs text-muted-foreground">
-                Idle, degraded or backlogged queues.
-              </p>
-            </div>
-            <Button type="button" variant="outline" size="sm" onClick={() => navigate(routeHref("queues"))}>
-              View all
-            </Button>
-          </div>
-          <ResourceTable
-            data={attention}
-            columns={columns}
-            noun="queues"
-            pageSize={6}
-            showPagination={false}
-            minWidth="min-w-[560px]"
-            loading={status === "loading"}
-            error={error}
-            onRetry={actions.retry}
-            onRowClick={(queue) => navigate(routeHref("queue", queue.name))}
-            empty="No queues need attention right now."
-          />
-        </div>
+        <QueuesNeedAttention queues={attention} />
 
         <SectionFrame
           title="Recent activity"

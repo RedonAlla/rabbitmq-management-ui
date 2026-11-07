@@ -71,12 +71,14 @@ export function SectionFrame({
   actions,
   children,
   className,
+  bodyClassName,
 }: {
   title: string;
   description?: string;
   actions?: ReactNode;
   children: ReactNode;
   className?: string;
+  bodyClassName?: string;
 }) {
   return (
     <Frame spacing="sm" className={cn("min-w-0", className)}>
@@ -87,7 +89,7 @@ export function SectionFrame({
         </div>
         {actions ? <div className="flex shrink-0 items-center gap-1.5">{actions}</div> : null}
       </FrameHeader>
-      <FramePanel className="min-w-0">{children}</FramePanel>
+      <FramePanel className={cn("min-w-0", bodyClassName)}>{children}</FramePanel>
     </Frame>
   );
 }
