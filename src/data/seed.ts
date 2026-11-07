@@ -76,9 +76,42 @@ export const seedData: SeedData = {
     { port: 5672, protocol: "AMQP 0-9-1", tls: false, nodes: 3, context: "amqp" },
     { port: 5671, protocol: "AMQP 0-9-1", tls: true, nodes: 1, context: "amqp/ssl" },
     { port: 15672, protocol: "HTTP API", tls: false, nodes: 1, context: "management" },
+    { port: 15671, protocol: "HTTPS API", tls: true, nodes: 1, context: "management/ssl" },
     { port: 15692, protocol: "Prometheus", tls: false, nodes: 1, context: "metrics" },
     { port: 1883, protocol: "MQTT", tls: false, nodes: 2, context: "mqtt" },
+    { port: 15675, protocol: "Web MQTT", tls: false, nodes: 1, context: "web-mqtt" },
     { port: 5552, protocol: "Stream", tls: false, nodes: 3, context: "stream" },
+  ],
+
+  webContexts: [
+    {
+      description: "Management UI and HTTP API",
+      path: "/",
+      port: 15672,
+      tls: false,
+      node: "rabbit@qoder-mq-01",
+    },
+    {
+      description: "Management UI over TLS",
+      path: "/",
+      port: 15671,
+      tls: true,
+      node: "rabbit@qoder-mq-01",
+    },
+    {
+      description: "Prometheus metrics",
+      path: "/metrics",
+      port: 15692,
+      tls: false,
+      node: "rabbit@qoder-mq-02",
+    },
+    {
+      description: "MQTT over WebSocket",
+      path: "/mqtt",
+      port: 15675,
+      tls: false,
+      node: "rabbit@qoder-mq-01",
+    },
   ],
 
   vhosts: [

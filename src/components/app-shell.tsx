@@ -344,15 +344,16 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="min-w-0 flex-1 truncate text-xs font-medium">
                 Cluster online
               </span>
-              <Badge variant="outline">{data.cluster.version}</Badge>
-            </div>
-            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-              <span>
-                {data.nodes.length} nodes · {totals.connections} connections
-              </span>
-              <span className="text-mono">
+              <span className="shrink-0 text-mono text-xs text-muted-foreground">
                 {fmtAgo(lastUpdated, new Date().getTime())}
               </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge variant="outline">RabbitMQ {data.cluster.version}</Badge>
+              <Badge variant="outline">Erlang {data.cluster.erlang}</Badge>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {data.nodes.length} nodes · {totals.connections} connections
             </div>
           </div>
           <SidebarMenu className="group-data-[collapsible=icon]:hidden">

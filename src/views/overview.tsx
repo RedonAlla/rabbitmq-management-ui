@@ -1,44 +1,24 @@
 import { useMemo, useState } from "react";
 import {
   FileJsonIcon,
-  InboxIcon,
-  MessageSquareIcon,
   SendIcon,
-  ServerIcon,
-  TimerIcon,
-  UsersIcon,
 } from "lucide-react";
 import { Badge } from "@/components/reui/badge";
-import { Frame, FramePanel } from "@/components/reui/frame";
-import { IconTile } from "@/components/reui/icon-tile";
 import { Button } from "@/components/ui/button";
-import { KpiCard, KpiGrid } from "@/components/kpi";
 import { PageHeader } from "@/components/page-header";
-import { Progress } from "@/components/ui/progress";
 import { ChartPanel } from "@/components/chart-panel";
 import { RegionError } from "@/components/region-states";
-import { SectionFrame } from "@/components/detail";
 import { useDialogs } from "@/components/dialogs/dialogs-provider";
 import { useCluster } from "@/store/cluster";
 import { useRoute, routeHref } from "@/lib/router";
-import {
-  clusterHealthLabel,
-  fmtCompact,
-  fmtInt,
-  fmtRate,
-  fmtAgo,
-  fmtDuration,
-  pct,
-} from "@/lib/format";
+import { clusterHealthLabel } from "@/lib/format";
 import type { RangeKey } from "@/data/types";
-import { QueuesNeedAttention } from "./overview/QueuesNeedAttention";
-
-const EVENT_TONE: Record<string, string> = {
-  warn: "bg-warning",
-  info: "bg-info",
-  ok: "bg-success",
-  error: "bg-destructive",
-};
+import QueuesNeedAttention from "./overview/QueuesNeedAttention";
+import ListeningPorts from "./overview/ListeningPorts";
+import WebContexts from "./overview/WebContexts";
+import Kpis from "./overview/Kpis";
+import Nodes from "./overview/Nodes";
+import RecentActivity from "./overview/RecentActivity";
 
 export function OverviewView() {
   const { data, totals, history, live, status, error, actions, lastUpdated } = useCluster();
@@ -56,13 +36,6 @@ export function OverviewView() {
   );
 
   const points = history[range];
-  const spark = (key: "ready" | "unacked" | "consumers" | "publish") =>
-    points.map((point) => point[key]);
-  const rateTrend = useMemo(() => {
-    const first = points[0]?.publish ?? 0;
-    const last = points[points.length - 1]?.publish ?? 0;
-    return first > 0 ? ((last - first) / first) * 100 : 0;
-  }, [points]);
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -104,43 +77,12 @@ export function OverviewView() {
 
       {error ? <RegionError message={error} onRetry={actions.retry} /> : null}
 
-      <KpiGrid>
-        <KpiCard
-          label="Ready messages"
-          value={fmtCompact(totals.ready)}
-          detail={`${fmtInt(totals.ready)} across ${totals.queues} queues`}
-          trend={data.cluster.trends.ready}
-          icon={<InboxIcon aria-hidden="true" />}
-          spark={spark("ready")}
-        />
-        <KpiCard
-          label="Unacked"
-          value={fmtCompact(totals.unacked)}
-          detail="Awaiting consumer acknowledgement"
-          trend={data.cluster.trends.unacked}
-          icon={<TimerIcon aria-hidden="true" />}
-          spark={spark("unacked")}
-          tone="warning"
-        />
-        <KpiCard
-          label="Consumers"
-          value={fmtInt(totals.consumers)}
-          detail={`${totals.channels} channels open`}
-          trend={data.cluster.trends.consumers}
-          icon={<UsersIcon aria-hidden="true" />}
-          spark={spark("consumers")}
-          tone="success"
-        />
-        <KpiCard
-          label="Publish rate"
-          value={fmtRate(totals.publishRate)}
-          detail={`Delivering ${fmtRate(totals.deliverRate)}`}
-          trend={rateTrend}
-          icon={<MessageSquareIcon aria-hidden="true" />}
-          spark={spark("publish")}
-          tone="success"
-        />
-      </KpiGrid>
+      <Kpis
+        data={data}
+        range={range}
+        totals={totals}
+        history={history}
+      />
 
       <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] xl:items-start">
         <ChartPanel
@@ -159,105 +101,27 @@ export function OverviewView() {
           onRetry={actions.retry}
         />
 
-        <SectionFrame
-          title="Cluster nodes"
-          description={`${data.nodes.length} nodes · ${fmtDuration(data.nodes[0].uptime)} uptime`}
-          actions={<Badge variant="outline">{data.cluster.version}</Badge>}
-        >
-          <div className="flex flex-col divide-y divide-border">
-            {data.nodes.map((node) => (
-              <div key={node.name} className="flex flex-col gap-2 py-2.5 first:pt-0 last:pb-0">
-                <div className="flex min-w-0 items-center gap-2">
-                  <IconTile variant="outline" size="xs" aria-hidden="true">
-                    <ServerIcon />
-                  </IconTile>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                    {node.name.replace("rabbit@", "")}
-                  </span>
-                  <Badge variant="outline">{node.type}</Badge>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-                  <span className="text-mono">CPU {node.cpu.toFixed(0)}%</span>
-                  <span className="text-mono">Mem {node.memory.toFixed(2)} GB</span>
-                  <span className="text-mono">{node.sockets} sockets</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Progress
-                    value={pct(node.memory, node.memoryMax)}
-                    aria-label={`${node.name} memory pressure`}
-                    className="flex-1"
-                  />
-                  <span className="text-xs text-muted-foreground">
-                    {pct(node.memory, node.memoryMax).toFixed(0)}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </SectionFrame>
+        <Nodes data={data} />
       </div>
 
       <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] xl:items-start">
         <QueuesNeedAttention queues={attention} />
-
-        <SectionFrame
-          title="Recent activity"
-          description="Simulated events from the broker."
-          actions={
-            live ? (
-              <Badge variant="success-light">
-                <span className="size-1.5 rounded-full bg-success" aria-hidden="true" />
-                Live
-              </Badge>
-            ) : (
-              <Badge variant="outline">Paused</Badge>
-            )
-          }
-        >
-          <ol className="flex flex-col divide-y divide-border">
-            {data.events.slice(0, 5).map((event) => (
-              <li key={event.id} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
-                <span
-                  className={`mt-1.5 size-1.5 shrink-0 rounded-full ${EVENT_TONE[event.type] ?? "bg-muted-foreground"}`}
-                  aria-hidden="true"
-                />
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-sm font-medium">{event.title}</span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {fmtAgo(event.time, new Date().getTime())}
-                    </span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{event.detail}</span>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </SectionFrame>
+        <RecentActivity events={data.events} live={live} />
       </div>
 
-      <Frame spacing="sm" className="min-w-0">
-        <FramePanel className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="relative flex size-2">
-              <span className="absolute inline-flex size-full rounded-full bg-success/40" />
-              <span className="relative inline-flex size-2 rounded-full bg-success" />
-            </span>
-            <span>
-              {data.nodes.length} nodes · {data.ports.length} listeners · updated{" "}
-              {fmtAgo(lastUpdated, new Date().getTime())}
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {data.ports.slice(0, 4).map((port) => (
-              <Badge key={port.port} variant="outline">
-                <span className="text-mono">{port.port}</span>
-                {port.protocol}
-              </Badge>
-            ))}
-          </div>
-        </FramePanel>
-      </Frame>
+      <div className="grid min-w-0 gap-4 xl:grid-cols-2 xl:items-start">
+        <ListeningPorts
+          ports={data.ports}
+          loading={status === "loading"}
+          updated={lastUpdated}
+          onRetry={actions.retry}
+        />
+        <WebContexts
+          contexts={data.webContexts}
+          loading={status === "loading"}
+          onRetry={actions.retry}
+        />
+      </div>
     </div>
   );
 }

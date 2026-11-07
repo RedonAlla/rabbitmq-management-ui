@@ -190,10 +190,19 @@ export interface PortInfo {
   context: string;
 }
 
+export interface WebContext {
+  description: string;
+  path: string;
+  port: number;
+  tls: boolean;
+  node: string;
+}
+
 export interface SeedData {
   cluster: ClusterInfo;
   nodes: NodeInfo[];
   ports: PortInfo[];
+  webContexts: WebContext[];
   vhosts: Vhost[];
   queues: Queue[];
   exchanges: Exchange[];

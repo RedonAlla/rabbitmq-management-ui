@@ -17,7 +17,7 @@ type Props = {
   queues: Queue[]
 }
 
-export function QueuesNeedAttention({queues}: Props) {
+export default function QueuesNeedAttention({queues}: Props) {
   const { navigate } = useRoute();
 
   return (
