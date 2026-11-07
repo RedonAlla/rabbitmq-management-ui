@@ -1,7 +1,7 @@
 import { RegionError } from "@/components/region-states";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { InboxIcon } from "lucide-react";
+import { ListOrdered } from "lucide-react";
 
 type Props = {
   errorMessage: string | null;
@@ -17,7 +17,7 @@ export default function GridEmptyState({ errorMessage, clearFilters, retry }: Pr
     <Empty>
       <EmptyHeader>
         <EmptyMedia variant="icon">
-          <InboxIcon />
+          <ListOrdered />
         </EmptyMedia>
         <EmptyTitle>No queues match</EmptyTitle>
         <EmptyDescription>

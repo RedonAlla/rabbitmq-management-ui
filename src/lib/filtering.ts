@@ -26,49 +26,55 @@ export function filterRows<T>(items: T[], query: FilterQuery, accessors: Accesso
       const value = normalize(raw).toLowerCase();
       const values = condition.values.map((entry) => normalize(entry).toLowerCase());
       const first = values[0] ?? "";
+      const pending =
+        values.length === 0 &&
+        condition.operator !== "empty" &&
+        condition.operator !== "not_empty";
       let result = true;
 
-      switch (condition.operator) {
-        case "is":
-        case "equals":
-          result = value === first;
-          break;
-        case "is_not":
-        case "not_equals":
-          result = value !== first;
-          break;
-        case "contains":
-          result = value.includes(first);
-          break;
-        case "not_contains":
-          result = !value.includes(first);
-          break;
-        case "starts_with":
-          result = value.startsWith(first);
-          break;
-        case "ends_with":
-          result = value.endsWith(first);
-          break;
-        case "is_any_of":
-          result = values.includes(value);
-          break;
-        case "is_none_of":
-          result = !values.includes(value);
-          break;
-        case "empty":
-          result = value === "";
-          break;
-        case "not_empty":
-          result = value !== "";
-          break;
-        case "greater_than":
-          result = Number(raw) > Number(first);
-          break;
-        case "less_than":
-          result = Number(raw) < Number(first);
-          break;
-        default:
-          result = value.includes(first);
+      if (!pending) {
+        switch (condition.operator) {
+          case "is":
+          case "equals":
+            result = value === first;
+            break;
+          case "is_not":
+          case "not_equals":
+            result = value !== first;
+            break;
+          case "contains":
+            result = value.includes(first);
+            break;
+          case "not_contains":
+            result = !value.includes(first);
+            break;
+          case "starts_with":
+            result = value.startsWith(first);
+            break;
+          case "ends_with":
+            result = value.endsWith(first);
+            break;
+          case "is_any_of":
+            result = values.includes(value);
+            break;
+          case "is_none_of":
+            result = !values.includes(value);
+            break;
+          case "empty":
+            result = value === "";
+            break;
+          case "not_empty":
+            result = value !== "";
+            break;
+          case "greater_than":
+            result = Number(raw) > Number(first);
+            break;
+          case "less_than":
+            result = Number(raw) < Number(first);
+            break;
+          default:
+            result = value.includes(first);
+        }
       }
 
       return condition.negated ? !result : result;

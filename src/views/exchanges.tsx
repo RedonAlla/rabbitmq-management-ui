@@ -1,49 +1,56 @@
 import { useCallback, useMemo, useState } from "react";
-import { MoreHorizontalIcon, PlusIcon, SendIcon, Trash2Icon } from "lucide-react";
+import { PlusIcon, SendIcon } from "lucide-react";
 import { toast } from "sonner";
-import type { ColumnDef } from "@tanstack/react-table";
+import { useTable, type ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { PageHeader } from "@/components/page-header";
-import { ResourceTable } from "@/components/resource-table";
-import { RegionEmpty } from "@/components/region-states";
-import { FilterBar, SelectFilter } from "@/components/filters-bar";
-import { TypeBadge, VhostBadge } from "@/components/badges";
+import { FilterBar } from "@/components/filters-bar";
+import { Filters } from "@/components/reui/filters/filters";
+import { createFilterQuery } from "@/components/reui/filters/filters-query";
+import type { FilterField, FilterQuery } from "@/components/reui/filters/filters-types";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useDialogs } from "@/components/dialogs/dialogs-provider";
 import { useCluster } from "@/store/cluster";
 import { useRoute, routeHref } from "@/lib/router";
 import { fmtInt, fmtRate } from "@/lib/format";
-import { matchesText } from "@/lib/filtering";
+import { filterRows, matchesText } from "@/lib/filtering";
 import type { Exchange, ExchangeType } from "@/data/types";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
-import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import { Skeleton } from "@/components/ui/skeleton";
+import { numericMeta } from "@/components/table-meta-numeric";
+import GridActions from "./exchanges/grid-actions";
+import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
+import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
+import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
+import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
+import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
+import GridEmptyState from "./exchanges/grid-empty-state";
+
+const EXCHANGE_TYPE_OPTIONS: { value: ExchangeType; label: string }[] = [
+  { value: "direct", label: "Direct" },
+  { value: "fanout", label: "Fanout" },
+  { value: "topic", label: "Topic" },
+  { value: "headers", label: "Headers" },
+];
 
 export function ExchangesView() {
   const { data, status, error, actions } = useCluster();
   const { openDialog } = useDialogs();
   const { navigate } = useRoute();
   const [search, setSearch] = useState("");
-  const [vhost, setVhost] = useState("all");
-  const [type, setType] = useState("all");
+  const [query, setQuery] = useState<FilterQuery>(() => createFilterQuery());
   const [pendingDelete, setPendingDelete] = useState<Exchange | null>(null);
 
   const exchanges = useMemo(
     () =>
-      data.exchanges.filter(
-        (exchange) =>
-          matchesText(exchange.name || "default", search) &&
-          (vhost === "all" || exchange.vhost === vhost) &&
-          (type === "all" || exchange.type === type)
+      filterRows(
+        data.exchanges.filter((exchange) => matchesText(exchange.name || "default", search)),
+        query,
+        { vhost: (exchange) => exchange.vhost, type: (exchange) => exchange.type }
       ),
-    [data.exchanges, search, vhost, type]
+    [data.exchanges, search, query]
   );
 
   const bindingCount = useCallback(
@@ -54,12 +61,23 @@ export function ExchangesView() {
     [data.bindings]
   );
 
-  const typeOptions: { value: ExchangeType; label: string }[] = [
-    { value: "direct", label: "Direct" },
-    { value: "fanout", label: "Fanout" },
-    { value: "topic", label: "Topic" },
-    { value: "headers", label: "Headers" },
-  ];
+  const filterFields = useMemo<FilterField[]>(
+    () => [
+      {
+        id: "vhost",
+        label: "Virtual host",
+        type: "select",
+        options: data.vhosts.map((entry) => ({ value: entry.name, label: entry.name })),
+      },
+      {
+        id: "type",
+        label: "Type",
+        type: "select",
+        options: EXCHANGE_TYPE_OPTIONS,
+      },
+    ],
+    [data.vhosts]
+  );
 
   const columns = useMemo<ColumnDef<DataGridFeatures, Exchange>[]>(
     () => [
@@ -70,14 +88,14 @@ export function ExchangesView() {
           <div className="flex min-w-0 flex-col gap-1">
             <div className="flex min-w-0 items-center gap-1.5">
               <span className="truncate font-medium">{row.original.name || "(default)"}</span>
-              {row.original.internal ? <Badge variant="outline">Internal</Badge> : null}
             </div>
             <div className="flex items-center gap-1.5">
-              <TypeBadge type={row.original.type} />
-              <VhostBadge>{row.original.vhost}</VhostBadge>
+              {row.original.internal ? <Badge variant="outline">Internal</Badge> : null}
+              {row.original.durable ? <Badge variant="outline">Durable</Badge> : null}
             </div>
           </div>
         ),
+        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
       },
       {
         id: "bindings",
@@ -85,25 +103,30 @@ export function ExchangesView() {
         cell: ({ row }) => (
           <span className="data-cell">{fmtInt(bindingCount(row.original))}</span>
         ),
+        meta: numericMeta
+      },{
+        accessorKey: "vhost",
+        header: ({ column }) => <DataGridColumnHeader title="Virtual host" column={column} />,
+        cell: ({ row }) => <span className="text-muted-foreground">{row.original.vhost}</span>,
+        meta: { skeleton: <Skeleton className="h-4 w-16" /> },
+      },
+      {
+        accessorKey: "type",
+        header: ({ column }) => <DataGridColumnHeader title="Type" column={column} />,
+        cell: ({ row }) => <Badge variant="outline">{row.original.type}</Badge>,
+        meta: { skeleton: <Skeleton className="h-5 w-14" /> },
       },
       {
         accessorKey: "publishRate",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Publish" />,
         cell: ({ row }) => <span className="data-cell">{fmtRate(row.original.publishRate)}</span>,
+        meta: numericMeta
       },
       {
         accessorKey: "deliverRate",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Deliver" />,
         cell: ({ row }) => <span className="data-cell">{fmtRate(row.original.deliverRate)}</span>,
-      },
-      {
-        accessorKey: "durable",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Durable" />,
-        cell: ({ row }) => (
-          <Badge variant={row.original.durable ? "outline" : "warning-light"}>
-            {row.original.durable ? "Durable" : "Transient"}
-          </Badge>
-        ),
+        meta: numericMeta
       },
       {
         accessorKey: "autoDelete",
@@ -113,55 +136,35 @@ export function ExchangesView() {
             {row.original.autoDelete ? "Yes" : "No"}
           </span>
         ),
+        meta: { skeleton: <Skeleton className="h-4 w-16" /> },
       },
       {
         id: "actions",
         header: () => <span className="sr-only">Actions</span>,
         cell: ({ row }) => (
-          <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={`Actions for ${row.original.name || "default exchange"}`}
-                  />
-                }
-              >
-                <MoreHorizontalIcon aria-hidden="true" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem
-                  onClick={() =>
-                    openDialog({
-                      type: "publish",
-                      vhost: row.original.vhost,
-                      exchange: row.original.name || undefined,
-                    })
-                  }
-                >
-                  <SendIcon aria-hidden="true" />
-                  Publish
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  disabled={!row.original.name}
-                  onClick={() => setPendingDelete(row.original)}
-                >
-                  <Trash2Icon aria-hidden="true" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <GridActions
+            row={row.original}
+            setPendingDelete={setPendingDelete}
+            openDialog={openDialog}
+          />
         ),
       },
     ],
     [bindingCount, openDialog]
   );
+
+  const clearFilters = () => {
+    setSearch("")
+    setQuery(createFilterQuery())
+  }
+
+  const table = useTable({
+    features: dataGridFeatures,
+    defaultColumn: { size: 120, minSize: 80 },
+    data: exchanges,
+    columns,
+    initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
+  });
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -182,47 +185,52 @@ export function ExchangesView() {
         }
       />
 
-      <FilterBar search={search} onSearch={setSearch} placeholder="Search exchanges…">
-        <SelectFilter
-          value={vhost}
-          onChange={setVhost}
-          options={data.vhosts.map((entry) => ({ value: entry.name, label: entry.name }))}
-          label="Filter by virtual host"
-          allLabel="All virtual hosts"
-        />
-        <SelectFilter
-          value={type}
-          onChange={setType}
-          options={typeOptions}
-          label="Filter by exchange type"
-          allLabel="All types"
-        />
-      </FilterBar>
-
-      <ResourceTable
-        data={exchanges}
-        columns={columns}
-        noun="exchanges"
-        minWidth="min-w-[840px]"
-        loading={status === "loading"}
-        error={error}
-        onRetry={actions.retry}
-        onRowClick={(exchange) =>
-          exchange.name ? navigate(routeHref("exchange", exchange.name)) : undefined
-        }
-        footerExtra={`${data.exchanges.length} total`}
-        empty={
-          <RegionEmpty
-            title="No exchanges match"
-            description="Adjust the filters or declare a new exchange."
-            action={
-              <Button type="button" size="sm" onClick={() => openDialog({ type: "add-exchange" })}>
-                Add exchange
-              </Button>
-            }
+      <DataGrid
+        table={table}
+        recordCount={exchanges.length}
+        isLoading={status === "loading"}
+        onRowClick={(row: Exchange) => navigate(routeHref("exchange", row.name))}
+        emptyMessage={
+          <GridEmptyState 
+            errorMessage={error}
+            retry={actions.retry}
+            clearFilters={clearFilters}
           />
         }
-      />
+        tableLayout={{
+          dense: true,
+          headerBorder: true,
+          width: "auto",
+        }}
+        tableClassNames={{ base: "min-w-[900px]" }}
+      >
+        <Frame spacing="sm" className="min-w-0">
+          <FrameHeader>
+            <FilterBar
+              search={search}
+              onSearch={setSearch}
+              placeholder="Search queues…"
+              className="justify-end"
+            >
+              <Filters
+                fields={filterFields}
+                query={query}
+                onQueryChange={setQuery}
+                size="sm"
+                showClear
+              />
+            </FilterBar>
+          </FrameHeader>
+          <FramePanel>
+            <DataGridScrollArea>
+              <DataGridTable />
+            </DataGridScrollArea>
+          </FramePanel>
+          <FrameFooter>
+            <DataGridPagination sizes={DEFAULT_PAGES_OPTIONS} />
+          </FrameFooter>
+        </Frame>
+      </DataGrid>
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}
