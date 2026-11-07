@@ -7,6 +7,8 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
+import { CircleAlertIcon } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/reui/alert";
 import {
   Dialog,
   DialogClose,
@@ -94,12 +96,12 @@ function ToggleField({
   onCheckedChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-border pb-2.5">
+    <div className="flex items-start justify-between gap-4 rounded-lg border border-input px-2.5 py-1">
       <div className="flex min-w-0 flex-col gap-0.5">
         <span className="text-sm font-medium">{label}</span>
         <span className="text-xs text-muted-foreground">{hint}</span>
       </div>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} aria-label={label} />
+      <Switch className="shrink-0" checked={checked} onCheckedChange={onCheckedChange} aria-label={label} />
     </div>
   );
 }
@@ -107,9 +109,10 @@ function ToggleField({
 function FormError({ children }: { children: ReactNode }) {
   if (!children) return null;
   return (
-    <p className="text-xs text-destructive-foreground" role="alert">
-      {children}
-    </p>
+    <Alert variant="destructive">
+      <CircleAlertIcon aria-hidden="true" />
+      <AlertDescription>{children}</AlertDescription>
+    </Alert>
   );
 }
 

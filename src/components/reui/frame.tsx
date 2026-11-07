@@ -31,9 +31,9 @@ const frameVariants = cva(
   {
     variants: {
       variant: {
-        default: "border border-[var(--frame-border-color)] bg-clip-padding",
+        default: "bg-clip-padding",
         inverse:
-          "[--frame-panel-bg:color-mix(in_oklch,var(--color-muted)_40%,transparent)] border border-[var(--frame-border-color)] bg-background bg-clip-padding",
+          "[--frame-panel-bg:color-mix(in_oklch,var(--color-muted)_40%,transparent)] bg-background bg-clip-padding",
         ghost: "[--frame-panel-radius:calc(var(--frame-radius)-var(--frame-px))]",
       },
       // Bars read as chrome, not a second content block: py runs 0.5/1.5/2/2.5
@@ -105,7 +105,7 @@ function FramePanel({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-(--frame-panel-radius) border border-(--frame-panel-border-color) bg-(--frame-panel-bg) bg-clip-padding shadow-xs",
+        "relative overflow-hidden rounded-(--frame-panel-radius) bg-(--frame-panel-bg) bg-clip-padding shadow-xs",
         /* `fit` sizes the panel to its content; otherwise it grows to fill
            the frame. */
         !fit && "grow",

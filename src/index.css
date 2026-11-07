@@ -66,8 +66,9 @@
     --card-foreground: #1C1C1E;
     --popover: #FFFFFF;
     --popover-foreground: #1C1C1E;
-    --primary: #FF8D28; /* systemOrange */
-    --primary-foreground: #1C1C1E;
+    --primary: #f60;
+; /* systemOrange */
+    --primary-foreground: #FFFFFF;
     --secondary: #E5E5EA; /* systemGray5 */
     --secondary-foreground: #1C1C1E;
     --muted: #E5E5EA;
@@ -111,7 +112,7 @@
     --popover: #2C2C2E; /* tertiarySystemBackground */
     --popover-foreground: #FFFFFF;
     --primary: #FF9230;
-    --primary-foreground: #1C1C1E;
+    --primary-foreground: #FFFFFF;
     --secondary: #2C2C2E;
     --secondary-foreground: #FFFFFF;
     --muted: #2C2C2E;

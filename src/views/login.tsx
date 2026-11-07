@@ -95,7 +95,7 @@ export function LoginView() {
         </Button>
       </div>
 
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm ring-1 ring-foreground/10">
         <CardHeader className="justify-items-center gap-3 text-center">
           <IconTile variant="solid" size="lg" aria-hidden="true">
             <span className="text-mono text-sm font-semibold">RQ</span>
