@@ -1,19 +1,17 @@
 import { useMemo, useState } from "react";
-import { EraserIcon, MoreHorizontalIcon, PlusIcon, SendIcon, Trash2Icon } from "lucide-react";
+import { PlusIcon, SendIcon } from "lucide-react";
 import { toast } from "sonner";
-import type { ColumnDef } from "@tanstack/react-table";
+import { useTable, type ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { PageHeader } from "@/components/page-header";
-import { ResourceTable } from "@/components/resource-table";
-import { RegionEmpty } from "@/components/region-states";
-import { FilterBar, SelectFilter } from "@/components/filters-bar";
+import { FilterBar } from "@/components/filters-bar";
+import { Filters } from "@/components/reui/filters/filters";
+import {
+  createFilterQuery,
+  flattenFilterConditions,
+  type FilterCondition,
+} from "@/components/reui/filters/filters-query";
+import type { FilterField, FilterQuery } from "@/components/reui/filters/filters-types";
 import { StateBadge, TypeBadge, VhostBadge } from "@/components/badges";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useDialogs } from "@/components/dialogs/dialogs-provider";
@@ -21,45 +19,107 @@ import { useCluster } from "@/store/cluster";
 import { useRoute, routeHref } from "@/lib/router";
 import { fmtBytesMb, fmtInt, fmtRate } from "@/lib/format";
 import { matchesText } from "@/lib/filtering";
-import type { Queue, QueueState, QueueType } from "@/data/types";
+import type { Queue } from "@/data/types";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
-import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import type { ConfirmState } from "./queues/grid-actions";
+import GridActions from "./queues/grid-actions";
+import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
+import GridEmptyState from "./queues/grid-empty-state";
+import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
+import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
+import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
+import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
+import { numericMeta } from "@/components/table-meta-numeric";
+import { Skeleton } from "@/components/ui/skeleton";
 
-type ConfirmState = { kind: "purge" | "delete"; queue: Queue } | null;
+function matchesCondition(value: string, condition: FilterCondition): boolean {
+  const selected = condition.values.map(String);
+  const pending = selected.length === 0;
+  let matches: boolean;
+  switch (condition.operator) {
+    case "empty":
+      matches = value === "";
+      break;
+    case "not_empty":
+      matches = value !== "";
+      break;
+    case "is":
+    case "is_any_of":
+      matches = pending || selected.includes(value);
+      break;
+    case "is_not":
+    case "is_none_of":
+      matches = pending || !selected.includes(value);
+      break;
+    default:
+      matches = true;
+  }
+  return condition.negated ? !matches : matches;
+}
 
 export function QueuesView() {
   const { data, status, error, actions } = useCluster();
   const { openDialog } = useDialogs();
   const { navigate } = useRoute();
   const [search, setSearch] = useState("");
-  const [vhost, setVhost] = useState("all");
-  const [type, setType] = useState("all");
-  const [state, setState] = useState("all");
+  const [query, setQuery] = useState<FilterQuery>(() => createFilterQuery());
   const [confirm, setConfirm] = useState<ConfirmState>(null);
+
+  const conditions = useMemo(() =>
+    flattenFilterConditions(query), [query]);
+
+  const clearFilters = () => {
+    setSearch("")
+    setQuery(createFilterQuery())
+  }
 
   const queues = useMemo(
     () =>
       data.queues.filter(
         (queue) =>
           matchesText(queue.name, search) &&
-          (vhost === "all" || queue.vhost === vhost) &&
-          (type === "all" || queue.type === type) &&
-          (state === "all" || queue.state === state)
+          conditions.every((condition) => {
+            if (condition.field === "vhost") return matchesCondition(queue.vhost, condition);
+            if (condition.field === "type") return matchesCondition(queue.type, condition);
+            if (condition.field === "state") return matchesCondition(queue.state, condition);
+            return true;
+          })
       ),
-    [data.queues, search, vhost, type, state]
+    [data.queues, search, conditions]
   );
 
-  const vhostOptions = data.vhosts.map((entry) => ({ value: entry.name, label: entry.name }));
-  const typeOptions: { value: QueueType; label: string }[] = [
-    { value: "classic", label: "Classic" },
-    { value: "quorum", label: "Quorum" },
-    { value: "stream", label: "Stream" },
-  ];
-  const stateOptions: { value: QueueState; label: string }[] = [
-    { value: "running", label: "Running" },
-    { value: "degraded", label: "Degraded" },
-    { value: "idle", label: "Idle" },
-  ];
+  const filterFields = useMemo<FilterField[]>(
+    () => [
+      {
+        id: "vhost",
+        label: "Virtual host",
+        type: "select",
+        options: data.vhosts.map((entry) => ({ value: entry.name, label: entry.name })),
+      },
+      {
+        id: "type",
+        label: "Type",
+        type: "select",
+        options: [
+          { value: "classic", label: "Classic" },
+          { value: "quorum", label: "Quorum" },
+          { value: "stream", label: "Stream" },
+        ],
+      },
+      {
+        id: "state",
+        label: "State",
+        type: "select",
+        options: [
+          { value: "running", label: "Running" },
+          { value: "degraded", label: "Degraded" },
+          { value: "idle", label: "Idle" },
+        ],
+      },
+    ],
+    [data.vhosts]
+  );
 
   const columns = useMemo<ColumnDef<DataGridFeatures, Queue>[]>(
     () => [
@@ -75,11 +135,14 @@ export function QueuesView() {
             </div>
           </div>
         ),
+        enableResizing: true,
+        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
       },
       {
         accessorKey: "state",
         header: ({ column }) => <DataGridColumnHeader column={column} title="State" />,
         cell: ({ row }) => <StateBadge state={row.original.state} />,
+        meta: { skeleton: <Skeleton className="h-4 w-12" /> }
       },
       {
         accessorKey: "ready",
@@ -92,75 +155,42 @@ export function QueuesView() {
             ) : null}
           </span>
         ),
+        meta: numericMeta,
       },
       {
         accessorKey: "unacked",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Unacked" />,
         cell: ({ row }) => <span className="data-cell">{fmtInt(row.original.unacked)}</span>,
+        meta: numericMeta,
       },
       {
         accessorKey: "consumers",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Consumers" />,
         cell: ({ row }) => <span className="data-cell">{row.original.consumers}</span>,
+        meta: numericMeta,
       },
       {
         accessorKey: "publishRate",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Publish" />,
         cell: ({ row }) => <span className="data-cell">{fmtRate(row.original.publishRate)}</span>,
+        meta: numericMeta,
       },
       {
         accessorKey: "deliverRate",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Deliver" />,
         cell: ({ row }) => <span className="data-cell">{fmtRate(row.original.deliverRate)}</span>,
+        meta: numericMeta,
       },
       {
         accessorKey: "memory",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Memory" />,
         cell: ({ row }) => <span className="data-cell">{fmtBytesMb(row.original.memory)}</span>,
+        meta: numericMeta,
       },
       {
         id: "actions",
         header: () => <span className="sr-only">Actions</span>,
-        cell: ({ row }) => (
-          <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={`Actions for ${row.original.name}`}
-                  />
-                }
-              >
-                <MoreHorizontalIcon aria-hidden="true" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem
-                  onClick={() => openDialog({ type: "publish", vhost: row.original.vhost })}
-                >
-                  <SendIcon aria-hidden="true" />
-                  Publish
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setConfirm({ kind: "purge", queue: row.original })}
-                >
-                  <EraserIcon aria-hidden="true" />
-                  Purge
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => setConfirm({ kind: "delete", queue: row.original })}
-                >
-                  <Trash2Icon aria-hidden="true" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ),
+        cell: ({ row }) => (<GridActions rowData={row.original} openDialog={openDialog} setConfirm={setConfirm} />),
       },
     ],
     [openDialog]
@@ -179,6 +209,14 @@ export function QueuesView() {
     }
     setConfirm(null);
   };
+
+  const table = useTable({
+    features: dataGridFeatures,
+    defaultColumn: { size: 120, minSize: 80 },
+    data: queues,
+    columns,
+    initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
+  });
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -199,52 +237,52 @@ export function QueuesView() {
         }
       />
 
-      <FilterBar search={search} onSearch={setSearch} placeholder="Search queues…">
-        <SelectFilter
-          value={vhost}
-          onChange={setVhost}
-          options={vhostOptions}
-          label="Filter by virtual host"
-          allLabel="All virtual hosts"
-        />
-        <SelectFilter
-          value={type}
-          onChange={setType}
-          options={typeOptions}
-          label="Filter by queue type"
-          allLabel="All types"
-        />
-        <SelectFilter
-          value={state}
-          onChange={setState}
-          options={stateOptions}
-          label="Filter by state"
-          allLabel="All states"
-        />
-      </FilterBar>
-
-      <ResourceTable
-        data={queues}
-        columns={columns}
-        noun="queues"
-        minWidth="min-w-[980px]"
-        loading={status === "loading"}
-        error={error}
-        onRetry={actions.retry}
-        onRowClick={(queue) => navigate(routeHref("queue", queue.name))}
-        footerExtra={`${data.queues.length} total`}
-        empty={
-          <RegionEmpty
-            title="No queues match"
-            description="Adjust the filters or declare a new queue."
-            action={
-              <Button type="button" size="sm" onClick={() => openDialog({ type: "add-queue" })}>
-                Add queue
-              </Button>
-            }
+      <DataGrid
+        table={table}
+        recordCount={queues.length}
+        isLoading={status === "loading"}
+        onRowClick={(row: Queue) => navigate(routeHref("queue", row.name))}
+        emptyMessage={
+          <GridEmptyState 
+            errorMessage={error}
+            retry={actions.retry}
+            clearFilters={clearFilters}
           />
         }
-      />
+        tableLayout={{
+          dense: true,
+          headerBorder: true,
+          width: "auto",
+        }}
+        tableClassNames={{ base: "min-w-[900px]" }}
+      >
+        <Frame spacing="sm" className="min-w-0">
+          <FrameHeader>
+            <FilterBar
+              search={search}
+              onSearch={setSearch}
+              placeholder="Search queues…"
+              className="justify-end"
+            >
+              <Filters
+                fields={filterFields}
+                query={query}
+                onQueryChange={setQuery}
+                size="sm"
+                showClear
+              />
+            </FilterBar>
+          </FrameHeader>
+          <FramePanel>
+            <DataGridScrollArea>
+              <DataGridTable />
+            </DataGridScrollArea>
+          </FramePanel>
+          <FrameFooter>
+            <DataGridPagination sizes={DEFAULT_PAGES_OPTIONS} />
+          </FrameFooter>
+        </Frame>
+      </DataGrid>
 
       <ConfirmDialog
         open={Boolean(confirm)}

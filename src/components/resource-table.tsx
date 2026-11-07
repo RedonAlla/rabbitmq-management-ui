@@ -8,7 +8,7 @@ import {
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
-import { Frame, FrameFooter, FramePanel } from "@/components/reui/frame";
+import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
 import { RegionError } from "@/components/region-states";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +25,7 @@ interface ResourceTableProps<TData extends object> {
   noun?: string;
   showPagination?: boolean;
   footerExtra?: ReactNode;
+  toolbar?: ReactNode;
   embedded?: boolean;
 }
 
@@ -41,6 +42,7 @@ export function ResourceTable<TData extends object>({
   noun = "rows",
   showPagination = true,
   footerExtra,
+  toolbar,
   embedded = false,
 }: ResourceTableProps<TData>) {
   const table = useTable({
@@ -94,6 +96,7 @@ export function ResourceTable<TData extends object>({
         </>
       ) : (
         <Frame spacing="sm" className="min-w-0">
+          {toolbar ? <FrameHeader>{toolbar}</FrameHeader> : null}
           <FramePanel className="p-0">
             <DataGridScrollArea>
               <DataGridTable />

@@ -12,17 +12,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 interface FilterBarProps {
   search: string;
   onSearch: (value: string) => void;
   placeholder: string;
   children?: ReactNode;
+  className?: string;
 }
 
-export function FilterBar({ search, onSearch, placeholder, children }: FilterBarProps) {
+export function FilterBar({ search, onSearch, placeholder, children, className }: FilterBarProps) {
   return (
-    <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+    <div
+      className={cn(
+        "flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center",
+        className
+      )}
+    >
       <InputGroup className="w-full sm:max-w-xs">
         <InputGroupAddon>
           <SearchIcon aria-hidden="true" />
