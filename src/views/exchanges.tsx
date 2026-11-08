@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { PlusIcon, SendIcon } from "lucide-react";
+import { PlusIcon, SendIcon, Waypoints } from "lucide-react";
 import { toast } from "sonner";
 import { useTable, type ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/reui/badge";
@@ -26,7 +26,7 @@ import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagina
 import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
-import GridEmptyState from "./exchanges/grid-empty-state";
+import GridEmptyState from "@/components/ui/empty-state";
 
 const EXCHANGE_TYPE_OPTIONS: { value: ExchangeType; label: string }[] = [
   { value: "direct", label: "Direct" },
@@ -191,8 +191,11 @@ export function ExchangesView() {
         isLoading={status === "loading"}
         onRowClick={(row: Exchange) => navigate(routeHref("exchange", row.name))}
         emptyMessage={
-          <GridEmptyState 
-            errorMessage={error}
+          <GridEmptyState
+            icon={<Waypoints />}
+            title="No exchanges match"
+            description="No exchange matches this search. Clear the filters to see all declared exchanges."
+            error={error}
             retry={actions.retry}
             clearFilters={clearFilters}
           />

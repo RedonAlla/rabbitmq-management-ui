@@ -12,6 +12,7 @@ import { definitionSummary, fmtInt } from "@/lib/format"
 import type { Policy } from "@/data/types"
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header"
 import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function policyColumns(
   applied: (policy: Policy) => number,
@@ -34,6 +35,7 @@ export function policyColumns(
           </span>
         </div>
       ),
+      meta: { skeleton: <Skeleton className="h-4 w-25" /> }
     },
     {
       accessorKey: "pattern",
@@ -43,6 +45,7 @@ export function policyColumns(
       cell: ({ row }) => (
         <span className="data-cell text-xs">{row.original.pattern}</span>
       ),
+        meta: { skeleton: <Skeleton className="h-4 w-15" /> }
     },
     {
       accessorKey: "applyTo",
@@ -52,6 +55,7 @@ export function policyColumns(
       cell: ({ row }) => (
         <span className="text-sm capitalize">{row.original.applyTo}</span>
       ),
+      meta: { skeleton: <Skeleton className="h-4 w-25" /> }
     },
     {
       id: "definition",
@@ -61,6 +65,7 @@ export function policyColumns(
           {definitionSummary(row.original.definition)}
         </span>
       ),
+      meta: { skeleton: <Skeleton className="h-4 w-15" /> }
     },
     {
       id: "applied",
@@ -73,6 +78,7 @@ export function policyColumns(
           </Badge>
         )
       },
+      meta: { skeleton: <Skeleton className="h-4 w-15" /> }
     },
     {
       id: "actions",
@@ -107,6 +113,7 @@ export function policyColumns(
           </DropdownMenu>
         </div>
       ),
+      meta: { skeleton: <Skeleton className="h-4 w-15" /> }
     },
   ]
 }

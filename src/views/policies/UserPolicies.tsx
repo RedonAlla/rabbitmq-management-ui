@@ -17,7 +17,7 @@ import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagina
 import { matchesText } from "@/lib/filtering"
 import GridEmptyState from "@/components/ui/empty-state"
 import { Button } from "@/components/ui/button"
-import { PlusIcon } from "lucide-react"
+import { PlusIcon, ShieldCheck } from "lucide-react"
 
 function matchesPolicy(policy: Policy, queue: Queue): boolean {
   if (policy.vhost !== queue.vhost || policy.applyTo === "exchanges")
@@ -88,9 +88,10 @@ export default function UserPolicies() {
         }}
         emptyMessage={
           <GridEmptyState
+            icon={<ShieldCheck />}
             title="No policies match"
             description="Adjust the filters or create a policy."
-            errorMessage={error}
+            error={error}
             retry={actions.retry}
             clearFilters={clearFilters}
           />

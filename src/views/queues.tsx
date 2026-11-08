@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { PlusIcon, SendIcon } from "lucide-react";
+import { ListOrdered, PlusIcon, SendIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useTable, type ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
@@ -25,13 +25,13 @@ import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/
 import type { ConfirmState } from "./queues/grid-actions";
 import GridActions from "./queues/grid-actions";
 import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
-import GridEmptyState from "./queues/grid-empty-state";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
 import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
 import { numericMeta } from "@/components/table-meta-numeric";
 import { Skeleton } from "@/components/ui/skeleton";
+import GridEmptyState from "@/components/ui/empty-state";
 
 function matchesCondition(value: string, condition: FilterCondition): boolean {
   const selected = condition.values.map(String);
@@ -243,8 +243,11 @@ export function QueuesView() {
         isLoading={status === "loading"}
         onRowClick={(row: Queue) => navigate(routeHref("queue", row.name))}
         emptyMessage={
-          <GridEmptyState 
-            errorMessage={error}
+          <GridEmptyState
+            icon={<ListOrdered />}
+            title="No queues match"
+            description="Adjust the search or clear the filters to see every declared queue."
+            error={error}
             retry={actions.retry}
             clearFilters={clearFilters}
           />

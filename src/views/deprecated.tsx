@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { TriangleAlertIcon } from "lucide-react";
+import { Boxes, TriangleAlertIcon } from "lucide-react";
 import { useTable, type ColumnDef } from "@tanstack/react-table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/reui/alert";
 import { Badge } from "@/components/reui/badge";
@@ -11,12 +11,12 @@ import type { DeprecatedFeature, DeprecationPhase } from "@/data/types";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
 import { Skeleton } from "@/components/ui/skeleton";
-import GridEmptyState from "./deprecated/empty-state";
 import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
 import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
+import GridEmptyState from "@/components/ui/empty-state";
 
 const PHASES: Record<
   DeprecationPhase,
@@ -135,10 +135,13 @@ export function DeprecatedFeaturesView() {
         recordCount={features.length}
         isLoading={status === "loading"}
         emptyMessage={
-          <GridEmptyState 
-            errorMessage={error}
+          <GridEmptyState
+            icon={<Boxes />}
+            error={error}
             retry={actions.retry}
             clearFilters={clearFilters}
+            title="No deprecated features match"
+            description="Clear the filters to see every deprecated capability."
           />
         }
         tableLayout={{

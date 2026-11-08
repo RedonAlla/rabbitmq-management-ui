@@ -8,32 +8,34 @@ import {
   EmptyMedia,
   EmptyTitle
 } from "@/components/ui/empty";
-import { ShieldCheck } from "lucide-react";
+import type { ReactNode } from "react";
 
 type Props = {
-  errorMessage: string | null;
+  error: string | null;
   retry: () => void;
   clearFilters?: () => void;
   title: string;
   description: string;
+  icon: ReactNode
 };
 
 export default function GridEmptyState({
   title,
   description,
-  errorMessage,
+  error,
   clearFilters,
-  retry
+  retry,
+  icon
 }: Props) {
 
-  if(errorMessage != null)
-    return (<RegionError message={errorMessage} onRetry={retry} />);
+  if(error != null)
+    return (<RegionError message={error} onRetry={retry} />);
 
   return (
     <Empty>
       <EmptyHeader>
         <EmptyMedia variant="icon">
-          <ShieldCheck />
+          {icon}
         </EmptyMedia>
         <EmptyTitle>{title}</EmptyTitle>
         <EmptyDescription>

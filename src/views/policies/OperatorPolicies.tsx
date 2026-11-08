@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react"
-import { PlusIcon } from "lucide-react"
+import { PlusIcon, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/confirm-dialog"
@@ -88,9 +88,10 @@ export default function OperatorPolicies() {
         }}
         emptyMessage={
           <GridEmptyState
+            icon={<ShieldCheck />}
             title="No policies match"
             description="Adjust the filters or create a policy."
-            errorMessage={error}
+            error={error}
             retry={actions.retry}
             clearFilters={clearFilters}
           />
@@ -150,27 +151,6 @@ export default function OperatorPolicies() {
           </FrameFooter>
         </Frame>
       </DataGrid>
-
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">Operator policies</h2>
-          <p className="text-xs text-muted-foreground">
-            Administrators use these to override user policies for critical
-            limits.
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => openDialog({ type: "add-operator-policy" })}
-          >
-            <PlusIcon data-icon="inline-start" aria-hidden="true" />
-            Add operator policy
-          </Button>
-        </div>
-      </div>
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}

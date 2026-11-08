@@ -20,11 +20,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { numericMeta } from "@/components/table-meta-numeric";
 import GridActions from "./channels/grid-actions";
 import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
-import GridEmptyState from "./channels/grid-empty-state";
 import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
+import { GitBranch } from "lucide-react";
+import GridEmptyState from "@/components/ui/empty-state";
 
 export function ChannelsView() {
   const { data, status, error, actions } = useCluster();
@@ -189,7 +190,10 @@ export function ChannelsView() {
         onRowClick={(channel) => navigate(routeHref("channel", channel.id))}
         emptyMessage={
           <GridEmptyState 
-            errorMessage={error}
+            icon={<GitBranch />}
+            error={error}
+            title="No channels match"
+            description="Adjust the filters or open a new connection."
             retry={actions.retry}
             clearFilters={clearFilters}
           />

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useTable, type ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/reui/badge";
@@ -17,7 +17,6 @@ import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-colu
 import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
 import { Skeleton } from "@/components/ui/skeleton";
 import GridActions from "./user/grid-actions";
-import GridEmptyState from "./user/grid-empty-state";
 import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
 import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
 import { Filters } from "@/components/reui/filters/filters";
@@ -30,6 +29,7 @@ import type { FilterField, FilterQuery } from "@/components/reui/filters/filters
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
+import GridEmptyState from "@/components/ui/empty-state";
 
 function matchesValues(values: string[], condition: FilterCondition): boolean {
   const selected = condition.values.map(String);
@@ -200,10 +200,13 @@ export function UsersView() {
         recordCount={users.length}
         isLoading={status === "loading"}
         emptyMessage={
-          <GridEmptyState 
-            errorMessage={error}
+          <GridEmptyState
+            icon={<Users />} 
+            error={error}
             retry={actions.retry}
             clearFilters={clearFilters}
+            title="No users match"
+            description="No users matches this search."
           />
         }
         tableLayout={{

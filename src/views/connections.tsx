@@ -19,12 +19,13 @@ import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/
 import { Skeleton } from "@/components/ui/skeleton";
 import GridActions from "./connections/grid-actions";
 import { numericMeta } from "@/components/table-meta-numeric";
-import GridEmptyState from "./connections/grid-empty-state";
 import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
 import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
+import { Plug } from "lucide-react";
+import GridEmptyState from "@/components/ui/empty-state";
 
 export function ConnectionsView() {
   const { data, status, error, actions } = useCluster();
@@ -191,10 +192,13 @@ export function ConnectionsView() {
         isLoading={status === "loading"}
         onRowClick={(connection: Connection) => navigate(routeHref("connection", connection.id))}
         emptyMessage={
-          <GridEmptyState 
-            errorMessage={error}
+          <GridEmptyState
+            icon={<Plug />}
+            error={error}
             retry={actions.retry}
             clearFilters={clearFilters}
+            title="No connections match"
+            description="No client matches this search. Clear the filters to see every open socket."
           />
         }
         tableLayout={{

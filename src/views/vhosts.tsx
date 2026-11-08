@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { MoreHorizontalIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { MoreHorizontalIcon, PlusIcon, Trash2Icon, TriangleExclamationPoint } from "lucide-react";
 import { toast } from "sonner";
 import { useTable, type ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/reui/badge";
@@ -23,11 +23,11 @@ import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/
 import { Skeleton } from "@/components/ui/skeleton";
 import { numericMeta } from "@/components/table-meta-numeric";
 import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
-import GridEmptyState from "./vhosts/empty-state";
 import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
+import GridEmptyState from "@/components/ui/empty-state";
 
 export function VhostsView() {
   const { data, status, error, actions } = useCluster();
@@ -175,10 +175,13 @@ export function VhostsView() {
         recordCount={vhosts.length}
         isLoading={status === "loading"}
         emptyMessage={
-          <GridEmptyState 
-            errorMessage={error}
+          <GridEmptyState
+            icon={<TriangleExclamationPoint />}
+            error={error}
             retry={actions.retry}
             clearFilters={clearFilters}
+            title="No virtual hosts match"
+            description="Adjust the search or create a new namespace."
           />
         }
         tableLayout={{
