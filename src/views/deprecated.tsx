@@ -17,6 +17,7 @@ import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
 import GridEmptyState from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
 
 const PHASES: Record<
   DeprecationPhase,

@@ -26,6 +26,7 @@ import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
 import { Plug } from "lucide-react";
 import GridEmptyState from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
 
 export function ConnectionsView() {
   const { data, status, error, actions } = useCluster();
