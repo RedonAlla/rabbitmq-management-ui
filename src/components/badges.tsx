@@ -30,3 +30,20 @@ export function TlsBadge({ ssl }: { ssl: boolean }) {
   if (!ssl) return <Badge variant="outline">Plain</Badge>;
   return <Badge variant="success-light">TLS</Badge>;
 }
+
+export function ConnectionStateBadge({
+  state,
+}: {
+  state: string//"running" | "blocked" | "blocking" | "closed"
+}) {
+  switch (state) {
+    case "running":
+      return <Badge variant="success-light">running</Badge>
+    case "blocked":
+      return <Badge variant="destructive-light">blocked</Badge>
+    case "blocking":
+      return <Badge variant="warning-light">blocking</Badge>
+    default:
+      return <Badge variant="outline">closed</Badge>
+  }
+}
