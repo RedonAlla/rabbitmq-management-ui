@@ -1,22 +1,16 @@
-import { useMemo, useState, type FormEvent } from "react";
-import { ServerIcon } from "lucide-react";
+import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { PageHeader } from "@/components/page-header";
-import { ResourceTable } from "@/components/resource-table";
-import { RegionEmpty, RegionError } from "@/components/region-states";
+import { RegionError } from "@/components/region-states";
 import { FactPanel, SectionFrame } from "@/components/detail";
-import { TlsBadge } from "@/components/badges";
 import { useCluster } from "@/store/cluster";
-import { fmtAgo, fmtDate, fmtDuration, fmtInt, pct } from "@/lib/format";
-import type { NodeInfo, PortInfo } from "@/data/types";
-import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
-import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import { fmtAgo, fmtDate } from "@/lib/format";
+import NodesTable from "./cluster/NodesTable";
+import ListenersTable from "./cluster/ListenersTable";
 
 export function ClusterView() {
   const { data, status, error, actions } = useCluster();
@@ -33,125 +27,6 @@ export function ClusterView() {
     setNameError("");
     toast.success("Cluster renamed", { description: `Clients now see ${clean} in server properties.` });
   };
-
-  const nodeColumns = useMemo<ColumnDef<DataGridFeatures, NodeInfo>[]>(
-    () => [
-      {
-        accessorKey: "name",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Node" />,
-        cell: ({ row }) => (
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="truncate font-medium">{row.original.name.replace("rabbit@", "")}</span>
-            <Badge variant="outline">{row.original.type}</Badge>
-          </div>
-        ),
-      },
-      {
-        accessorKey: "uptime",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Uptime" />,
-        cell: ({ row }) => <span className="data-cell">{fmtDuration(row.original.uptime)}</span>,
-      },
-      {
-        id: "memory",
-        header: () => <span>Memory</span>,
-        cell: ({ row }) => {
-          const usage = pct(row.original.memory, row.original.memoryMax);
-          return (
-            <div className="flex w-40 flex-col gap-1">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="data-cell">
-                  {row.original.memory.toFixed(2)}{" "}
-                  <span className="text-xs text-muted-foreground">
-                    / {row.original.memoryMax.toFixed(1)} GB
-                  </span>
-                </span>
-                <span className="text-xs text-muted-foreground">{usage.toFixed(0)}%</span>
-              </div>
-              <Progress value={usage} aria-label={`Memory usage on ${row.original.name}`} />
-            </div>
-          );
-        },
-      },
-      {
-        id: "disk",
-        header: () => <span>Disk</span>,
-        cell: ({ row }) => {
-          const usage = pct(row.original.diskMax - row.original.diskFree, row.original.diskMax);
-          return (
-            <div className="flex w-40 flex-col gap-1">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="data-cell">
-                  {row.original.diskFree.toFixed(1)}{" "}
-                  <span className="text-xs text-muted-foreground">GB free</span>
-                </span>
-                <span className="text-xs text-muted-foreground">{usage.toFixed(0)}% used</span>
-              </div>
-              <Progress value={usage} aria-label={`Disk usage on ${row.original.name}`} />
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: "fd",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="File descriptors" />,
-        cell: ({ row }) => (
-          <span className="data-cell">
-            {fmtInt(row.original.fd)}{" "}
-            <span className="text-xs text-muted-foreground">/ {fmtInt(row.original.fdMax)}</span>
-          </span>
-        ),
-      },
-      {
-        accessorKey: "cpu",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="CPU" />,
-        cell: ({ row }) => <span className="data-cell">{row.original.cpu.toFixed(0)}%</span>,
-      },
-      {
-        id: "status",
-        header: () => <span>Status</span>,
-        cell: ({ row }) =>
-          row.original.running ? (
-            <Badge variant="success-light">Running</Badge>
-          ) : (
-            <Badge variant="destructive-light">Stopped</Badge>
-          ),
-      },
-    ],
-    []
-  );
-
-  const portColumns = useMemo<ColumnDef<DataGridFeatures, PortInfo>[]>(
-    () => [
-      {
-        accessorKey: "port",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Port" />,
-        cell: ({ row }) => <span className="data-cell font-medium">{row.original.port}</span>,
-      },
-      {
-        accessorKey: "protocol",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Protocol" />,
-        cell: ({ row }) => <span className="text-sm">{row.original.protocol}</span>,
-      },
-      {
-        accessorKey: "tls",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="TLS" />,
-        cell: ({ row }) => <TlsBadge ssl={row.original.tls} />,
-      },
-      {
-        accessorKey: "nodes",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Nodes" />,
-        cell: ({ row }) => <span className="data-cell">{row.original.nodes}</span>,
-      },
-      {
-        accessorKey: "context",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Context" />,
-        cell: ({ row }) => (
-          <span className="data-cell text-xs text-muted-foreground">{row.original.context}</span>
-        ),
-      },
-    ],
-    []
-  );
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -222,73 +97,8 @@ export function ClusterView() {
         />
       </div>
 
-      <div className="flex min-w-0 flex-col gap-2">
-        <div className="flex min-w-0 items-center justify-between gap-3">
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <h2 className="text-sm font-semibold">Nodes</h2>
-            <p className="text-xs text-muted-foreground">Runtime resources per cluster member.</p>
-          </div>
-          <Badge variant="outline">
-            {data.nodes.length} {data.nodes.length === 1 ? "node" : "nodes"}
-          </Badge>
-        </div>
-        <ResourceTable
-          data={data.nodes}
-          columns={nodeColumns}
-          noun="nodes"
-          pageSize={10}
-          showPagination={false}
-          minWidth="min-w-[1040px]"
-          loading={status === "loading"}
-          empty={
-            <RegionEmpty
-              title="No nodes reported"
-              description="The management API returned no cluster members."
-              icon={<ServerIcon />}
-              action={
-                <Button type="button" variant="outline" size="sm" onClick={actions.retry}>
-                  Retry
-                </Button>
-              }
-            />
-          }
-        />
-      </div>
-
-      <div className="flex min-w-0 flex-col gap-2">
-        <div className="flex min-w-0 items-center justify-between gap-3">
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <h2 className="text-sm font-semibold">Listeners</h2>
-            <p className="text-xs text-muted-foreground">
-              Protocols accepted by the cluster, with their exposed ports.
-            </p>
-          </div>
-          <Badge variant="outline">
-            {data.ports.length} {data.ports.length === 1 ? "listener" : "listeners"}
-          </Badge>
-        </div>
-        <ResourceTable
-          data={data.ports}
-          columns={portColumns}
-          noun="listeners"
-          pageSize={10}
-          showPagination={false}
-          minWidth="min-w-[640px]"
-          loading={status === "loading"}
-          empty={
-            <RegionEmpty
-              title="No listeners reported"
-              description="No protocol ports were returned for this cluster."
-              icon={<ServerIcon />}
-              action={
-                <Button type="button" variant="outline" size="sm" onClick={actions.retry}>
-                  Retry
-                </Button>
-              }
-            />
-          }
-        />
-      </div>
+      <NodesTable nodes={data.nodes} loading={status === "loading"} error={error} onRetry={actions.retry} />
+      <ListenersTable ports={data.ports} loading={status === "loading"} error={error} onRetry={actions.retry} />
     </div>
   );
 }
