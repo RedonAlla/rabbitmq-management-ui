@@ -1,19 +1,11 @@
 import { useMemo, useState } from "react";
-import { MoreHorizontalIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 import { toast } from "sonner";
-import type { ColumnDef } from "@tanstack/react-table";
+import { useTable, type ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/reui/badge";
 import { IconTile } from "@/components/reui/icon-tile";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { PageHeader } from "@/components/page-header";
-import { ResourceTable } from "@/components/resource-table";
-import { RegionEmpty } from "@/components/region-states";
 import { FilterBar } from "@/components/filters-bar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useDialogs } from "@/components/dialogs/dialogs-provider";
@@ -22,21 +14,101 @@ import { initials } from "@/lib/format";
 import { matchesText } from "@/lib/filtering";
 import type { User } from "@/data/types";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
-import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import { Skeleton } from "@/components/ui/skeleton";
+import GridActions from "./user/grid-actions";
+import GridEmptyState from "./user/grid-empty-state";
+import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
+import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
+import { Filters } from "@/components/reui/filters/filters";
+import {
+  createFilterQuery,
+  flattenFilterConditions,
+  type FilterCondition,
+} from "@/components/reui/filters/filters-query";
+import type { FilterField, FilterQuery } from "@/components/reui/filters/filters-types";
+import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
+import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
+import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
+
+function matchesValues(values: string[], condition: FilterCondition): boolean {
+  const selected = condition.values.map(String);
+  const pending = selected.length === 0;
+  const wildcard = values.includes("*");
+  let matches: boolean;
+
+  switch (condition.operator) {
+    case "empty":
+      matches = values.length === 0;
+      break;
+    case "not_empty":
+      matches = values.length > 0;
+      break;
+    case "is":
+    case "is_any_of":
+    case "has_any_of":
+      matches = pending || wildcard || values.some((value) => selected.includes(value));
+      break;
+    case "is_not":
+    case "is_none_of":
+    case "has_none_of":
+      matches = pending || !(wildcard || values.some((value) => selected.includes(value)));
+      break;
+    case "has_all_of":
+      matches = pending || wildcard || selected.every((value) => values.includes(value));
+      break;
+    default:
+      matches = true;
+  }
+
+  return condition.negated ? !matches : matches;
+}
 
 export function UsersView() {
   const { data, status, error, actions } = useCluster();
   const { openDialog } = useDialogs();
   const [search, setSearch] = useState("");
+  const [query, setQuery] = useState<FilterQuery>(() => createFilterQuery());
   const [pendingDelete, setPendingDelete] = useState<User | null>(null);
+
+  const conditions = useMemo(() => flattenFilterConditions(query), [query]);
 
   const users = useMemo(
     () =>
       data.users.filter(
-        (user) => matchesText(user.username, search) || matchesText(user.tags.join(" "), search)
+        (user) =>
+          (matchesText(user.username, search) || matchesText(user.tags.join(" "), search)) &&
+          conditions.every((condition) => {
+            if (condition.field === "username") return matchesValues([user.username], condition);
+            if (condition.field === "vhost") return matchesValues(user.vhosts, condition);
+            return true;
+          })
       ),
-    [data.users, search]
+    [conditions, data.users, search]
   );
+
+  const filterFields = useMemo<FilterField[]>(
+    () => [
+      {
+        id: "username",
+        label: "Username",
+        type: "select",
+        options: data.users.map((user) => ({ value: user.username, label: user.username })),
+      },
+      {
+        id: "vhost",
+        label: "Virtual host",
+        type: "multiselect",
+        options: data.vhosts.map((entry) => ({ value: entry.name, label: entry.name })),
+      },
+    ],
+    [data.users, data.vhosts]
+  );
+
+  const clearFilters = () => {
+    setSearch("")
+    setQuery(createFilterQuery())
+  }
 
   const columns = useMemo<ColumnDef<DataGridFeatures, User>[]>(
     () => [
@@ -52,6 +124,7 @@ export function UsersView() {
             {row.original.username === "admin" ? <Badge variant="outline">owner</Badge> : null}
           </div>
         ),
+        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
       },
       {
         accessorKey: "tags",
@@ -65,6 +138,7 @@ export function UsersView() {
             ))}
           </div>
         ),
+        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
       },
       {
         accessorKey: "vhosts",
@@ -78,6 +152,7 @@ export function UsersView() {
             ))}
           </div>
         ),
+        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
       },
       {
         accessorKey: "hash",
@@ -85,42 +160,27 @@ export function UsersView() {
         cell: ({ row }) => (
           <span className="data-cell text-xs text-muted-foreground">{row.original.hash}</span>
         ),
+        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
       },
       {
         id: "actions",
         header: () => <span className="sr-only">Actions</span>,
         cell: ({ row }) => (
-          <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={`Actions for ${row.original.username}`}
-                  />
-                }
-              >
-                <MoreHorizontalIcon aria-hidden="true" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem
-                  variant="destructive"
-                  disabled={row.original.username === "admin"}
-                  onClick={() => setPendingDelete(row.original)}
-                >
-                  <Trash2Icon aria-hidden="true" />
-                  Delete user
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <GridActions row={row.original} setPendingDelete={setPendingDelete} />
         ),
+        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
       },
     ],
     []
   );
+
+  const table = useTable({
+    features: dataGridFeatures,
+    defaultColumn: { size: 120, minSize: 80 },
+    data: users,
+    columns,
+    initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
+  });
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -135,28 +195,51 @@ export function UsersView() {
         }
       />
 
-      <FilterBar search={search} onSearch={setSearch} placeholder="Search users or tags…" />
-
-      <ResourceTable
-        data={users}
-        columns={columns}
-        noun="users"
-        minWidth="min-w-[760px]"
-        loading={status === "loading"}
-        error={error}
-        onRetry={actions.retry}
-        empty={
-          <RegionEmpty
-            title="No users match"
-            description="Adjust the search or create a new user."
-            action={
-              <Button type="button" size="sm" onClick={() => openDialog({ type: "add-user" })}>
-                Add user
-              </Button>
-            }
+      <DataGrid
+        table={table}
+        recordCount={users.length}
+        isLoading={status === "loading"}
+        emptyMessage={
+          <GridEmptyState 
+            errorMessage={error}
+            retry={actions.retry}
+            clearFilters={clearFilters}
           />
         }
-      />
+        tableLayout={{
+          dense: true,
+          headerBorder: true,
+          width: "auto",
+        }}
+        tableClassNames={{ base: "min-w-[900px]" }}
+      >
+        <Frame spacing="sm" className="min-w-0">
+          <FrameHeader>
+            <FilterBar
+              search={search}
+              onSearch={setSearch}
+              placeholder="Search users or tags…"
+              className="justify-end"
+            >
+              <Filters
+                fields={filterFields}
+                query={query}
+                onQueryChange={setQuery}
+                size="sm"
+                showClear
+              />
+            </FilterBar>
+          </FrameHeader>
+          <FramePanel>
+            <DataGridScrollArea>
+              <DataGridTable />
+            </DataGridScrollArea>
+          </FramePanel>
+          <FrameFooter>
+            <DataGridPagination sizes={DEFAULT_PAGES_OPTIONS} />
+          </FrameFooter>
+        </Frame>
+      </DataGrid>
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}
