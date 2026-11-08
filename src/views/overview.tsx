@@ -59,13 +59,16 @@ export function OverviewView() {
             >
               Add queue
             </Button>
-            <Button type="button" onClick={() => openDialog({ type: "publish" })}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => openDialog({ type: "publish" })}
+            >
               <SendIcon data-icon="inline-start" aria-hidden="true" />
               Publish message
             </Button>
             <Button
               type="button"
-              variant="outline"
               onClick={() => navigate(routeHref("definitions"))}
             >
               <FileJsonIcon data-icon="inline-start" aria-hidden="true" />
