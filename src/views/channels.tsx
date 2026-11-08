@@ -1,34 +1,36 @@
 import { useCallback, useMemo, useState } from "react";
-import { MoreHorizontalIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
-import type { ColumnDef } from "@tanstack/react-table";
+import { useTable, type ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/reui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { PageHeader } from "@/components/page-header";
-import { ResourceTable } from "@/components/resource-table";
-import { RegionEmpty } from "@/components/region-states";
-import { FilterBar, SelectFilter } from "@/components/filters-bar";
+import { FilterBar } from "@/components/filters-bar";
+import { Filters } from "@/components/reui/filters/filters";
+import { createFilterQuery } from "@/components/reui/filters/filters-query";
+import type { FilterField, FilterQuery } from "@/components/reui/filters/filters-types";
 import { StateBadge, VhostBadge } from "@/components/badges";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useCluster } from "@/store/cluster";
 import { useRoute, routeHref } from "@/lib/router";
 import { fmtRate } from "@/lib/format";
-import { matchesText } from "@/lib/filtering";
+import { filterRows, matchesText } from "@/lib/filtering";
 import type { Channel } from "@/data/types";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
-import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import { Skeleton } from "@/components/ui/skeleton";
+import { numericMeta } from "@/components/table-meta-numeric";
+import GridActions from "./channels/grid-actions";
+import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
+import GridEmptyState from "./channels/grid-empty-state";
+import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
+import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
+import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
+import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
 
 export function ChannelsView() {
   const { data, status, error, actions } = useCluster();
   const { navigate } = useRoute();
   const [search, setSearch] = useState("");
-  const [vhost, setVhost] = useState("all");
+  const [query, setQuery] = useState<FilterQuery>(() => createFilterQuery());
   const [pendingClose, setPendingClose] = useState<Channel | null>(null);
 
   const connectionName = useCallback(
@@ -39,12 +41,28 @@ export function ChannelsView() {
 
   const channels = useMemo(
     () =>
-      data.channels.filter(
-        (channel) =>
-          (matchesText(channel.id, search) || matchesText(connectionName(channel.connection), search)) &&
-          (vhost === "all" || channel.vhost === vhost)
+      filterRows(
+        data.channels.filter(
+          (channel) =>
+            matchesText(channel.id, search) ||
+            matchesText(connectionName(channel.connection), search)
+        ),
+        query,
+        { vhost: (channel) => channel.vhost }
       ),
-    [data.channels, search, vhost, connectionName]
+    [data.channels, search, query, connectionName]
+  );
+
+  const filterFields = useMemo<FilterField[]>(
+    () => [
+      {
+        id: "vhost",
+        label: "Virtual host",
+        type: "select",
+        options: data.vhosts.map((entry) => ({ value: entry.name, label: entry.name })),
+      },
+    ],
+    [data.vhosts]
   );
 
   const columns = useMemo<ColumnDef<DataGridFeatures, Channel>[]>(
@@ -60,21 +78,25 @@ export function ChannelsView() {
             </span>
           </div>
         ),
+        meta: { skeleton: <Skeleton className="h-4 w-15" /> }
       },
       {
         accessorKey: "state",
         header: ({ column }) => <DataGridColumnHeader column={column} title="State" />,
         cell: ({ row }) => <StateBadge state={row.original.state} />,
+        meta: { skeleton: <Skeleton className="h-4 w-15" /> }
       },
       {
         accessorKey: "user",
         header: ({ column }) => <DataGridColumnHeader column={column} title="User" />,
         cell: ({ row }) => <span className="text-sm">{row.original.user}</span>,
+        meta: { skeleton: <Skeleton className="h-4 w-15" /> }
       },
       {
         accessorKey: "vhost",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Vhost" />,
         cell: ({ row }) => <VhostBadge>{row.original.vhost}</VhostBadge>,
+        meta: { skeleton: <Skeleton className="h-4 w-15" /> }
       },
       {
         accessorKey: "prefetch",
@@ -84,26 +106,31 @@ export function ChannelsView() {
             {row.original.prefetch === 0 ? "∞" : row.original.prefetch}
           </span>
         ),
+        meta: numericMeta,
       },
       {
         accessorKey: "consumers",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Consumers" />,
         cell: ({ row }) => <span className="data-cell">{row.original.consumers}</span>,
+        meta: numericMeta,
       },
       {
         accessorKey: "unacked",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Unacked" />,
         cell: ({ row }) => <span className="data-cell">{row.original.unacked}</span>,
+        meta: numericMeta,
       },
       {
         accessorKey: "publishRate",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Publish" />,
         cell: ({ row }) => <span className="data-cell">{fmtRate(row.original.publishRate)}</span>,
+        meta: numericMeta,
       },
       {
         accessorKey: "deliverRate",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Deliver" />,
         cell: ({ row }) => <span className="data-cell">{fmtRate(row.original.deliverRate)}</span>,
+        meta: numericMeta,
       },
       {
         id: "mode",
@@ -117,41 +144,31 @@ export function ChannelsView() {
             ) : null}
           </div>
         ),
+        meta: numericMeta,
       },
       {
         id: "actions",
         header: () => <span className="sr-only">Actions</span>,
         cell: ({ row }) => (
-          <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={`Actions for channel ${row.original.id}`}
-                  />
-                }
-              >
-                <MoreHorizontalIcon aria-hidden="true" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => setPendingClose(row.original)}
-                >
-                  <XIcon aria-hidden="true" />
-                  Close channel
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <GridActions row={row.original} setPendingClose={setPendingClose} />
         ),
       },
     ],
     [connectionName]
   );
+
+  const clearFilters = () => {
+    setSearch("")
+    setQuery(createFilterQuery())
+  }
+
+  const table = useTable({
+    features: dataGridFeatures,
+    defaultColumn: { size: 120, minSize: 80 },
+    data: channels,
+    columns,
+    initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
+  });
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -165,32 +182,52 @@ export function ChannelsView() {
         }
       />
 
-      <FilterBar search={search} onSearch={setSearch} placeholder="Search channels or connections…">
-        <SelectFilter
-          value={vhost}
-          onChange={setVhost}
-          options={data.vhosts.map((entry) => ({ value: entry.name, label: entry.name }))}
-          label="Filter by virtual host"
-          allLabel="All virtual hosts"
-        />
-      </FilterBar>
-
-      <ResourceTable
-        data={channels}
-        columns={columns}
-        noun="channels"
-        minWidth="min-w-[1040px]"
-        loading={status === "loading"}
-        error={error}
-        onRetry={actions.retry}
+      <DataGrid
+        table={table}
+        recordCount={channels.length}
+        isLoading={status === "loading"}
         onRowClick={(channel) => navigate(routeHref("channel", channel.id))}
-        empty={
-          <RegionEmpty
-            title="No channels match"
-            description="Adjust the filters or open a new connection."
+        emptyMessage={
+          <GridEmptyState 
+            errorMessage={error}
+            retry={actions.retry}
+            clearFilters={clearFilters}
           />
         }
-      />
+        tableLayout={{
+          dense: true,
+          headerBorder: true,
+          width: "auto",
+        }}
+        tableClassNames={{ base: "min-w-[900px]" }}
+      >
+        <Frame spacing="sm" className="min-w-0">
+          <FrameHeader>
+            <FilterBar
+              search={search}
+              onSearch={setSearch}
+              placeholder="Search channels"
+              className="justify-end"
+            >
+              <Filters
+                fields={filterFields}
+                query={query}
+                onQueryChange={setQuery}
+                size="sm"
+                showClear
+              />
+            </FilterBar>
+          </FrameHeader>
+          <FramePanel>
+            <DataGridScrollArea>
+              <DataGridTable />
+            </DataGridScrollArea>
+          </FramePanel>
+          <FrameFooter>
+            <DataGridPagination sizes={DEFAULT_PAGES_OPTIONS} />
+          </FrameFooter>
+        </Frame>
+      </DataGrid>
 
       <ConfirmDialog
         open={Boolean(pendingClose)}

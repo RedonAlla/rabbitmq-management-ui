@@ -189,7 +189,7 @@ export function ConnectionsView() {
         table={table}
         recordCount={connections.length}
         isLoading={status === "loading"}
-        onRowClick={(row: Connection) => navigate(routeHref("queue", row.name))}
+        onRowClick={(connection: Connection) => navigate(routeHref("connection", connection.id))}
         emptyMessage={
           <GridEmptyState 
             errorMessage={error}
