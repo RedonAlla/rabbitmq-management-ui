@@ -7,8 +7,6 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
-import { CircleAlertIcon } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/reui/alert";
 import {
   Dialog,
   DialogClose,
@@ -19,7 +17,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -34,8 +31,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCluster } from "@/store/cluster";
 import { routeTargets } from "@/lib/topology";
 import { fmtInt } from "@/lib/format";
-import type { ExchangeType, QueueType, User } from "@/data/types";
+import type { ExchangeType, QueueType } from "@/data/types";
 import { cn } from "@/lib/utils";
+import FormError from "../ui/form-error";
+import AddUserDialog from "@/views/user/add-user-dialog";
 
 export type DialogRequest =
   | { type: "add-queue" }
@@ -103,16 +102,6 @@ function ToggleField({
       </div>
       <Switch className="shrink-0" checked={checked} onCheckedChange={onCheckedChange} aria-label={label} />
     </div>
-  );
-}
-
-function FormError({ children }: { children: ReactNode }) {
-  if (!children) return null;
-  return (
-    <Alert variant="destructive">
-      <CircleAlertIcon aria-hidden="true" />
-      <AlertDescription>{children}</AlertDescription>
-    </Alert>
   );
 }
 
@@ -387,111 +376,7 @@ function AddExchangeDialog({ open, onClose }: { open: boolean; onClose: () => vo
   );
 }
 
-function AddUserDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { data, actions } = useCluster();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [tags, setTags] = useState<string[]>(["management"]);
-  const [vhosts, setVhosts] = useState<string[]>(["/"]);
-  const [error, setError] = useState("");
 
-  const toggle = (list: string[], setList: (next: string[]) => void, value: string) => {
-    setList(list.includes(value) ? list.filter((item) => item !== value) : [...list, value]);
-  };
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    const clean = username.trim();
-    if (!clean) return setError("Enter a username.");
-    if (data.users.some((user) => user.username === clean)) {
-      return setError(`${clean} already exists.`);
-    }
-    if (password.trim().length < 4) return setError("Use a password of at least 4 characters.");
-    const user: User = {
-      username: clean,
-      tags: tags.length ? tags : ["management"],
-      vhosts: vhosts.length ? vhosts : ["/"],
-      hash: "rabbit_password_hashing_sha256",
-    };
-    actions.addUser(user);
-    toast.success("User created", { description: `${clean} can access ${user.vhosts.join(", ")}.` });
-    setUsername("");
-    setPassword("");
-    setTags(["management"]);
-    setVhosts(["/"]);
-    setError("");
-    onClose();
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
-      <DialogContent className="sm:max-w-lg">
-        <form onSubmit={submit} className="flex min-w-0 flex-col gap-4">
-          <DialogHeader>
-            <DialogTitle>Add user</DialogTitle>
-            <DialogDescription>Grant a client access to specific virtual hosts.</DialogDescription>
-          </DialogHeader>
-          <DialogBody>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Username" htmlFor="user-name">
-                <Input
-                  id="user-name"
-                  value={username}
-                  onChange={(event) => {
-                    setUsername(event.target.value);
-                    setError("");
-                  }}
-                  placeholder="reporting"
-                  autoFocus
-                />
-              </Field>
-              <Field label="Password" htmlFor="user-password">
-                <Input
-                  id="user-password"
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="••••••••"
-                />
-              </Field>
-            </div>
-            <Field label="Tags">
-              <div className="flex flex-wrap gap-x-4 gap-y-2">
-                {["administrator", "management", "policymaker", "monitoring"].map((tag) => (
-                  <Label key={tag} className="font-normal text-muted-foreground">
-                    <Checkbox
-                      checked={tags.includes(tag)}
-                      onCheckedChange={() => toggle(tags, setTags, tag)}
-                    />
-                    {tag}
-                  </Label>
-                ))}
-              </div>
-            </Field>
-            <Field label="Virtual hosts">
-              <div className="flex flex-wrap gap-x-4 gap-y-2">
-                {data.vhosts.map((vhost) => (
-                  <Label key={vhost.name} className="font-normal text-muted-foreground">
-                    <Checkbox
-                      checked={vhosts.includes(vhost.name)}
-                      onCheckedChange={() => toggle(vhosts, setVhosts, vhost.name)}
-                    />
-                    {vhost.name}
-                  </Label>
-                ))}
-              </div>
-            </Field>
-            <FormError>{error}</FormError>
-          </DialogBody>
-          <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
-            <Button type="submit">Create user</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function AddVhostDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data, actions } = useCluster();
