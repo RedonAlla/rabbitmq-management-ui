@@ -68,12 +68,7 @@ export default function AddUserDialog({ open, onClose }: { open: boolean; onClos
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [tag, setTag] = useState("management");
-  const [vhosts, setVhosts] = useState<string[]>(["/"]);
   const [error, setError] = useState("");
-
-  const toggle = (list: string[], setList: (next: string[]) => void, value: string) => {
-    setList(list.includes(value) ? list.filter((item) => item !== value) : [...list, value]);
-  };
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -91,18 +86,17 @@ export default function AddUserDialog({ open, onClose }: { open: boolean; onClos
     const user: User = {
       username: clean,
       tags: [tag],
-      vhosts: vhosts.length ? vhosts : ["/"],
+      vhosts: ["/"],
       hash: "rabbit_password_hashing_sha256",
     };
 
     actions.addUser(user);
 
-    toast.success("User created", { description: `${clean} can access ${user.vhosts.join(", ")}.` });
+    toast.success("User created", { description: `${clean} has the ${tag} tag.` });
     
     setUsername("");
     setPassword("");
     setTag("management");
-    setVhosts(["/"]);
     setError("");
     onClose();
   };
@@ -113,7 +107,7 @@ export default function AddUserDialog({ open, onClose }: { open: boolean; onClos
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
           <SheetHeader>
             <SheetTitle>Add user</SheetTitle>
-            <SheetDescription>Grant a client access to specific virtual hosts.</SheetDescription>
+            <SheetDescription>Create a user and choose the tags that grant management access.</SheetDescription>
           </SheetHeader>
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
             <Field label="Username" htmlFor="user-name">
@@ -137,7 +131,7 @@ export default function AddUserDialog({ open, onClose }: { open: boolean; onClos
                 placeholder="••••••••"
               />
             </Field>
-            <Field label="Tags" hint="Choose one tag for the user.">
+            <Field label="Tags">
               <div className="flex flex-col gap-2">
                 {USER_TAGS.map((option) => {
                   const selected = tag === option.name;
@@ -161,19 +155,6 @@ export default function AddUserDialog({ open, onClose }: { open: boolean; onClos
                     </label>
                   );
                 })}
-              </div>
-            </Field>
-            <Field label="Virtual hosts">
-              <div className="flex flex-wrap gap-x-4 gap-y-2">
-                {data.vhosts.map((vhost) => (
-                  <Label key={vhost.name} className="font-normal text-muted-foreground">
-                    <Checkbox
-                      checked={vhosts.includes(vhost.name)}
-                      onCheckedChange={() => toggle(vhosts, setVhosts, vhost.name)}
-                    />
-                    {vhost.name}
-                  </Label>
-                ))}
               </div>
             </Field>
             <FormError>{error}</FormError>
