@@ -1,18 +1,8 @@
 import { useMemo, useState } from "react";
-import { MoreHorizontalIcon, UnplugIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useTable, type ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/reui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { PageHeader } from "@/components/page-header";
-import { ResourceTable } from "@/components/resource-table";
-import { RegionEmpty } from "@/components/region-states";
 import { FilterBar } from "@/components/filters-bar";
 import { Filters } from "@/components/reui/filters/filters";
 import { createFilterQuery } from "@/components/reui/filters/filters-query";
