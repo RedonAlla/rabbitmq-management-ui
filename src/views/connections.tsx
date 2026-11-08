@@ -196,7 +196,11 @@ export function ConnectionsView() {
             icon={<Plug />}
             error={error}
             retry={actions.retry}
-            clearFilters={clearFilters}
+            action={
+              <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+                Clear filters
+              </Button>
+            }
             title="No connections match"
             description="No client matches this search. Clear the filters to see every open socket."
           />

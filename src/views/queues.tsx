@@ -191,6 +191,7 @@ export function QueuesView() {
         id: "actions",
         header: () => <span className="sr-only">Actions</span>,
         cell: ({ row }) => (<GridActions rowData={row.original} openDialog={openDialog} setConfirm={setConfirm} />),
+        meta: { skeleton: <Skeleton className="h-4 w-12" /> }
       },
     ],
     [openDialog]
@@ -249,7 +250,11 @@ export function QueuesView() {
             description="Adjust the search or clear the filters to see every declared queue."
             error={error}
             retry={actions.retry}
-            clearFilters={clearFilters}
+            action={
+              <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+                Clear filters
+              </Button>
+            }
           />
         }
         tableLayout={{

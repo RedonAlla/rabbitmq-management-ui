@@ -1,16 +1,21 @@
 import { useMemo } from "react";
-import { PencilIcon, PlusIcon } from "lucide-react";
-import type { ColumnDef } from "@tanstack/react-table";
+import { Gauge, PencilIcon, PlusIcon } from "lucide-react";
+import { useTable, type ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { PageHeader } from "@/components/page-header";
-import { ResourceTable } from "@/components/resource-table";
-import { RegionEmpty } from "@/components/region-states";
 import { useDialogs } from "@/components/dialogs/dialogs-provider";
 import { useCluster } from "@/store/cluster";
 import { fmtInt, pct } from "@/lib/format";
-import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import { Skeleton } from "@/components/ui/skeleton";
+import GridEmptyState from "@/components/ui/empty-state";
+import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
+import { Frame, FrameFooter, FramePanel } from "@/components/reui/frame";
+import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
+import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
+import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
 
 export function LimitsView() {
   const { data, status, error, actions } = useCluster();
@@ -40,6 +45,7 @@ export function LimitsView() {
         id: "vhost",
         header: () => <span>Virtual host</span>,
         cell: ({ row }) => <span className="data-cell font-medium">{row.original.limit.vhost}</span>,
+        meta: { skeleton: <Skeleton className="h-4 w-25" /> }
       },
       {
         id: "connections",
@@ -64,6 +70,7 @@ export function LimitsView() {
             </div>
           );
         },
+        meta: { skeleton: <Skeleton className="h-4 w-25" /> }
       },
       {
         id: "queues",
@@ -85,6 +92,7 @@ export function LimitsView() {
             </div>
           );
         },
+        meta: { skeleton: <Skeleton className="h-4 w-25" /> }
       },
       {
         id: "status",
@@ -102,6 +110,7 @@ export function LimitsView() {
               : connectionStatus;
           return <Badge variant={worst.variant}>{worst.label}</Badge>;
         },
+        meta: { skeleton: <Skeleton className="h-4 w-25" /> }
       },
       {
         id: "actions",
@@ -119,10 +128,19 @@ export function LimitsView() {
             </Button>
           </div>
         ),
+        meta: { skeleton: <Skeleton className="h-4 w-25" /> }
       },
     ],
     [openDialog]
   );
+
+  const table = useTable({
+    features: dataGridFeatures,
+    defaultColumn: { size: 120, minSize: 80 },
+    data: rows,
+    columns,
+    initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
+  });
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -132,31 +150,48 @@ export function LimitsView() {
         actions={
           <Button type="button" onClick={() => openDialog({ type: "edit-limits" })}>
             <PlusIcon data-icon="inline-start" aria-hidden="true" />
-            Edit limits
+            Add limits
           </Button>
         }
       />
 
-      <ResourceTable
-        data={rows}
-        columns={columns}
-        noun="limits"
-        minWidth="min-w-[960px]"
-        loading={status === "loading"}
-        error={error}
-        onRetry={actions.retry}
-        empty={
-          <RegionEmpty
-            title="No limits configured"
-            description="Add a cap to protect the cluster from runaway clients."
+      <DataGrid
+        table={table}
+        recordCount={rows.length}
+        isLoading={status === "loading"}
+        emptyMessage={
+          <GridEmptyState
+            icon={<Gauge />}
+            title="No limits found"
+            description="Add a new limit."
+            error={error}
+            retry={actions.retry}
             action={
-              <Button type="button" size="sm" onClick={() => openDialog({ type: "edit-limits" })}>
-                Edit limits
+              <Button type="button" onClick={() => openDialog({ type: "edit-limits" })}>
+                <PlusIcon data-icon="inline-start" aria-hidden="true" />
+                Add limits
               </Button>
             }
           />
         }
-      />
+        tableLayout={{
+          dense: true,
+          headerBorder: true,
+          width: "auto",
+        }}
+        tableClassNames={{ base: "min-w-[900px]" }}
+      >
+        <Frame spacing="sm" className="min-w-0">
+          <FramePanel>
+            <DataGridScrollArea>
+              <DataGridTable />
+            </DataGridScrollArea>
+          </FramePanel>
+          <FrameFooter>
+            <DataGridPagination sizes={DEFAULT_PAGES_OPTIONS} />
+          </FrameFooter>
+        </Frame>
+      </DataGrid>
     </div>
   );
 }

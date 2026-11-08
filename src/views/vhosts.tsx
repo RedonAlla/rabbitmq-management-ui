@@ -179,7 +179,11 @@ export function VhostsView() {
             icon={<TriangleExclamationPoint />}
             error={error}
             retry={actions.retry}
-            clearFilters={clearFilters}
+            action={
+              <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+                Clear filters
+              </Button>
+            }
             title="No virtual hosts match"
             description="Adjust the search or create a new namespace."
           />

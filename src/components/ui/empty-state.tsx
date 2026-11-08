@@ -1,5 +1,4 @@
 import { RegionError } from "@/components/region-states";
-import { Button } from "@/components/ui/button";
 import {
   Empty,
   EmptyContent,
@@ -13,7 +12,7 @@ import type { ReactNode } from "react";
 type Props = {
   error: string | null;
   retry: () => void;
-  clearFilters?: () => void;
+  action?: ReactNode;
   title: string;
   description: string;
   icon: ReactNode
@@ -23,7 +22,7 @@ export default function GridEmptyState({
   title,
   description,
   error,
-  clearFilters,
+  action,
   retry,
   icon
 }: Props) {
@@ -43,12 +42,10 @@ export default function GridEmptyState({
         </EmptyDescription>
       </EmptyHeader>
       {
-        clearFilters ? 
+        action ? 
         (
           <EmptyContent>
-          <Button variant="outline" size="sm" onClick={clearFilters}>
-            Clear filters
-          </Button>
+            {action}
         </EmptyContent>
         ) : null
       }

@@ -195,7 +195,11 @@ export function ChannelsView() {
             title="No channels match"
             description="Adjust the filters or open a new connection."
             retry={actions.retry}
-            clearFilters={clearFilters}
+            action={
+              <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+                Clear filters
+              </Button>
+            }
           />
         }
         tableLayout={{

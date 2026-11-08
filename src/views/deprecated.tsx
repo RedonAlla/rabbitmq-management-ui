@@ -139,7 +139,11 @@ export function DeprecatedFeaturesView() {
             icon={<Boxes />}
             error={error}
             retry={actions.retry}
-            clearFilters={clearFilters}
+            action={
+              <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+                Clear filters
+              </Button>
+            }
             title="No deprecated features match"
             description="Clear the filters to see every deprecated capability."
           />

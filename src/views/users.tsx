@@ -204,7 +204,11 @@ export function UsersView() {
             icon={<Users />} 
             error={error}
             retry={actions.retry}
-            clearFilters={clearFilters}
+            action={
+              <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+                Clear filters
+              </Button>
+            }
             title="No users match"
             description="No users matches this search."
           />

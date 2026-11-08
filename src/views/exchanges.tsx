@@ -197,7 +197,11 @@ export function ExchangesView() {
             description="No exchange matches this search. Clear the filters to see all declared exchanges."
             error={error}
             retry={actions.retry}
-            clearFilters={clearFilters}
+            action={
+              <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+                Clear filters
+              </Button>
+            }
           />
         }
         tableLayout={{
