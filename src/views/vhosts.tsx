@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { MoreHorizontalIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
-import type { ColumnDef } from "@tanstack/react-table";
+import { useTable, type ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,8 +11,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PageHeader } from "@/components/page-header";
-import { ResourceTable } from "@/components/resource-table";
-import { RegionEmpty } from "@/components/region-states";
 import { FilterBar } from "@/components/filters-bar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useDialogs } from "@/components/dialogs/dialogs-provider";
@@ -21,7 +19,15 @@ import { fmtInt } from "@/lib/format";
 import { matchesText } from "@/lib/filtering";
 import type { Vhost } from "@/data/types";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
-import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import { Skeleton } from "@/components/ui/skeleton";
+import { numericMeta } from "@/components/table-meta-numeric";
+import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
+import GridEmptyState from "./vhosts/empty-state";
+import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
+import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
+import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
+import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
 
 export function VhostsView() {
   const { data, status, error, actions } = useCluster();
@@ -36,6 +42,10 @@ export function VhostsView() {
       ),
     [data.vhosts, search]
   );
+
+  const clearFilters = () => {
+    setSearch("")
+  }
 
   const counts = useCallback(
     (name: string) => ({
@@ -60,6 +70,7 @@ export function VhostsView() {
             </span>
           </div>
         ),
+        meta: { fillWidth: true, skeleton: <Skeleton className="h-4 w-20" /> }
       },
       {
         id: "queues",
@@ -75,11 +86,13 @@ export function VhostsView() {
             ) : null}
           </span>
         ),
+        meta: numericMeta
       },
       {
         id: "exchanges",
         header: () => <span>Exchanges</span>,
         cell: ({ row }) => <span className="data-cell">{fmtInt(counts(row.original.name).exchanges)}</span>,
+        meta: numericMeta
       },
       {
         id: "connections",
@@ -87,6 +100,7 @@ export function VhostsView() {
         cell: ({ row }) => (
           <span className="data-cell">{fmtInt(counts(row.original.name).connections)}</span>
         ),
+        meta: numericMeta
       },
       {
         accessorKey: "tracing",
@@ -97,6 +111,7 @@ export function VhostsView() {
           ) : (
             <Badge variant="outline">Off</Badge>
           ),
+        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
       },
       {
         id: "actions",
@@ -134,6 +149,14 @@ export function VhostsView() {
     [counts]
   );
 
+  const table = useTable({
+    features: dataGridFeatures,
+    defaultColumn: { size: 120, minSize: 80 },
+    data: vhosts,
+    columns,
+    initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
+  });
+
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader
@@ -147,28 +170,43 @@ export function VhostsView() {
         }
       />
 
-      <FilterBar search={search} onSearch={setSearch} placeholder="Search virtual hosts…" />
-
-      <ResourceTable
-        data={vhosts}
-        columns={columns}
-        noun="virtual hosts"
-        minWidth="min-w-[720px]"
-        loading={status === "loading"}
-        error={error}
-        onRetry={actions.retry}
-        empty={
-          <RegionEmpty
-            title="No virtual hosts match"
-            description="Adjust the search or create a new namespace."
-            action={
-              <Button type="button" size="sm" onClick={() => openDialog({ type: "add-vhost" })}>
-                Add virtual host
-              </Button>
-            }
+      <DataGrid
+        table={table}
+        recordCount={vhosts.length}
+        isLoading={status === "loading"}
+        emptyMessage={
+          <GridEmptyState 
+            errorMessage={error}
+            retry={actions.retry}
+            clearFilters={clearFilters}
           />
         }
-      />
+        tableLayout={{
+          dense: true,
+          headerBorder: true,
+          width: "auto",
+        }}
+        tableClassNames={{ base: "min-w-[900px]" }}
+      >
+        <Frame spacing="sm" className="min-w-0">
+          <FrameHeader>
+            <FilterBar
+              search={search}
+              onSearch={setSearch}
+              placeholder="Search queues…"
+              className="justify-end"
+            />
+          </FrameHeader>
+          <FramePanel>
+            <DataGridScrollArea>
+              <DataGridTable />
+            </DataGridScrollArea>
+          </FramePanel>
+          <FrameFooter>
+            <DataGridPagination sizes={DEFAULT_PAGES_OPTIONS} />
+          </FrameFooter>
+        </Frame>
+      </DataGrid>
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}

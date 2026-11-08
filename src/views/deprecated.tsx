@@ -1,18 +1,22 @@
 import { useMemo, useState } from "react";
 import { TriangleAlertIcon } from "lucide-react";
-import type { ColumnDef } from "@tanstack/react-table";
+import { useTable, type ColumnDef } from "@tanstack/react-table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/reui/alert";
 import { Badge } from "@/components/reui/badge";
-import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
-import { ResourceTable } from "@/components/resource-table";
-import { RegionEmpty } from "@/components/region-states";
 import { FilterBar, SelectFilter } from "@/components/filters-bar";
 import { useCluster } from "@/store/cluster";
 import { matchesText } from "@/lib/filtering";
 import type { DeprecatedFeature, DeprecationPhase } from "@/data/types";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
-import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
+import { Skeleton } from "@/components/ui/skeleton";
+import GridEmptyState from "./deprecated/empty-state";
+import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
+import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
+import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
+import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
+import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
 
 const PHASES: Record<
   DeprecationPhase,
@@ -55,6 +59,7 @@ export function DeprecatedFeaturesView() {
         accessorKey: "name",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Feature" />,
         cell: ({ row }) => <span className="data-cell font-medium">{row.original.name}</span>,
+        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
       },
       {
         accessorKey: "phase",
@@ -63,6 +68,7 @@ export function DeprecatedFeaturesView() {
           const meta = PHASES[row.original.phase];
           return <Badge variant={meta.variant}>{meta.label}</Badge>;
         },
+        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
       },
       {
         id: "status",
@@ -73,6 +79,7 @@ export function DeprecatedFeaturesView() {
           ) : (
             <Badge variant="outline">Not in use</Badge>
           ),
+        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
       },
       {
         id: "description",
@@ -80,10 +87,24 @@ export function DeprecatedFeaturesView() {
         cell: ({ row }) => (
           <span className="block max-w-2xl text-xs text-muted-foreground">{row.original.desc}</span>
         ),
+        meta: { fillWidth: true, skeleton: <Skeleton className="h-4 w-20" /> }
       },
     ],
     []
   );
+
+  const table = useTable({
+    features: dataGridFeatures,
+    defaultColumn: { size: 120, minSize: 80 },
+    data: features,
+    columns,
+    initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
+  });
+
+  const clearFilters = () => {
+    setSearch("")
+    setPhase("all")
+  }
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -109,44 +130,52 @@ export function DeprecatedFeaturesView() {
         </Alert>
       ) : null}
 
-      <FilterBar search={search} onSearch={setSearch} placeholder="Search deprecated features…">
-        <SelectFilter
-          value={phase}
-          onChange={setPhase}
-          options={PHASE_OPTIONS}
-          label="Filter by deprecation phase"
-          allLabel="All phases"
-        />
-      </FilterBar>
-
-      <ResourceTable
-        data={features}
-        columns={columns}
-        noun="deprecated features"
-        minWidth="min-w-[880px]"
-        loading={status === "loading"}
-        error={error}
-        onRetry={actions.retry}
-        empty={
-          <RegionEmpty
-            title="No deprecated features match"
-            description="Clear the filters to see every deprecated capability."
-            action={
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearch("");
-                  setPhase("all");
-                }}
-              >
-                Clear filters
-              </Button>
-            }
+      <DataGrid
+        table={table}
+        recordCount={features.length}
+        isLoading={status === "loading"}
+        emptyMessage={
+          <GridEmptyState 
+            errorMessage={error}
+            retry={actions.retry}
+            clearFilters={clearFilters}
           />
         }
-      />
+        tableLayout={{
+          dense: true,
+          headerBorder: true,
+          width: "auto",
+        }}
+        tableClassNames={{ base: "min-w-[900px]" }}
+      >
+        <Frame spacing="sm" className="min-w-0">
+          <FrameHeader>
+            <FilterBar
+              search={search}
+              onSearch={setSearch}
+              placeholder="Search deprecated features…"
+              className="justify-end"
+            >
+              <SelectFilter
+                value={phase}
+                onChange={setPhase}
+                options={PHASE_OPTIONS}
+                label="Filter by deprecation phase"
+                allLabel="All phases"
+              />
+            </FilterBar>
+          </FrameHeader>
+          <FramePanel>
+            <DataGridScrollArea>
+              <DataGridTable />
+            </DataGridScrollArea>
+          </FramePanel>
+          <FrameFooter>
+            <DataGridPagination sizes={DEFAULT_PAGES_OPTIONS} />
+          </FrameFooter>
+        </Frame>
+      </DataGrid>
+      
     </div>
   );
 }
