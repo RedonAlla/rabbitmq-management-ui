@@ -216,6 +216,13 @@ function emptyTotals(): ClusterTotals {
     publishRate: 0,
     deliverRate: 0,
     ackRate: 0,
+    connectionCreatedRate: 0,
+    connectionClosedRate: 0,
+    channelCreatedRate: 0,
+    channelClosedRate: 0,
+    queueCreatedRate: 0,
+    queueDeletedRate: 0,
+    queueDeclaredRate: 0,
   }
 }
 

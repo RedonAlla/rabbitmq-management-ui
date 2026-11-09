@@ -8,7 +8,7 @@ import { RegionError } from "@/components/region-states"
 import { useDialogs } from "@/components/dialogs/dialogs-provider"
 import { useCluster } from "@/store/cluster"
 import { useRoute, routeHref } from "@/lib/router"
-import { clusterHealthLabel } from "@/lib/format"
+import { clusterHealthLabel, fmtCompact } from "@/lib/format"
 import type { RangeKey } from "@/data/types"
 import QueuesNeedAttention from "./overview/QueuesNeedAttention"
 import ListeningPorts from "./overview/ListeningPorts"
@@ -16,6 +16,10 @@ import WebContexts from "./overview/WebContexts"
 import Kpis from "./overview/Kpis"
 import Nodes from "./overview/Nodes"
 import RecentActivity from "./overview/RecentActivity"
+
+function fmtOpsRate(value: number): string {
+  return value > 0 && value < 1 ? value.toFixed(2) : fmtCompact(value)
+}
 
 export function OverviewView() {
   const { data, totals, history, live, status, error, actions, lastUpdated } =
@@ -34,6 +38,12 @@ export function OverviewView() {
   )
 
   const points = history[range]
+
+  const chartEmptyAction = (
+    <Button type="button" variant="outline" size="sm" onClick={actions.retry}>
+      Refresh
+    </Button>
+  )
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -99,6 +109,7 @@ export function OverviewView() {
           loading={status === "loading"}
           error={error}
           onRetry={actions.retry}
+          emptyAction={chartEmptyAction}
         />
 
         <Nodes
@@ -115,6 +126,89 @@ export function OverviewView() {
           loading={status === "loading"}
         />
         <RecentActivity events={data.events} live={live} />
+      </div>
+
+      <div className="grid min-w-0 gap-4 xl:grid-cols-2 xl:items-start">
+        <ChartPanel
+          title="Queued messages"
+          description="Ready and unacknowledged messages over time."
+          data={points}
+          series={[
+            { key: "ready", label: "Ready", color: "var(--chart-1)" },
+            { key: "unacked", label: "Unacked", color: "var(--chart-2)" },
+          ]}
+          range={range}
+          onRangeChange={setRange}
+          loading={status === "loading"}
+          error={error}
+          onRetry={actions.retry}
+          emptyAction={chartEmptyAction}
+          emptyDescription="Queue depth appears after the first polling window."
+        />
+        <ChartPanel
+          title="Connection operations"
+          description="Connections opened and closed per second."
+          data={points}
+          series={[
+            {
+              key: "connectionCreated",
+              label: "Opened",
+              color: "var(--chart-1)",
+            },
+            {
+              key: "connectionClosed",
+              label: "Closed",
+              color: "var(--chart-2)",
+            },
+          ]}
+          range={range}
+          onRangeChange={setRange}
+          loading={status === "loading"}
+          error={error}
+          onRetry={actions.retry}
+          emptyAction={chartEmptyAction}
+          emptyDescription="Connection churn appears after the first polling window."
+          valueFormatter={fmtOpsRate}
+        />
+        <ChartPanel
+          title="Channel operations"
+          description="Channels opened and closed per second."
+          data={points}
+          series={[
+            { key: "channelCreated", label: "Opened", color: "var(--chart-1)" },
+            { key: "channelClosed", label: "Closed", color: "var(--chart-2)" },
+          ]}
+          range={range}
+          onRangeChange={setRange}
+          loading={status === "loading"}
+          error={error}
+          onRetry={actions.retry}
+          emptyAction={chartEmptyAction}
+          emptyDescription="Channel churn appears after the first polling window."
+          valueFormatter={fmtOpsRate}
+        />
+        <ChartPanel
+          title="Queue operations"
+          description="Queues created, deleted and declared per second."
+          data={points}
+          series={[
+            { key: "queueCreated", label: "Created", color: "var(--chart-1)" },
+            { key: "queueDeleted", label: "Deleted", color: "var(--chart-2)" },
+            {
+              key: "queueDeclared",
+              label: "Declared",
+              color: "var(--chart-3)",
+            },
+          ]}
+          range={range}
+          onRangeChange={setRange}
+          loading={status === "loading"}
+          error={error}
+          onRetry={actions.retry}
+          emptyAction={chartEmptyAction}
+          emptyDescription="Queue churn appears after the first polling window."
+          valueFormatter={fmtOpsRate}
+        />
       </div>
 
       <div className="grid min-w-0 gap-4 xl:grid-cols-2 xl:items-start">

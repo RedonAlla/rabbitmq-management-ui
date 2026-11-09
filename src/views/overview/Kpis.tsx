@@ -1,34 +1,39 @@
-import { KpiCard, KpiGrid } from "@/components/kpi";
-import type { HistoryPoint, RangeKey, SeedData } from "@/data/types";
-import { fmtCompact, fmtInt, fmtRate, type ClusterTotals } from "@/lib/format";
-import { InboxIcon, MessageSquareIcon, TimerIcon, UsersIcon } from "lucide-react";
-import { useMemo } from "react";
+import { KpiCard, KpiGrid } from "@/components/kpi"
+import type { HistoryPoint, RangeKey, SeedData } from "@/data/types"
+import { fmtCompact, fmtInt, fmtRate, type ClusterTotals } from "@/lib/format"
+import {
+  InboxIcon,
+  MessageSquareIcon,
+  TimerIcon,
+  UsersIcon,
+} from "lucide-react"
+import { useMemo } from "react"
 
 type Props = {
-  data: SeedData;
-  range: RangeKey;
-  totals: ClusterTotals;
-  history: Record<RangeKey, HistoryPoint[]>;
-};
+  data: SeedData
+  range: RangeKey
+  totals: ClusterTotals
+  history: Record<RangeKey, HistoryPoint[]>
+}
 
 export default function Kpis({ data, totals, history, range }: Props) {
-  const points = history[range];
+  const points = history[range]
 
   const spark = (key: "ready" | "unacked" | "consumers" | "publish") =>
-    points.map((point) => point[key]);
+    points.map((point) => point[key])
 
   const rateTrend = useMemo(() => {
-    const first = points[0]?.publish ?? 0;
-    const last = points[points.length - 1]?.publish ?? 0;
-    return first > 0 ? ((last - first) / first) * 100 : 0;
-  }, [points]);
+    const first = points[0]?.publish ?? 0
+    const last = points[points.length - 1]?.publish ?? 0
+    return first > 0 ? ((last - first) / first) * 100 : 0
+  }, [points])
 
   return (
     <KpiGrid>
       <KpiCard
         label="Ready messages"
         value={fmtCompact(totals.ready)}
-        detail={`${fmtInt(totals.ready)} across ${totals.queues} queues`}
+        detail={`${fmtInt(totals.ready)} across ${totals.queues} ${totals.queues === 1 ? "queue" : "queues"}`}
         trend={data.cluster.trends.ready}
         icon={<InboxIcon aria-hidden="true" />}
         spark={spark("ready")}
@@ -61,5 +66,5 @@ export default function Kpis({ data, totals, history, range }: Props) {
         tone="success"
       />
     </KpiGrid>
-  );
+  )
 }

@@ -288,21 +288,26 @@ function mapQueues(queues: ApiQueue[]): Queue[] {
   })
 }
 
-function mapTotals(
-  objectTotals: ApiOverview["object_totals"],
-  queues: Queue[]
-): ClusterTotals {
+function mapTotals(overview: ApiOverview, queues: Queue[]): ClusterTotals {
+  const churn = overview.churn_rates
   return {
-    queues: objectTotals.queues,
-    exchanges: objectTotals.exchanges,
-    connections: objectTotals.connections,
-    channels: objectTotals.channels,
-    consumers: objectTotals.consumers,
+    queues: overview.object_totals.queues,
+    exchanges: overview.object_totals.exchanges,
+    connections: overview.object_totals.connections,
+    channels: overview.object_totals.channels,
+    consumers: overview.object_totals.consumers,
     ready: queues.reduce((sum, queue) => sum + queue.ready, 0),
     unacked: queues.reduce((sum, queue) => sum + queue.unacked, 0),
     publishRate: queues.reduce((sum, queue) => sum + queue.publishRate, 0),
     deliverRate: queues.reduce((sum, queue) => sum + queue.deliverRate, 0),
     ackRate: queues.reduce((sum, queue) => sum + queue.ackRate, 0),
+    connectionCreatedRate: churn?.connection_created_details?.rate ?? 0,
+    connectionClosedRate: churn?.connection_closed_details?.rate ?? 0,
+    channelCreatedRate: churn?.channel_created_details?.rate ?? 0,
+    channelClosedRate: churn?.channel_closed_details?.rate ?? 0,
+    queueCreatedRate: churn?.queue_created_details?.rate ?? 0,
+    queueDeletedRate: churn?.queue_deleted_details?.rate ?? 0,
+    queueDeclaredRate: churn?.queue_declared_details?.rate ?? 0,
   }
 }
 
@@ -345,6 +350,6 @@ export async function fetchRabbitSnapshot(
     ports: mapPorts(listeners),
     webContexts: mapWebContexts(overview.contexts ?? [], listeners),
     queues,
-    totals: mapTotals(overview.object_totals, queues),
+    totals: mapTotals(overview, queues),
   }
 }

@@ -227,4 +227,11 @@ export interface HistoryPoint {
   unacked: number
   consumers: number
   connections: number
+  connectionCreated: number
+  connectionClosed: number
+  channelCreated: number
+  channelClosed: number
+  queueCreated: number
+  queueDeleted: number
+  queueDeclared: number
 }

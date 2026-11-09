@@ -127,6 +127,13 @@ export interface ClusterTotals {
   publishRate: number
   deliverRate: number
   ackRate: number
+  connectionCreatedRate: number
+  connectionClosedRate: number
+  channelCreatedRate: number
+  channelClosedRate: number
+  queueCreatedRate: number
+  queueDeletedRate: number
+  queueDeclaredRate: number
 }
 
 export function getTotals(data: SeedData): ClusterTotals {
@@ -141,6 +148,13 @@ export function getTotals(data: SeedData): ClusterTotals {
     publishRate: data.queues.reduce((sum, queue) => sum + queue.publishRate, 0),
     deliverRate: data.queues.reduce((sum, queue) => sum + queue.deliverRate, 0),
     ackRate: data.queues.reduce((sum, queue) => sum + queue.ackRate, 0),
+    connectionCreatedRate: data.connections.length * 0.04,
+    connectionClosedRate: data.connections.length * 0.035,
+    channelCreatedRate: data.channels.length * 0.06,
+    channelClosedRate: data.channels.length * 0.05,
+    queueCreatedRate: data.queues.length * 0.012,
+    queueDeletedRate: data.queues.length * 0.008,
+    queueDeclaredRate: data.queues.length * 0.016,
   }
 }
 
@@ -204,6 +218,27 @@ export function buildHistory(
       connections: isLast
         ? totals.connections
         : Math.max(0, Math.round(totals.connections * (1 + waveB))),
+      connectionCreated: isLast
+        ? totals.connectionCreatedRate
+        : Math.max(0, totals.connectionCreatedRate * shape),
+      connectionClosed: isLast
+        ? totals.connectionClosedRate
+        : Math.max(0, totals.connectionClosedRate * shape * 0.98),
+      channelCreated: isLast
+        ? totals.channelCreatedRate
+        : Math.max(0, totals.channelCreatedRate * shape),
+      channelClosed: isLast
+        ? totals.channelClosedRate
+        : Math.max(0, totals.channelClosedRate * shape * 0.98),
+      queueCreated: isLast
+        ? totals.queueCreatedRate
+        : Math.max(0, totals.queueCreatedRate * shape),
+      queueDeleted: isLast
+        ? totals.queueDeletedRate
+        : Math.max(0, totals.queueDeletedRate * shape * 0.98),
+      queueDeclared: isLast
+        ? totals.queueDeclaredRate
+        : Math.max(0, totals.queueDeclaredRate * shape),
     }
   })
 }
@@ -229,6 +264,8 @@ export function tickHistory(
     const points = history[range]
     const previous = points[points.length - 1]
     const jitter = (random() - 0.5) * 0.04
+    const nextRate = (previousRate: number, target: number) =>
+      Math.max(0, previousRate * (1 + jitter) + (target - previousRate) * 0.35)
     const next: HistoryPoint = {
       label: "now",
       publish: Math.max(
@@ -249,6 +286,22 @@ export function tickHistory(
       unacked: totals.unacked,
       consumers: totals.consumers,
       connections: totals.connections,
+      connectionCreated: nextRate(
+        previous.connectionCreated,
+        totals.connectionCreatedRate
+      ),
+      connectionClosed: nextRate(
+        previous.connectionClosed,
+        totals.connectionClosedRate
+      ),
+      channelCreated: nextRate(
+        previous.channelCreated,
+        totals.channelCreatedRate
+      ),
+      channelClosed: nextRate(previous.channelClosed, totals.channelClosedRate),
+      queueCreated: nextRate(previous.queueCreated, totals.queueCreatedRate),
+      queueDeleted: nextRate(previous.queueDeleted, totals.queueDeletedRate),
+      queueDeclared: nextRate(previous.queueDeclared, totals.queueDeclaredRate),
     }
 
     if (range === "1m") {
@@ -274,6 +327,13 @@ export function tickHistory(
         unacked: next.unacked,
         consumers: next.consumers,
         connections: next.connections,
+        connectionCreated: next.connectionCreated,
+        connectionClosed: next.connectionClosed,
+        channelCreated: next.channelCreated,
+        channelClosed: next.channelClosed,
+        queueCreated: next.queueCreated,
+        queueDeleted: next.queueDeleted,
+        queueDeclared: next.queueDeclared,
       },
     ]
   }
@@ -328,6 +388,13 @@ export function pointFromTotals(
     unacked: totals.unacked,
     consumers: totals.consumers,
     connections: totals.connections,
+    connectionCreated: totals.connectionCreatedRate,
+    connectionClosed: totals.connectionClosedRate,
+    channelCreated: totals.channelCreatedRate,
+    channelClosed: totals.channelClosedRate,
+    queueCreated: totals.queueCreatedRate,
+    queueDeleted: totals.queueDeletedRate,
+    queueDeclared: totals.queueDeclaredRate,
   }
 }
 
