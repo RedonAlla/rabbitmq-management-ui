@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react"
-import { FileJsonIcon, SendIcon } from "lucide-react"
+import { FileJsonIcon } from "lucide-react"
 import { Badge } from "@/components/reui/badge"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/page-header"
 import { ChartPanel } from "@/components/chart-panel"
 import { RegionError } from "@/components/region-states"
-import { useDialogs } from "@/components/dialogs/dialogs-provider"
 import { useCluster } from "@/store/cluster"
 import { useRoute, routeHref } from "@/lib/router"
 import { clusterHealthLabel, fmtCompact } from "@/lib/format"
@@ -24,7 +23,6 @@ function fmtOpsRate(value: number): string {
 export function OverviewView() {
   const { data, totals, history, live, status, error, actions, lastUpdated } =
     useCluster()
-  const { openDialog } = useDialogs()
   const { navigate } = useRoute()
   const [range, setRange] = useState<RangeKey>("1m")
 
@@ -63,30 +61,13 @@ export function OverviewView() {
         }
         description="Cluster health, message flow and queue pressure at a glance."
         actions={
-          <>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => openDialog({ type: "add-queue" })}
-            >
-              Add queue
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => openDialog({ type: "publish" })}
-            >
-              <SendIcon data-icon="inline-start" aria-hidden="true" />
-              Publish message
-            </Button>
-            <Button
-              type="button"
-              onClick={() => navigate(routeHref("definitions"))}
-            >
-              <FileJsonIcon data-icon="inline-start" aria-hidden="true" />
-              Definitions
-            </Button>
-          </>
+          <Button
+            type="button"
+            onClick={() => navigate(routeHref("definitions"))}
+          >
+            <FileJsonIcon data-icon="inline-start" aria-hidden="true" />
+            Definitions
+          </Button>
         }
       />
 
