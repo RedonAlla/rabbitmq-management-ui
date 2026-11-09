@@ -15,13 +15,13 @@ createRoot(document.getElementById("root")!).render(
     <ThemeProvider defaultTheme="light" storageKey="rmq-theme">
       <TooltipProvider>
         <RouterProvider>
-          <ClusterProvider>
-            <AuthProvider>
+          <AuthProvider>
+            <ClusterProvider>
               <DialogsProvider>
                 <App />
               </DialogsProvider>
-            </AuthProvider>
-          </ClusterProvider>
+            </ClusterProvider>
+          </AuthProvider>
         </RouterProvider>
       </TooltipProvider>
     </ThemeProvider>

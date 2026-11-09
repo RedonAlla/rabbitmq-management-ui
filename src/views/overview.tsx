@@ -1,30 +1,28 @@
-import { useMemo, useState } from "react";
-import {
-  FileJsonIcon,
-  SendIcon,
-} from "lucide-react";
-import { Badge } from "@/components/reui/badge";
-import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/page-header";
-import { ChartPanel } from "@/components/chart-panel";
-import { RegionError } from "@/components/region-states";
-import { useDialogs } from "@/components/dialogs/dialogs-provider";
-import { useCluster } from "@/store/cluster";
-import { useRoute, routeHref } from "@/lib/router";
-import { clusterHealthLabel } from "@/lib/format";
-import type { RangeKey } from "@/data/types";
-import QueuesNeedAttention from "./overview/QueuesNeedAttention";
-import ListeningPorts from "./overview/ListeningPorts";
-import WebContexts from "./overview/WebContexts";
-import Kpis from "./overview/Kpis";
-import Nodes from "./overview/Nodes";
-import RecentActivity from "./overview/RecentActivity";
+import { useMemo, useState } from "react"
+import { FileJsonIcon, SendIcon } from "lucide-react"
+import { Badge } from "@/components/reui/badge"
+import { Button } from "@/components/ui/button"
+import { PageHeader } from "@/components/page-header"
+import { ChartPanel } from "@/components/chart-panel"
+import { RegionError } from "@/components/region-states"
+import { useDialogs } from "@/components/dialogs/dialogs-provider"
+import { useCluster } from "@/store/cluster"
+import { useRoute, routeHref } from "@/lib/router"
+import { clusterHealthLabel } from "@/lib/format"
+import type { RangeKey } from "@/data/types"
+import QueuesNeedAttention from "./overview/QueuesNeedAttention"
+import ListeningPorts from "./overview/ListeningPorts"
+import WebContexts from "./overview/WebContexts"
+import Kpis from "./overview/Kpis"
+import Nodes from "./overview/Nodes"
+import RecentActivity from "./overview/RecentActivity"
 
 export function OverviewView() {
-  const { data, totals, history, live, status, error, actions, lastUpdated } = useCluster();
-  const { openDialog } = useDialogs();
-  const { navigate } = useRoute();
-  const [range, setRange] = useState<RangeKey>("1m");
+  const { data, totals, history, live, status, error, actions, lastUpdated } =
+    useCluster()
+  const { openDialog } = useDialogs()
+  const { navigate } = useRoute()
+  const [range, setRange] = useState<RangeKey>("1m")
 
   const attention = useMemo(
     () =>
@@ -33,9 +31,9 @@ export function OverviewView() {
         .sort((a, b) => b.ready - a.ready)
         .slice(0, 6),
     [data.queues]
-  );
+  )
 
-  const points = history[range];
+  const points = history[range]
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -43,10 +41,14 @@ export function OverviewView() {
         title="Overview"
         eyebrow={
           <>
-            <Badge variant="success-light">{clusterHealthLabel(data.cluster, totals)}</Badge>
-            <span className="text-xs text-muted-foreground">
-              {data.cluster.node} · Erlang {data.cluster.erlang}
-            </span>
+            <Badge variant="success-light">
+              {clusterHealthLabel(data.cluster, totals)}
+            </Badge>
+            {data.cluster.node ? (
+              <span className="text-xs text-muted-foreground">
+                {data.cluster.node} · Erlang {data.cluster.erlang}
+              </span>
+            ) : null}
           </>
         }
         description="Cluster health, message flow and queue pressure at a glance."
@@ -80,12 +82,7 @@ export function OverviewView() {
 
       {error ? <RegionError message={error} onRetry={actions.retry} /> : null}
 
-      <Kpis
-        data={data}
-        range={range}
-        totals={totals}
-        history={history}
-      />
+      <Kpis data={data} range={range} totals={totals} history={history} />
 
       <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] xl:items-start">
         <ChartPanel
@@ -104,11 +101,19 @@ export function OverviewView() {
           onRetry={actions.retry}
         />
 
-        <Nodes data={data} />
+        <Nodes
+          data={data}
+          loading={status === "loading"}
+          onRetry={actions.retry}
+        />
       </div>
 
       <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] xl:items-start">
-        <QueuesNeedAttention queues={attention} />
+        <QueuesNeedAttention
+          queues={attention}
+          total={data.queues.length}
+          loading={status === "loading"}
+        />
         <RecentActivity events={data.events} live={live} />
       </div>
 
@@ -126,5 +131,5 @@ export function OverviewView() {
         />
       </div>
     </div>
-  );
+  )
 }

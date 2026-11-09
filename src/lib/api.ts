@@ -36,3 +36,22 @@ export async function loginWithPassword(
 
   return (await response.json()) as RabbitLoginResponse
 }
+
+export async function apiGet<T>(path: string, token: string): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    cache: "no-store",
+    headers: { Authorization: `Basic ${token}` },
+  })
+
+  if (response.status === 401) {
+    throw new ApiError("Your session has expired. Sign in again.", 401)
+  }
+  if (!response.ok) {
+    throw new ApiError(
+      `RabbitMQ returned HTTP ${response.status} for ${path}.`,
+      response.status
+    )
+  }
+
+  return (await response.json()) as T
+}
