@@ -29,6 +29,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { useTheme } from "@/components/theme-provider"
+import { IS_DEMO } from "@/lib/env"
 import { useAuth } from "@/store/auth"
 import { useCluster } from "@/store/cluster"
 
@@ -207,25 +208,13 @@ export function LoginView() {
           </form>
         </CardContent>
 
-        <CardFooter className="flex-col items-start gap-1 text-xs text-muted-foreground">
-          <span>Demo credentials</span>
-          <span className="text-mono text-foreground">admin / admin</span>
-        </CardFooter>
+        {IS_DEMO ? (
+          <CardFooter className="flex-col items-start gap-1 text-xs text-muted-foreground">
+            <span>Demo credentials</span>
+            <span className="text-mono text-foreground">admin / admin</span>
+          </CardFooter>
+        ) : null}
       </Card>
-
-      <p className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
-        <span
-          className="flex size-2 rounded-full bg-success"
-          aria-hidden="true"
-        />
-        <span>{data.cluster.name}</span>
-        <span aria-hidden="true">·</span>
-        <span>RabbitMQ {data.cluster.version}</span>
-        <span aria-hidden="true">·</span>
-        <span>
-          {data.nodes.length} {data.nodes.length === 1 ? "node" : "nodes"}
-        </span>
-      </p>
     </main>
   )
 }

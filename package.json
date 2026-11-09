@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "demo": "vite --mode demo",
+    "build": "npm run build-prod",
+    "build-prod": "tsc -b && vite build --mode production",
+    "build-demo": "tsc -b && vite build --mode demo",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
