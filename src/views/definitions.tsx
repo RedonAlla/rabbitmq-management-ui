@@ -28,12 +28,13 @@ import {
   type BrokerDefinitions,
 } from "@/lib/definitions"
 import { IS_DEMO } from "@/lib/env"
-import { fetchDefinitions } from "@/lib/rabbit-api"
+import { fetchDefinitions, uploadDefinitions } from "@/lib/rabbit-api"
 import { useCluster } from "@/store/cluster"
 import { useAuth } from "@/store/auth"
 
 interface SelectedFile {
   name: string
+  raw: File
   definitions: BrokerDefinitions
 }
 
@@ -100,6 +101,7 @@ export function DefinitionsView() {
   const [parseError, setParseError] = useState<string | null>(null)
   const [overwrite, setOverwrite] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [importing, setImporting] = useState(false)
   const [fileName, setFileName] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -207,7 +209,7 @@ export function DefinitionsView() {
     try {
       const text = await next.text()
       const definitions = parseDefinitions(text)
-      setFile({ name: next.name, definitions })
+      setFile({ name: next.name, raw: next, definitions })
     } catch (cause) {
       setFile(null)
       setParseError(
@@ -218,9 +220,40 @@ export function DefinitionsView() {
     }
   }
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (!file) return
     const summary = summarizeDefinitions(file.definitions)
+
+    if (!IS_DEMO) {
+      const token = user?.token
+      if (!token) {
+        toast.error("Could not import definitions", {
+          description: "Your session has expired. Sign in again.",
+        })
+        return
+      }
+      setImporting(true)
+      try {
+        await uploadDefinitions(token, file.raw)
+        toast.success("Definitions imported", {
+          description: `${plural(summary.total, "object")} from ${file.name}.`,
+        })
+        setFile(null)
+        setParseError(null)
+        actions.refresh()
+      } catch (cause) {
+        toast.error("Could not import definitions", {
+          description:
+            cause instanceof Error
+              ? cause.message
+              : "The management API did not respond.",
+        })
+      } finally {
+        setImporting(false)
+      }
+      return
+    }
+
     actions.importDefinitions(file.definitions, overwrite)
     toast.success("Definitions imported", {
       description: `${plural(summary.total, "object")} from ${file.name}${overwrite ? " with overwrite" : ""}.`,
@@ -365,7 +398,9 @@ export function DefinitionsView() {
           title="Import definitions"
           description="Upload a definitions file exported from another broker."
           actions={
-            file ? (
+            importing ? (
+              <Badge variant="outline">Importing…</Badge>
+            ) : file ? (
               <Badge variant="success-light">Ready to import</Badge>
             ) : (
               <Badge variant="outline">No file</Badge>
@@ -400,6 +435,7 @@ export function DefinitionsView() {
                     type="button"
                     variant="ghost"
                     size="sm"
+                    disabled={importing}
                     onClick={() => inputRef.current?.click()}
                   >
                     Replace
@@ -441,6 +477,7 @@ export function DefinitionsView() {
                   <Button
                     type="button"
                     variant="outline"
+                    disabled={importing}
                     onClick={() => inputRef.current?.click()}
                   >
                     <UploadIcon data-icon="inline-start" aria-hidden="true" />
@@ -458,22 +495,29 @@ export function DefinitionsView() {
               </Alert>
             ) : null}
 
-            <div className="flex items-start justify-between gap-4 border-t border-border pt-3">
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-sm font-medium">
-                  Overwrite existing definitions
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Imported queues, exchanges, users and policies replace
-                  conflicting entries.
-                </span>
+            {IS_DEMO ? (
+              <div className="flex items-start justify-between gap-4 border-t border-border pt-3">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-sm font-medium">
+                    Overwrite existing definitions
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Imported queues, exchanges, users and policies replace
+                    conflicting entries.
+                  </span>
+                </div>
+                <Switch
+                  checked={overwrite}
+                  onCheckedChange={setOverwrite}
+                  aria-label="Overwrite existing definitions"
+                />
               </div>
-              <Switch
-                checked={overwrite}
-                onCheckedChange={setOverwrite}
-                aria-label="Overwrite existing definitions"
-              />
-            </div>
+            ) : (
+              <p className="border-t border-border pt-3 text-xs text-muted-foreground">
+                Existing users, virtual hosts, queues, exchanges and policies
+                with matching names are replaced.
+              </p>
+            )}
 
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs text-muted-foreground">
@@ -484,10 +528,14 @@ export function DefinitionsView() {
               <Button
                 type="button"
                 onClick={handleImport}
-                disabled={!file || status === "loading"}
+                disabled={!file || status === "loading" || importing}
               >
-                <UploadIcon data-icon="inline-start" aria-hidden="true" />
-                Import definitions
+                {importing ? (
+                  <Spinner aria-hidden="true" />
+                ) : (
+                  <UploadIcon data-icon="inline-start" aria-hidden="true" />
+                )}
+                {importing ? "Importing…" : "Import definitions"}
               </Button>
             </div>
           </div>

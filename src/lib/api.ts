@@ -55,3 +55,43 @@ export async function apiGet<T>(path: string, token: string): Promise<T> {
 
   return (await response.json()) as T
 }
+
+export async function apiPostForm<T>(
+  path: string,
+  body: FormData,
+  token: string
+): Promise<T | null> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers: { Authorization: `Basic ${token}` },
+    body,
+  })
+
+  if (response.status === 401) {
+    throw new ApiError("Your session has expired. Sign in again.", 401)
+  }
+  if (!response.ok) {
+    let message = `RabbitMQ returned HTTP ${response.status} for ${path}.`
+    try {
+      const payload = (await response.json()) as {
+        error?: string
+        reason?: string
+      }
+      const parts = [payload.error, payload.reason].filter(
+        (part): part is string => typeof part === "string" && part.length > 0
+      )
+      if (parts.length > 0) message = parts.join(": ")
+    } catch {
+      // Non-JSON error body; keep the status message.
+    }
+    throw new ApiError(message, response.status)
+  }
+
+  const text = await response.text()
+  if (!text) return null
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    return null
+  }
+}

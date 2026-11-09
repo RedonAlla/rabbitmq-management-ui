@@ -5,7 +5,7 @@ import type {
   Queue,
   WebContext,
 } from "@/data/types"
-import { apiGet } from "@/lib/api"
+import { apiGet, apiPostForm } from "@/lib/api"
 import type { ClusterTotals } from "@/lib/format"
 
 interface ApiSample {
@@ -358,4 +358,13 @@ export async function fetchDefinitions(
   token: string
 ): Promise<Record<string, unknown>> {
   return apiGet<Record<string, unknown>>("/api/definitions", token)
+}
+
+export async function uploadDefinitions(
+  token: string,
+  file: File
+): Promise<void> {
+  const body = new FormData()
+  body.append("file", file)
+  await apiPostForm("/api/definitions", body, token)
 }
