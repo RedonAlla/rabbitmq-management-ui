@@ -353,3 +353,9 @@ export async function fetchRabbitSnapshot(
     totals: mapTotals(overview, queues),
   }
 }
+
+export async function fetchDefinitions(
+  token: string
+): Promise<Record<string, unknown>> {
+  return apiGet<Record<string, unknown>>("/api/definitions", token)
+}
