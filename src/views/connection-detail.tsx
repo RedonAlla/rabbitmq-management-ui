@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
-import { ArrowLeftIcon, ArrowRightIcon, UnplugIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  HeartIcon,
+  UnplugIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   Area,
@@ -177,35 +182,19 @@ function PropertyList({ entries }: { entries: PropertyEntry[] }) {
   );
 }
 
-function TrafficRow({
-  label,
-  rate,
-  avgRate,
-  total,
-  unit,
-  count,
-}: {
-  label: string;
-  rate: number;
-  avgRate: number;
-  total: number;
-  unit: string;
-  count?: number;
-}) {
+function HeartbeatValue({ seconds }: { seconds: number }) {
+  const enabled = seconds > 0;
   return (
-    <li className="flex flex-wrap items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
-      <span className="text-sm font-medium">{label}</span>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <span className="data-cell">{fmtRate(rate)} now</span>
-        <span className="data-cell">avg {fmtRate(avgRate)}</span>
-        <span className="data-cell">
-          {fmtInt(total)} {unit}
-        </span>
-        {typeof count === "number" ? (
-          <span className="data-cell">{fmtInt(count)} packets</span>
-        ) : null}
-      </div>
-    </li>
+    <span className="inline-flex items-center gap-1">
+      <HeartIcon
+        aria-hidden="true"
+        fill="currentColor"
+        className={`size-3.5 ${
+          enabled ? "text-success-foreground" : "text-destructive-foreground"
+        }`}
+      />
+      {enabled ? `${seconds}s` : "disabled"}
+    </span>
   );
 }
 
@@ -215,10 +204,12 @@ function RateChart({
   title,
   data,
   series,
+  legendLabel,
 }: {
   title: string;
   data: RateChartPoint[];
   series: { key: RateSeriesKey; label: string; color: string }[];
+  legendLabel?: string;
 }) {
   const config: ChartConfig = {};
   for (const item of series) {
@@ -226,63 +217,70 @@ function RateChart({
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <span className="text-xs font-medium text-muted-foreground">{title}</span>
-      <ChartContainer
-        config={config}
-        className="aspect-auto h-[200px] w-full"
-        role="img"
-        aria-label={`${title} chart`}
-      >
-        <AreaChart
-          data={data}
-          margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
-        >
-          <CartesianGrid vertical={false} strokeDasharray="3 3" />
-          <XAxis
-            dataKey="label"
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            minTickGap={30}
+    <ChartContainer
+      config={config}
+      className="aspect-auto h-[200px] w-full"
+      role="img"
+      aria-label={`${title} chart`}
+    >
+      <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+        <XAxis
+          dataKey="label"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          minTickGap={30}
+        />
+        <YAxis
+          width={48}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={4}
+          tickFormatter={(value: number) => fmtCompact(value)}
+        />
+        <ChartTooltip
+          cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
+          content={
+            <ChartTooltipContent
+              indicator="line"
+              formatter={(value) => fmtCompact(Number(value))}
+            />
+          }
+        />
+        {series.map((item) => (
+          <Area
+            key={item.key}
+            type="monotone"
+            dataKey={item.key}
+            name={item.label}
+            stroke={`var(--color-${item.key})`}
+            fill={`var(--color-${item.key})`}
+            fillOpacity={0.14}
+            strokeWidth={1.6}
+            dot={false}
+            activeDot={{ r: 3, strokeWidth: 0 }}
+            isAnimationActive={false}
           />
-          <YAxis
-            width={48}
-            tickLine={false}
-            axisLine={false}
-            tickMargin={4}
-            tickFormatter={(value: number) => fmtCompact(value)}
-          />
-          <ChartTooltip
-            cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
+        ))}
+        {legendLabel ? (
+          <ChartLegend
             content={
-              <ChartTooltipContent
-                indicator="line"
-                formatter={(value) => fmtCompact(Number(value))}
-              />
+              <div className="flex items-center justify-center gap-1.5 pt-3 text-xs text-muted-foreground">
+                <span
+                  aria-hidden="true"
+                  className="h-2 w-2 shrink-0 rounded-[2px]"
+                  style={{ backgroundColor: series[0]?.color }}
+                />
+                {legendLabel}
+              </div>
             }
           />
-          {series.map((item) => (
-            <Area
-              key={item.key}
-              type="monotone"
-              dataKey={item.key}
-              name={item.label}
-              stroke={`var(--color-${item.key})`}
-              fill={`var(--color-${item.key})`}
-              fillOpacity={0.14}
-              strokeWidth={1.6}
-              dot={false}
-              activeDot={{ r: 3, strokeWidth: 0 }}
-              isAnimationActive={false}
-            />
-          ))}
-          {series.length > 1 ? (
-            <ChartLegend content={<ChartLegendContent />} />
-          ) : null}
-        </AreaChart>
-      </ChartContainer>
-    </div>
+        ) : series.length > 1 ? (
+          <ChartLegend content={<ChartLegendContent />} />
+        ) : null}
+      </AreaChart>
+    </ChartContainer>
   );
 }
 
@@ -429,7 +427,7 @@ function DemoConnectionDetail() {
                 { label: "Virtual host", value: connection.vhost, mono: true },
                 { label: "Node", value: connection.node, mono: true },
                 { label: "Client", value: connection.client, mono: true },
-                { label: "Heartbeat", value: connection.heartbeat ? `${connection.heartbeat}s` : "disabled" },
+                { label: "Heartbeat", value: <HeartbeatValue seconds={connection.heartbeat} /> },
               ]}
             />
             <FactPanel
@@ -625,59 +623,31 @@ function ApiConnectionDetail() {
       <DetailLayout
         main={
           <>
-            <SectionFrame
-              title="Traffic"
-              description="Throughput reported by the management API for this connection."
-            >
-              <ul className="flex flex-col divide-y divide-border">
-                <TrafficRow
-                  label="Received"
-                  rate={connection.recv.rate}
-                  avgRate={connection.recv.avgRate}
-                  total={connection.recvOct}
-                  unit="bytes"
-                  count={connection.recvCount}
-                />
-                <TrafficRow
-                  label="Sent"
-                  rate={connection.send.rate}
-                  avgRate={connection.send.avgRate}
-                  total={connection.sendOct}
-                  unit="bytes"
-                  count={connection.sendCount}
-                />
-                <TrafficRow
-                  label="Reductions"
-                  rate={connection.reductionsRate?.rate ?? 0}
-                  avgRate={connection.reductionsRate?.avgRate ?? 0}
-                  total={connection.reductions}
-                  unit="reductions"
-                />
-              </ul>
-            </SectionFrame>
 
-            <SectionFrame
-              title="Rate samples"
-              description={
-                chartData.length
-                  ? "Per-second rates derived from the 60-second sample window."
-                  : "The broker keeps rate history for active connections only."
-              }
-            >
-              {chartData.length ? (
-                <div className="flex flex-col gap-6">
+            {chartData.length ? (
+              <>
+                <SectionFrame
+                  title="Throughput"
+                  description="Octets received and sent per second over the last 60 seconds."
+                >
                   <RateChart
-                    title="Throughput (octets/s)"
+                    title="Throughput"
                     data={chartData}
                     series={[
                       { key: "recv", label: "Received", color: "var(--chart-1)" },
                       { key: "send", label: "Sent", color: "var(--chart-2)" },
                     ]}
                   />
-                  {connection.reductionsRate ? (
+                </SectionFrame>
+                {connection.reductionsRate ? (
+                  <SectionFrame
+                    title="Reductions"
+                    description="Reductions per second over the last 60 seconds."
+                  >
                     <RateChart
-                      title="Reductions (per second)"
+                      title="Reductions"
                       data={chartData}
+                      legendLabel={`Reductions: ${fmtRate(connection.reductionsRate.avgRate)}`}
                       series={[
                         {
                           key: "reductions",
@@ -686,14 +656,19 @@ function ApiConnectionDetail() {
                         },
                       ]}
                     />
-                  ) : null}
-                </div>
-              ) : (
+                  </SectionFrame>
+                ) : null}
+              </>
+            ) : (
+              <SectionFrame
+                title="Rate samples"
+                description="The broker keeps rate history for active connections only."
+              >
                 <p className="text-xs text-muted-foreground">
                   No rate samples were reported for this connection.
                 </p>
-              )}
-            </SectionFrame>
+              </SectionFrame>
+            )}
 
             <SectionFrame
               title="Client properties"
@@ -791,7 +766,7 @@ function ApiConnectionDetail() {
                 },
                 {
                   label: "Heartbeat",
-                  value: connection.timeout ? `${connection.timeout}s` : "disabled",
+                  value: <HeartbeatValue seconds={connection.timeout} />,
                 },
                 { label: "Send pending", value: `${fmtInt(connection.sendPending)} bytes` },
               ]}
