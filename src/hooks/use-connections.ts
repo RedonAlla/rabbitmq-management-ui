@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
 import type { Connection } from "@/data/types"
 import { IS_DEMO } from "@/lib/env"
-import { fetchConnections, type ConnectionsPage } from "@/lib/rabbit-api"
+import { closeConnection as closeConnectionRequest, fetchConnections, type ConnectionsPage } from "@/lib/rabbit-api"
 import { useAuth } from "@/store/auth"
 import { useCluster } from "@/store/cluster"
 
@@ -60,6 +60,7 @@ interface ConnectionsQueryResult {
   loading: boolean
   error: string | null
   retry: () => void
+  closeConnection: (connection: Connection, reason: string) => Promise<void>
 }
 
 function compareValues(a: string | number, b: string | number): number {
@@ -185,6 +186,21 @@ export function useConnections(
     setRefreshId((current) => current + 1)
   }, [actions])
 
+  const closeConnection = useCallback(
+    async (connection: Connection, reason: string) => {
+      if (IS_DEMO) {
+        actions.closeConnection(connection.id)
+        return
+      }
+      if (!token) {
+        throw new Error("Your session has expired. Sign in again.")
+      }
+      await closeConnectionRequest(token, connection.name, reason)
+      setRefreshId((current) => current + 1)
+    },
+    [actions, token]
+  )
+
   if (IS_DEMO) {
     return {
       connections: localPage.items,
@@ -194,6 +210,7 @@ export function useConnections(
       loading: status === "loading",
       error: clusterError,
       retry,
+      closeConnection,
     }
   }
 
@@ -211,5 +228,6 @@ export function useConnections(
       ? requestError
       : "Your session has expired. Sign in again.",
     retry,
+    closeConnection,
   }
 }

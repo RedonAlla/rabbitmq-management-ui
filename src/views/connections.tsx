@@ -32,11 +32,13 @@ import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagina
 import { Plug } from "lucide-react";
 import GridEmptyState from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const CONNECTIONS_PAGE_SIZE = 100;
 
 export function ConnectionsView() {
-  const { data, actions } = useCluster();
+  const { data } = useCluster();
   const { navigate } = useRoute();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -48,6 +50,7 @@ export function ConnectionsView() {
     { id: "name", desc: true },
   ]);
   const [pendingClose, setPendingClose] = useState<Connection | null>(null);
+  const [closeReason, setCloseReason] = useState("");
 
   const query = useMemo(
     () => ({
@@ -67,6 +70,7 @@ export function ConnectionsView() {
     loading,
     error,
     retry,
+    closeConnection,
   } = useConnections(query);
 
   const resetPage = useCallback(() => {
@@ -211,16 +215,14 @@ export function ConnectionsView() {
       },
     ];
 
-    if (IS_DEMO) {
-      list.push({
-        id: "actions",
-        header: () => <span className="sr-only">Actions</span>,
-        cell: ({ row }) => (
-          <GridActions row={row.original} setPendingClose={setPendingClose} />
-        ),
-        meta: { skeleton: <Skeleton className="h-4 w-10" /> },
-      });
-    }
+    list.push({
+      id: "actions",
+      header: () => <span className="sr-only">Actions</span>,
+      cell: ({ row }) => (
+        <GridActions row={row.original} setPendingClose={setPendingClose} />
+      ),
+      meta: { skeleton: <Skeleton className="h-4 w-10" /> },
+    });
 
     return list;
   }, []);
@@ -306,18 +308,47 @@ export function ConnectionsView() {
 
       <ConfirmDialog
         open={Boolean(pendingClose)}
-        onOpenChange={(open) => (open ? undefined : setPendingClose(null))}
+        onOpenChange={(open) => {
+          if (open) return;
+          setPendingClose(null);
+          setCloseReason("");
+        }}
         title="Close connection?"
         description={`${pendingClose?.name ?? "This connection"} and its ${pendingClose?.channels ?? 0} channels will be closed. Attached consumers stop receiving messages.`}
         confirmLabel="Close connection"
         tone="destructive"
         onConfirm={() => {
           if (!pendingClose) return;
-          actions.closeConnection(pendingClose.id);
-          toast.success("Connection closed", { description: `${pendingClose.name} was closed.` });
+          const connection = pendingClose;
+          const reason = closeReason;
           setPendingClose(null);
+          setCloseReason("");
+          closeConnection(connection, reason)
+            .then(() => {
+              toast.success("Connection closed", {
+                description: `${connection.name} was closed.`,
+              });
+            })
+            .catch((cause: unknown) => {
+              toast.error("Connection was not closed", {
+                description:
+                  cause instanceof Error
+                    ? cause.message
+                    : "The management API did not respond.",
+              });
+            });
         }}
-      />
+      >
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="close-reason">Reason</Label>
+          <Textarea
+            id="close-reason"
+            value={closeReason}
+            onChange={(event) => setCloseReason(event.target.value)}
+            placeholder="Why is this connection being closed? (optional)"
+          />
+        </div>
+      </ConfirmDialog>
     </div>
   );
 }

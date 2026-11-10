@@ -61,6 +61,31 @@ export async function apiGet<T>(
   return (await response.json()) as T
 }
 
+export async function apiDelete(
+  path: string,
+  token: string,
+  body?: unknown
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Basic ${token}`,
+      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+
+  if (response.status === 401) {
+    throw new ApiError("Your session has expired. Sign in again.", 401)
+  }
+  if (!response.ok) {
+    throw new ApiError(
+      `RabbitMQ returned HTTP ${response.status} for ${path}.`,
+      response.status
+    )
+  }
+}
+
 export async function apiPostForm<T>(
   path: string,
   body: FormData,

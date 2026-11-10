@@ -20,6 +20,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   tone?: "default" | "destructive";
   pending?: boolean;
+  children?: ReactNode;
 }
 
 export function ConfirmDialog({
@@ -31,6 +32,7 @@ export function ConfirmDialog({
   onConfirm,
   tone = "default",
   pending = false,
+  children,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={(next) => (pending ? undefined : onOpenChange(next))}>
@@ -39,6 +41,7 @@ export function ConfirmDialog({
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
+        {children}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
           <AlertDialogAction

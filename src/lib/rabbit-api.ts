@@ -6,7 +6,7 @@ import type {
   Queue,
   WebContext,
 } from "@/data/types"
-import { apiGet, apiPostForm } from "@/lib/api"
+import { apiDelete, apiGet, apiPostForm } from "@/lib/api"
 import type { ClusterTotals } from "@/lib/format"
 
 interface ApiSample {
@@ -472,6 +472,18 @@ export async function fetchConnections(
     pageSize: page.page_size,
     pageCount: page.page_count,
   }
+}
+
+export async function closeConnection(
+  token: string,
+  name: string,
+  reason: string
+): Promise<void> {
+  await apiDelete(
+    `/api/connections/${encodeURIComponent(name)}`,
+    token,
+    { reason: reason.trim() || "Closed via management UI" }
+  )
 }
 
 export async function fetchDefinitions(
