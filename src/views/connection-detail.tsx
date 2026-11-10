@@ -1,8 +1,23 @@
 import { useMemo, useState } from "react";
 import { ArrowLeftIcon, ArrowRightIcon, UnplugIcon } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 import { PageHeader } from "@/components/page-header";
 import { KpiCard, KpiGrid } from "@/components/kpi";
 import {
@@ -28,7 +43,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useCluster } from "@/store/cluster";
 import { useRoute, routeHref } from "@/lib/router";
-import { fmtDate, fmtInt, fmtRate, fmtSince } from "@/lib/format";
+import { fmtCompact, fmtDate, fmtInt, fmtRate, fmtSince } from "@/lib/format";
 import { IS_DEMO } from "@/lib/env";
 import {
   type ConnectionDetail,
@@ -43,7 +58,6 @@ const timeFmt = new Intl.DateTimeFormat("en-US", {
   second: "2-digit",
   hour12: false,
 });
-
 const dateTimeFmt = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
@@ -63,31 +77,51 @@ function chronological(samples: ConnectionRateSample[]): number[] {
   return [...samples].reverse().map((sample) => sample.sample);
 }
 
-interface SampleRow {
-  timestamp: number;
+interface RateChartPoint {
+  label: string;
   recv?: number;
   send?: number;
   reductions?: number;
 }
 
-function mergeSamples(connection: ConnectionDetail): SampleRow[] {
-  const rows = new Map<number, SampleRow>();
-  const add = (
-    key: "recv" | "send" | "reductions",
-    samples: ConnectionRateSample[]
-  ) => {
-    for (const sample of samples) {
-      const row = rows.get(sample.timestamp) ?? { timestamp: sample.timestamp };
-      row[key] = sample.sample;
-      rows.set(sample.timestamp, row);
-    }
-  };
-  add("recv", connection.recv.samples);
-  add("send", connection.send.samples);
-  if (connection.reductionsRate) {
-    add("reductions", connection.reductionsRate.samples);
+function samplesToRates(
+  samples: ConnectionRateSample[]
+): Map<number, number> {
+  const ordered = [...samples].sort((a, b) => a.timestamp - b.timestamp);
+  const rates = new Map<number, number>();
+  for (let index = 1; index < ordered.length; index += 1) {
+    const previous = ordered[index - 1];
+    const current = ordered[index];
+    const seconds = (current.timestamp - previous.timestamp) / 1000;
+    if (seconds <= 0) continue;
+    rates.set(
+      current.timestamp,
+      Math.max(0, (current.sample - previous.sample) / seconds)
+    );
   }
-  return [...rows.values()].sort((a, b) => a.timestamp - b.timestamp);
+  return rates;
+}
+
+function buildRateChartData(connection: ConnectionDetail): RateChartPoint[] {
+  const recvRates = samplesToRates(connection.recv.samples);
+  const sendRates = samplesToRates(connection.send.samples);
+  const reductionsRates = connection.reductionsRate
+    ? samplesToRates(connection.reductionsRate.samples)
+    : new Map<number, number>();
+  const timestamps = new Set<number>([
+    ...recvRates.keys(),
+    ...sendRates.keys(),
+    ...reductionsRates.keys(),
+  ]);
+
+  return [...timestamps]
+    .sort((a, b) => a - b)
+    .map((timestamp) => ({
+      label: timeFmt.format(timestamp),
+      recv: recvRates.get(timestamp),
+      send: sendRates.get(timestamp),
+      reductions: reductionsRates.get(timestamp),
+    }));
 }
 
 interface PropertyEntry {
@@ -172,6 +206,83 @@ function TrafficRow({
         ) : null}
       </div>
     </li>
+  );
+}
+
+type RateSeriesKey = "recv" | "send" | "reductions";
+
+function RateChart({
+  title,
+  data,
+  series,
+}: {
+  title: string;
+  data: RateChartPoint[];
+  series: { key: RateSeriesKey; label: string; color: string }[];
+}) {
+  const config: ChartConfig = {};
+  for (const item of series) {
+    config[item.key] = { label: item.label, color: item.color };
+  }
+
+  return (
+    <div className="flex min-w-0 flex-col gap-2">
+      <span className="text-xs font-medium text-muted-foreground">{title}</span>
+      <ChartContainer
+        config={config}
+        className="aspect-auto h-[200px] w-full"
+        role="img"
+        aria-label={`${title} chart`}
+      >
+        <AreaChart
+          data={data}
+          margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
+        >
+          <CartesianGrid vertical={false} strokeDasharray="3 3" />
+          <XAxis
+            dataKey="label"
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            minTickGap={30}
+          />
+          <YAxis
+            width={48}
+            tickLine={false}
+            axisLine={false}
+            tickMargin={4}
+            tickFormatter={(value: number) => fmtCompact(value)}
+          />
+          <ChartTooltip
+            cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
+            content={
+              <ChartTooltipContent
+                indicator="line"
+                formatter={(value) => fmtCompact(Number(value))}
+              />
+            }
+          />
+          {series.map((item) => (
+            <Area
+              key={item.key}
+              type="monotone"
+              dataKey={item.key}
+              name={item.label}
+              stroke={`var(--color-${item.key})`}
+              fill={`var(--color-${item.key})`}
+              fillOpacity={0.14}
+              strokeWidth={1.6}
+              dot={false}
+              activeDot={{ r: 3, strokeWidth: 0 }}
+              isAnimationActive={false}
+            />
+          ))}
+          {series.length > 1 ? (
+            <ChartLegend content={<ChartLegendContent />} />
+          ) : null}
+        </AreaChart>
+      </ChartContainer>
+    </div>
   );
 }
 
@@ -443,7 +554,7 @@ function ApiConnectionDetail() {
     );
   }
 
-  const sampleRows = mergeSamples(connection);
+  const chartData = buildRateChartData(connection);
   const clientProperties = flattenProperties(connection.clientProperties);
   const garbageCollection = connection.garbageCollection
     ? flattenProperties(connection.garbageCollection)
@@ -548,40 +659,34 @@ function ApiConnectionDetail() {
             <SectionFrame
               title="Rate samples"
               description={
-                sampleRows.length
-                  ? `Metric samples collected every 5 seconds over the last 60 seconds.`
+                chartData.length
+                  ? "Per-second rates derived from the 60-second sample window."
                   : "The broker keeps rate history for active connections only."
               }
             >
-              {sampleRows.length ? (
-                <div className="flex flex-col">
-                  <div className="grid grid-cols-[6rem_repeat(3,minmax(0,1fr))] items-center gap-2 border-b border-border py-2 text-xs font-medium text-muted-foreground">
-                    <span>Time</span>
-                    <span className="text-right">Received bytes</span>
-                    <span className="text-right">Sent bytes</span>
-                    <span className="text-right">Reductions</span>
-                  </div>
-                  <div>
-                    {sampleRows.map((sample) => (
-                      <div
-                        key={sample.timestamp}
-                        className="grid grid-cols-[6rem_repeat(3,minmax(0,1fr))] items-center gap-2 border-b border-border py-1.5 text-xs last:border-b-0"
-                      >
-                        <span className="data-cell text-muted-foreground">
-                          {timeFmt.format(sample.timestamp)}
-                        </span>
-                        <span className="data-cell text-right">
-                          {orDash(sample.recv)}
-                        </span>
-                        <span className="data-cell text-right">
-                          {orDash(sample.send)}
-                        </span>
-                        <span className="data-cell text-right">
-                          {orDash(sample.reductions)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+              {chartData.length ? (
+                <div className="flex flex-col gap-6">
+                  <RateChart
+                    title="Throughput (octets/s)"
+                    data={chartData}
+                    series={[
+                      { key: "recv", label: "Received", color: "var(--chart-1)" },
+                      { key: "send", label: "Sent", color: "var(--chart-2)" },
+                    ]}
+                  />
+                  {connection.reductionsRate ? (
+                    <RateChart
+                      title="Reductions (per second)"
+                      data={chartData}
+                      series={[
+                        {
+                          key: "reductions",
+                          label: "Reductions",
+                          color: "var(--chart-3)",
+                        },
+                      ]}
+                    />
+                  ) : null}
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground">
