@@ -293,6 +293,7 @@ export function ConnectionsView() {
               search={search}
               onSearch={handleSearch}
               placeholder="Search connections by name"
+              className="justify-end"
             />
           </FrameHeader>
           <FramePanel>
