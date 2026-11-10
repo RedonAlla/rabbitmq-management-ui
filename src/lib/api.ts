@@ -37,10 +37,15 @@ export async function loginWithPassword(
   return (await response.json()) as RabbitLoginResponse
 }
 
-export async function apiGet<T>(path: string, token: string): Promise<T> {
+export async function apiGet<T>(
+  path: string,
+  token: string,
+  signal?: AbortSignal
+): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     cache: "no-store",
     headers: { Authorization: `Basic ${token}` },
+    signal,
   })
 
   if (response.status === 401) {

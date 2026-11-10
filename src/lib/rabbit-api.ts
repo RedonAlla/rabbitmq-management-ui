@@ -1,5 +1,6 @@
 import type {
   ClusterInfo,
+  Connection,
   NodeInfo,
   PortInfo,
   Queue,
@@ -148,6 +149,61 @@ interface ApiQueue {
   }
 }
 
+interface ApiConnection {
+  name: string
+  user: string
+  vhost: string
+  node: string
+  protocol: string
+  auth_mechanism: string
+  ssl: boolean
+  channels: number
+  state: string
+  host: string
+  port: number
+  peer_host: string
+  peer_port: number
+  connected_at: number
+  timeout: number
+  recv_oct_details?: { rate: number }
+  send_oct_details?: { rate: number }
+  user_provided_name?: string | null
+  client_properties?: {
+    connection_name?: string
+    product?: string
+    platform?: string
+    version?: string
+  }
+}
+
+interface ApiConnectionsResponse {
+  total_count: number
+  item_count: number
+  filtered_count: number
+  page: number
+  page_size: number
+  page_count: number
+  items: ApiConnection[]
+}
+
+export interface ConnectionsPage {
+  items: Connection[]
+  totalCount: number
+  filteredCount: number
+  page: number
+  pageSize: number
+  pageCount: number
+}
+
+export interface ConnectionsQuery {
+  page: number
+  pageSize: number
+  name?: string
+  vhost?: string
+  sort?: string
+  sortReverse?: boolean
+}
+
 export interface RabbitSnapshot {
   cluster: ClusterInfo
   nodes: NodeInfo[]
@@ -288,6 +344,35 @@ function mapQueues(queues: ApiQueue[]): Queue[] {
   })
 }
 
+function mapConnection(connection: ApiConnection): Connection {
+  const properties = connection.client_properties ?? {}
+  const client = [properties.product, properties.platform].filter(
+    (part): part is string => typeof part === "string" && part.length > 0
+  )
+
+  return {
+    id: connection.name,
+    name: connection.name,
+    userProvidedName:
+      connection.user_provided_name ?? properties.connection_name ?? null,
+    authMechanism: connection.auth_mechanism,
+    user: connection.user,
+    vhost: connection.vhost,
+    node: connection.node,
+    protocol: connection.protocol,
+    ssl: connection.ssl,
+    channels: connection.channels,
+    state: connection.state,
+    from: `${connection.peer_host}:${connection.peer_port}`,
+    peer: `${connection.host}:${connection.port}`,
+    connectedAt: connection.connected_at,
+    heartbeat: connection.timeout,
+    recvRate: connection.recv_oct_details?.rate ?? 0,
+    sendRate: connection.send_oct_details?.rate ?? 0,
+    client: client.length > 0 ? client.join(" / ") : "Unknown",
+  }
+}
+
 function mapTotals(overview: ApiOverview, queues: Queue[]): ClusterTotals {
   const churn = overview.churn_rates
   return {
@@ -351,6 +436,40 @@ export async function fetchRabbitSnapshot(
     webContexts: mapWebContexts(overview.contexts ?? [], listeners),
     queues,
     totals: mapTotals(overview, queues),
+  }
+}
+
+export async function fetchConnections(
+  token: string,
+  query: ConnectionsQuery,
+  signal?: AbortSignal
+): Promise<ConnectionsPage> {
+  const params = new URLSearchParams({
+    page: String(query.page),
+    page_size: String(query.pageSize),
+    name: query.name ?? "",
+    use_regex: "false",
+  })
+
+  if (query.sort) {
+    params.set("sort", query.sort)
+    params.set("sort_reverse", query.sortReverse ? "true" : "false")
+  }
+  if (query.vhost) params.set("vhost", query.vhost)
+
+  const page = await apiGet<ApiConnectionsResponse>(
+    `/api/connections?${params.toString()}`,
+    token,
+    signal
+  )
+
+  return {
+    items: page.items.map(mapConnection),
+    totalCount: page.total_count,
+    filteredCount: page.filtered_count,
+    page: page.page,
+    pageSize: page.page_size,
+    pageCount: page.page_count,
   }
 }
 

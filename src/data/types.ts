@@ -65,6 +65,8 @@ export interface Consumer {
 export interface Connection {
   id: string
   name: string
+  userProvidedName?: string | null
+  authMechanism?: string
   user: string
   vhost: string
   node: string

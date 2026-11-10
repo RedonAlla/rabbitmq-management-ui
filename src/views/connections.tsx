@@ -1,25 +1,30 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useTable, type ColumnDef } from "@tanstack/react-table";
+import {
+  useTable,
+  type ColumnDef,
+  type OnChangeFn,
+  type PaginationState,
+  type SortingState,
+} from "@tanstack/react-table";
 import { Badge } from "@/components/reui/badge";
 import { PageHeader } from "@/components/page-header";
 import { FilterBar } from "@/components/filters-bar";
-import { Filters } from "@/components/reui/filters/filters";
-import { createFilterQuery } from "@/components/reui/filters/filters-query";
-import type { FilterField, FilterQuery } from "@/components/reui/filters/filters-types";
 import { ConnectionStateBadge, TlsBadge, VhostBadge } from "@/components/badges";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useCluster } from "@/store/cluster";
 import { useRoute, routeHref } from "@/lib/router";
 import { fmtRate, fmtSince, fmtInt } from "@/lib/format";
-import { filterRows, matchesText } from "@/lib/filtering";
+import { IS_DEMO } from "@/lib/env";
 import type { Connection } from "@/data/types";
+import { useConnections } from "@/hooks/use-connections";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
 import { Skeleton } from "@/components/ui/skeleton";
 import GridActions from "./connections/grid-actions";
 import { numericMeta } from "@/components/table-meta-numeric";
-import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
+import { DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
 import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
@@ -28,69 +33,98 @@ import { Plug } from "lucide-react";
 import GridEmptyState from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 
+const CONNECTIONS_PAGE_SIZE = 100;
+
 export function ConnectionsView() {
-  const { data, status, error, actions } = useCluster();
+  const { data, actions } = useCluster();
   const { navigate } = useRoute();
   const [search, setSearch] = useState("");
-  const [query, setQuery] = useState<FilterQuery>(() => createFilterQuery());
+  const debouncedSearch = useDebouncedValue(search, 300);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: CONNECTIONS_PAGE_SIZE,
+  });
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "name", desc: true },
+  ]);
   const [pendingClose, setPendingClose] = useState<Connection | null>(null);
 
+  const query = useMemo(
+    () => ({
+      pageIndex: pagination.pageIndex,
+      pageSize: pagination.pageSize,
+      search: debouncedSearch,
+      sorting,
+    }),
+    [pagination.pageIndex, pagination.pageSize, debouncedSearch, sorting]
+  );
+
+  const {
+    connections,
+    totalCount,
+    filteredCount,
+    pageCount,
+    loading,
+    error,
+    retry,
+  } = useConnections(query);
+
+  const resetPage = useCallback(() => {
+    setPagination((previous) =>
+      previous.pageIndex === 0 ? previous : { ...previous, pageIndex: 0 }
+    );
+  }, []);
+
   const clearFilters = () => {
-    setSearch("")
-    setQuery(createFilterQuery())
-  }
-  
-  const connections = useMemo(
-    () =>
-      filterRows(
-        data.connections.filter(
-          (connection) =>
-            matchesText(connection.name, search) || matchesText(connection.user, search)
-        ),
-        query,
-        {
-          vhost: (connection) => connection.vhost,
-          protocol: (connection) => connection.protocol,
+    setSearch("");
+    resetPage();
+  };
+
+  const handleSearch = (value: string) => {
+    setSearch(value);
+    resetPage();
+  };
+
+  const handleSortingChange = useCallback<OnChangeFn<SortingState>>(
+    (updater) => {
+      setSorting(updater);
+      resetPage();
+    },
+    [resetPage]
+  );
+
+  const handlePaginationChange = useCallback<OnChangeFn<PaginationState>>(
+    (updater) => {
+      setPagination((previous) => {
+        const next =
+          typeof updater === "function" ? updater(previous) : updater;
+        if (next.pageSize !== previous.pageSize) {
+          return { pageIndex: 0, pageSize: next.pageSize };
         }
-      ),
-    [data.connections, search, query]
+        return next;
+      });
+    },
+    []
   );
 
-  const filterFields = useMemo<FilterField[]>(
-    () => [
-      {
-        id: "vhost",
-        label: "Virtual host",
-        type: "select",
-        options: data.vhosts.map((entry) => ({ value: entry.name, label: entry.name })),
-      },
-      {
-        id: "protocol",
-        label: "Protocol",
-        type: "select",
-        options: [
-          { value: "AMQP 0-9-1", label: "AMQP 0-9-1" },
-          { value: "HTTP", label: "HTTP" },
-        ],
-      },
-    ],
-    [data.vhosts]
-  );
-
-  const columns = useMemo<ColumnDef<DataGridFeatures, Connection>[]>(
-    () => [
+  const columns = useMemo<ColumnDef<DataGridFeatures, Connection>[]>(() => {
+    const list: ColumnDef<DataGridFeatures, Connection>[] = [
       {
         accessorKey: "name",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Connection" />,
-        cell: ({ row }) => (
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="truncate font-medium">{row.original.name}</span>
-            <div className="flex items-center gap-1.5">
-              <Badge variant="outline">{row.original.id}</Badge>
-              <VhostBadge>{row.original.vhost}</VhostBadge>
+        cell: ({ row }) => {
+          const providedName = row.original.userProvidedName;
+          return (
+            <div className="flex min-w-0 flex-col gap-1">
+              <span className="truncate font-medium">{row.original.name}</span>
+              {providedName && providedName !== row.original.name ? (
+                <span className="truncate text-xs text-muted-foreground">
+                  {providedName}
+                </span>
+              ) : null}
             </div>
-          </div>
-        ),
+          );
+        },
         meta: { fillWidth: true, skeleton: <Skeleton className="h-4 w-48" /> },
       },
       {
@@ -101,13 +135,13 @@ export function ConnectionsView() {
       },
       {
         accessorKey: "vhost",
-        header: ({ column }) => <DataGridColumnHeader title="Virtual host" column={column} />,
-        cell: ({ row }) => <span className="text-muted-foreground">{row.original.vhost}</span>,
+        header: ({ column }) => <DataGridColumnHeader column={column} title="Virtual Host" />,
+        cell: ({ row }) => <VhostBadge>{row.original.vhost}</VhostBadge>,
         meta: { skeleton: <Skeleton className="h-4 w-16" /> },
       },
       {
         accessorKey: "state",
-        header: ({ column }) => <DataGridColumnHeader title="State" column={column} />,
+        header: ({ column }) => <DataGridColumnHeader column={column} title="State" />,
         cell: ({ row }) => <ConnectionStateBadge state={row.original.state} />,
         meta: { skeleton: <Skeleton className="h-5 w-16" /> },
       },
@@ -120,20 +154,23 @@ export function ConnectionsView() {
         meta: { skeleton: <Skeleton className="h-4 w-20" /> },
       },
       {
+        accessorKey: "protocol",
+        header: ({ column }) => <DataGridColumnHeader column={column} title="Protocol" />,
+        cell: ({ row }) => (
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs">{row.original.protocol}</span>
+              <TlsBadge ssl={row.original.ssl} />
+            </div>
+          </div>
+        ),
+        meta: { skeleton: <Skeleton className="h-4 w-24" /> },
+      },
+      {
         accessorKey: "channels",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Channels" />,
         cell: ({ row }) => <span className="data-cell">{row.original.channels}</span>,
         meta: numericMeta,
-      },
-      {
-        accessorKey: "protocol",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Protocol" />,
-        cell: ({ row }) => (
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs">{row.original.protocol}</span>
-            <TlsBadge ssl={row.original.ssl} />
-          </div>
-        ),
       },
       {
         accessorKey: "recvRate",
@@ -143,7 +180,7 @@ export function ConnectionsView() {
       },
       {
         accessorKey: "sendRate",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Send" />,
+        header: ({ column }) => <DataGridColumnHeader column={column} title="Sent" />,
         cell: ({ row }) => <span className="data-cell">{fmtRate(row.original.sendRate)}</span>,
         meta: numericMeta,
       },
@@ -158,21 +195,42 @@ export function ConnectionsView() {
         meta: numericMeta,
       },
       {
+        accessorKey: "client",
+        header: ({ column }) => <DataGridColumnHeader column={column} title="Client" />,
+        cell: ({ row }) => (
+          <span className="text-xs text-muted-foreground">{row.original.client}</span>
+        ),
+        meta: { skeleton: <Skeleton className="h-4 w-24" /> },
+      },
+    ];
+
+    if (IS_DEMO) {
+      list.push({
         id: "actions",
         header: () => <span className="sr-only">Actions</span>,
-        cell: ({ row }) => (<GridActions row={row.original} setPendingClose={setPendingClose} />),
+        cell: ({ row }) => (
+          <GridActions row={row.original} setPendingClose={setPendingClose} />
+        ),
         meta: { skeleton: <Skeleton className="h-4 w-10" /> },
-      },
-    ],
-    []
-  );
+      });
+    }
+
+    return list;
+  }, []);
 
   const table = useTable({
     features: dataGridFeatures,
     defaultColumn: { size: 120, minSize: 80 },
     data: connections,
     columns,
-    initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
+    manualPagination: true,
+    manualSorting: true,
+    autoResetPageIndex: false,
+    pageCount,
+    rowCount: filteredCount,
+    state: { pagination, sorting },
+    onPaginationChange: handlePaginationChange,
+    onSortingChange: handleSortingChange,
   });
 
   return (
@@ -182,21 +240,28 @@ export function ConnectionsView() {
         description="Open AMQP and HTTP connections across the cluster."
         actions={
           <Badge variant="outline">
-            {fmtInt(data.connections.length)} connections · {fmtInt(data.channels.length)} channels
+            {IS_DEMO
+              ? `${fmtInt(data.connections.length)} connections · ${fmtInt(data.channels.length)} channels`
+              : `${fmtInt(totalCount)} connections`}
           </Badge>
         }
       />
 
       <DataGrid
         table={table}
-        recordCount={connections.length}
-        isLoading={status === "loading"}
-        onRowClick={(connection: Connection) => navigate(routeHref("connection", connection.id))}
+        recordCount={filteredCount}
+        isLoading={loading}
+        onRowClick={
+          IS_DEMO
+            ? (connection: Connection) =>
+                navigate(routeHref("connection", connection.id))
+            : undefined
+        }
         emptyMessage={
           <GridEmptyState
             icon={<Plug />}
             error={error}
-            retry={actions.retry}
+            retry={retry}
             action={
               <Button variant="outline" size="sm" onClick={() => clearFilters()}>
                 Clear filters
@@ -211,24 +276,15 @@ export function ConnectionsView() {
           headerBorder: true,
           width: "auto",
         }}
-        tableClassNames={{ base: "min-w-[900px]" }}
+        tableClassNames={{ base: "min-w-[1100px]" }}
       >
         <Frame spacing="sm" className="min-w-0">
           <FrameHeader>
             <FilterBar
               search={search}
-              onSearch={setSearch}
-              placeholder="Search connections"
-              className="justify-end"
-            >
-              <Filters
-                fields={filterFields}
-                query={query}
-                onQueryChange={setQuery}
-                size="sm"
-                showClear
-              />
-            </FilterBar>
+              onSearch={handleSearch}
+              placeholder="Search connections by name"
+            />
           </FrameHeader>
           <FramePanel>
             <DataGridScrollArea>
