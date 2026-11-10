@@ -176,6 +176,91 @@ interface ApiConnection {
   }
 }
 
+interface ApiConnectionDetail
+  extends Omit<
+    ApiConnection,
+    "recv_oct_details" | "send_oct_details" | "client_properties"
+  > {
+  recv_oct_details: ApiRateDetails
+  send_oct_details: ApiRateDetails
+  reductions_details?: ApiRateDetails
+  recv_oct: number
+  send_oct: number
+  recv_cnt: number
+  send_cnt: number
+  send_pend: number
+  reductions: number
+  type: string
+  frame_max: number
+  channel_max: number
+  ssl_protocol?: string
+  ssl_hash?: string
+  ssl_cipher?: string
+  ssl_key_exchange?: string
+  peer_cert_subject?: string
+  peer_cert_issuer?: string
+  peer_cert_serial_number?: string
+  peer_cert_validity?: string
+  user_who_performed_action?: string
+  client_properties?: Record<string, unknown>
+  garbage_collection?: Record<string, unknown>
+}
+
+export interface ConnectionRateSample {
+  sample: number
+  timestamp: number
+}
+
+export interface ConnectionRate {
+  rate: number
+  avgRate: number
+  avg: number
+  samples: ConnectionRateSample[]
+}
+
+export interface ConnectionDetail {
+  name: string
+  client: string
+  user: string
+  userProvidedName: string | null
+  userWhoPerformedAction: string | null
+  vhost: string
+  node: string
+  type: string
+  state: string
+  protocol: string
+  authMechanism: string
+  ssl: boolean
+  sslProtocol: string
+  sslHash: string
+  sslCipher: string
+  sslKeyExchange: string
+  peerCertSubject: string
+  peerCertIssuer: string
+  peerCertSerialNumber: string
+  peerCertValidity: string
+  host: string
+  port: number
+  peerHost: string
+  peerPort: number
+  connectedAt: number
+  timeout: number
+  channels: number
+  frameMax: number
+  channelMax: number
+  sendPending: number
+  recvOct: number
+  sendOct: number
+  recvCount: number
+  sendCount: number
+  reductions: number
+  recv: ConnectionRate
+  send: ConnectionRate
+  reductionsRate: ConnectionRate | null
+  clientProperties: Record<string, unknown>
+  garbageCollection: Record<string, unknown> | null
+}
+
 interface ApiConnectionsResponse {
   total_count: number
   item_count: number
@@ -374,6 +459,70 @@ function mapConnection(connection: ApiConnection): Connection {
   }
 }
 
+function mapRate(details: ApiRateDetails | undefined): ConnectionRate {
+  return {
+    rate: details?.rate ?? 0,
+    avgRate: details?.avg_rate ?? 0,
+    avg: details?.avg ?? 0,
+    samples: (details?.samples ?? []).map((sample) => ({
+      sample: sample.sample,
+      timestamp: sample.timestamp,
+    })),
+  }
+}
+
+function mapConnectionDetail(detail: ApiConnectionDetail): ConnectionDetail {
+  const properties = detail.client_properties ?? {}
+  const client = [properties.product, properties.platform].filter(
+    (part): part is string => typeof part === "string" && part.length > 0
+  )
+
+  return {
+    name: detail.name,
+    client: client.length > 0 ? client.join(" / ") : "Unknown",
+    user: detail.user,
+    userProvidedName: detail.user_provided_name ?? null,
+    userWhoPerformedAction: detail.user_who_performed_action ?? null,
+    vhost: detail.vhost,
+    node: detail.node,
+    type: detail.type,
+    state: detail.state,
+    protocol: detail.protocol,
+    authMechanism: detail.auth_mechanism,
+    ssl: detail.ssl,
+    sslProtocol: detail.ssl_protocol ?? "",
+    sslHash: detail.ssl_hash ?? "",
+    sslCipher: detail.ssl_cipher ?? "",
+    sslKeyExchange: detail.ssl_key_exchange ?? "",
+    peerCertSubject: detail.peer_cert_subject ?? "",
+    peerCertIssuer: detail.peer_cert_issuer ?? "",
+    peerCertSerialNumber: detail.peer_cert_serial_number ?? "",
+    peerCertValidity: detail.peer_cert_validity ?? "",
+    host: detail.host,
+    port: detail.port,
+    peerHost: detail.peer_host,
+    peerPort: detail.peer_port,
+    connectedAt: detail.connected_at,
+    timeout: detail.timeout,
+    channels: detail.channels,
+    frameMax: detail.frame_max,
+    channelMax: detail.channel_max,
+    sendPending: detail.send_pend,
+    recvOct: detail.recv_oct,
+    sendOct: detail.send_oct,
+    recvCount: detail.recv_cnt,
+    sendCount: detail.send_cnt,
+    reductions: detail.reductions,
+    recv: mapRate(detail.recv_oct_details),
+    send: mapRate(detail.send_oct_details),
+    reductionsRate: detail.reductions_details
+      ? mapRate(detail.reductions_details)
+      : null,
+    clientProperties: properties,
+    garbageCollection: detail.garbage_collection ?? null,
+  }
+}
+
 function mapTotals(overview: ApiOverview, queues: Queue[]): ClusterTotals {
   const churn = overview.churn_rates
   return {
@@ -472,6 +621,23 @@ export async function fetchConnections(
     pageSize: page.page_size,
     pageCount: page.page_count,
   }
+}
+
+export async function fetchConnectionDetail(
+  token: string,
+  name: string,
+  signal?: AbortSignal
+): Promise<ConnectionDetail> {
+  const params = new URLSearchParams({
+    data_rates_age: "60",
+    data_rates_incr: "5",
+  })
+  const detail = await apiGet<ApiConnectionDetail>(
+    `/api/connections/${encodeURIComponent(name)}?${params.toString()}`,
+    token,
+    signal
+  )
+  return mapConnectionDetail(detail)
 }
 
 export async function closeConnection(

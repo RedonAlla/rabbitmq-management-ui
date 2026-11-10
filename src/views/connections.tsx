@@ -260,11 +260,8 @@ export function ConnectionsView() {
         table={table}
         recordCount={filteredCount}
         isLoading={loading}
-        onRowClick={
-          IS_DEMO
-            ? (connection: Connection) =>
-                navigate(routeHref("connection", connection.id))
-            : undefined
+        onRowClick={(connection: Connection) =>
+          navigate(routeHref("connection", connection.id))
         }
         emptyMessage={
           <GridEmptyState
