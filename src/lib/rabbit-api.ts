@@ -370,6 +370,7 @@ function mapConnection(connection: ApiConnection): Connection {
     recvRate: connection.recv_oct_details?.rate ?? 0,
     sendRate: connection.send_oct_details?.rate ?? 0,
     client: client.length > 0 ? client.join(" / ") : "Unknown",
+    clientVersion: properties.version,
   }
 }
 

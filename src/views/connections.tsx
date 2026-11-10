@@ -198,7 +198,14 @@ export function ConnectionsView() {
         accessorKey: "client",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Client" />,
         cell: ({ row }) => (
-          <span className="text-xs text-muted-foreground">{row.original.client}</span>
+          <div className="flex min-w-0 flex-col gap-1">
+            <span className="truncate text-xs">{row.original.client}</span>
+            {row.original.clientVersion ? (
+              <span className="truncate text-xs text-muted-foreground">
+                {row.original.clientVersion}
+              </span>
+            ) : null}
+          </div>
         ),
         meta: { skeleton: <Skeleton className="h-4 w-24" /> },
       },

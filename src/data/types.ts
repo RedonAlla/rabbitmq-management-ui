@@ -81,6 +81,7 @@ export interface Connection {
   recvRate: number
   sendRate: number
   client: string
+  clientVersion?: string
 }
 
 export interface Channel {
