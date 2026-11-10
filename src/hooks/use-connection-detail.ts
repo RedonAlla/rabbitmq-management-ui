@@ -5,6 +5,7 @@ import {
   closeConnection as closeConnectionRequest,
   fetchConnectionDetail,
   type ConnectionDetail,
+  type ConnectionRateRange,
 } from "@/lib/rabbit-api"
 import { useAuth } from "@/store/auth"
 
@@ -18,7 +19,8 @@ interface ConnectionDetailResult {
 }
 
 export function useConnectionDetail(
-  name: string | undefined
+  name: string | undefined,
+  range: ConnectionRateRange = 60
 ): ConnectionDetailResult {
   const { user } = useAuth()
   const token = user?.token
@@ -32,14 +34,14 @@ export function useConnectionDetail(
     status: number | null
   } | null>(null)
   const [refreshId, setRefreshId] = useState(0)
-  const requestKey = `${name ?? ""}|${refreshId}`
+  const requestKey = `${name ?? ""}|${range}|${refreshId}`
 
   useEffect(() => {
     if (IS_DEMO || !token || !name) return undefined
 
     const controller = new AbortController()
 
-    fetchConnectionDetail(token, name, controller.signal)
+    fetchConnectionDetail(token, name, range, controller.signal)
       .then((next) => {
         if (controller.signal.aborted) return
         setResult({ key: requestKey, connection: next })
@@ -57,7 +59,7 @@ export function useConnectionDetail(
       })
 
     return () => controller.abort()
-  }, [token, name, requestKey])
+  }, [token, name, range, requestKey])
 
   const retry = useCallback(() => setRefreshId((current) => current + 1), [])
 

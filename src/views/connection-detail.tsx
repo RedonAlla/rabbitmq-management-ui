@@ -52,10 +52,28 @@ import { fmtCompact, fmtDate, fmtInt, fmtRate, fmtSince } from "@/lib/format";
 import { IS_DEMO } from "@/lib/env";
 import {
   type ConnectionDetail,
+  type ConnectionRateRange,
   type ConnectionRateSample,
 } from "@/lib/rabbit-api";
 import { useConnectionDetail } from "@/hooks/use-connection-detail";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NotFoundView } from "@/views/not-found";
+
+const RATE_RANGES: {
+  value: ConnectionRateRange;
+  label: string;
+  ariaLabel: string;
+}[] = [
+  { value: 60, label: "1m", ariaLabel: "Last minute" },
+  { value: 600, label: "10m", ariaLabel: "Last ten minutes" },
+  { value: 3600, label: "1h", ariaLabel: "Last hour" },
+];
+
+const RATE_WINDOW: Record<ConnectionRateRange, string> = {
+  60: "last minute",
+  600: "last ten minutes",
+  3600: "last hour",
+};
 
 const timeFmt = new Intl.DateTimeFormat("en-US", {
   hour: "2-digit",
@@ -182,6 +200,10 @@ function PropertyList({ entries }: { entries: PropertyEntry[] }) {
   );
 }
 
+function fmtByteRate(value: number): string {
+  return `${fmtRate(value).replace("/s", "")} B/s`;
+}
+
 function HeartbeatValue({ seconds }: { seconds: number }) {
   const enabled = seconds > 0;
   return (
@@ -204,17 +226,16 @@ function RateChart({
   title,
   data,
   series,
-  legendLabel,
 }: {
   title: string;
   data: RateChartPoint[];
-  series: { key: RateSeriesKey; label: string; color: string }[];
-  legendLabel?: string;
+  series: { key: RateSeriesKey; label: string; color: string; legend?: string }[];
 }) {
   const config: ChartConfig = {};
   for (const item of series) {
     config[item.key] = { label: item.label, color: item.color };
   }
+  const legendItems = series.filter((item) => item.legend);
 
   return (
     <ChartContainer
@@ -263,16 +284,20 @@ function RateChart({
             isAnimationActive={false}
           />
         ))}
-        {legendLabel ? (
+        {legendItems.length ? (
           <ChartLegend
             content={
-              <div className="flex items-center justify-center gap-1.5 pt-3 text-xs text-muted-foreground">
-                <span
-                  aria-hidden="true"
-                  className="h-2 w-2 shrink-0 rounded-[2px]"
-                  style={{ backgroundColor: series[0]?.color }}
-                />
-                {legendLabel}
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pt-3 text-xs text-muted-foreground">
+                {legendItems.map((item) => (
+                  <span key={item.key} className="inline-flex items-center gap-1.5">
+                    <span
+                      aria-hidden="true"
+                      className="h-2 w-2 shrink-0 rounded-[2px]"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    {item.legend}
+                  </span>
+                ))}
               </div>
             }
           />
@@ -463,10 +488,33 @@ function DemoConnectionDetail() {
 
 function ApiConnectionDetail() {
   const { route, navigate } = useRoute();
+  const [range, setRange] = useState<ConnectionRateRange>(60);
   const { connection, loading, error, status, retry, closeConnection } =
-    useConnectionDetail(route.id);
+    useConnectionDetail(route.id, range);
   const [confirmClose, setConfirmClose] = useState(false);
   const [closeReason, setCloseReason] = useState("");
+
+  const rangeControl = (
+    <Tabs
+      value={String(range)}
+      onValueChange={(value) =>
+        setRange(Number(value) as ConnectionRateRange)
+      }
+    >
+      <TabsList aria-label="Rate sample range">
+        {RATE_RANGES.map((item) => (
+          <TabsTrigger
+            key={item.value}
+            value={String(item.value)}
+            aria-label={item.ariaLabel}
+            className="px-2 text-xs"
+          >
+            {item.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
+  );
 
   const backAction = (
     <Button variant="outline" render={<a href={routeHref("connections")} />}>
@@ -627,32 +675,44 @@ function ApiConnectionDetail() {
             {chartData.length ? (
               <>
                 <SectionFrame
-                  title="Throughput"
-                  description="Octets received and sent per second over the last 60 seconds."
+                  title="Data rates"
+                  description={`Octets received and sent per second over the ${RATE_WINDOW[range]}.`}
+                  actions={rangeControl}
                 >
                   <RateChart
                     title="Throughput"
                     data={chartData}
                     series={[
-                      { key: "recv", label: "Received", color: "var(--chart-1)" },
-                      { key: "send", label: "Sent", color: "var(--chart-2)" },
+                      {
+                        key: "recv",
+                        label: "Received",
+                        color: "var(--chart-1)",
+                        legend: `From client: ${fmtByteRate(connection.recv.avgRate)}`,
+                      },
+                      {
+                        key: "send",
+                        label: "Sent",
+                        color: "var(--chart-2)",
+                        legend: `To client: ${fmtByteRate(connection.send.avgRate)}`,
+                      },
                     ]}
                   />
                 </SectionFrame>
                 {connection.reductionsRate ? (
                   <SectionFrame
                     title="Reductions"
-                    description="Reductions per second over the last 60 seconds."
+                    description={`Reductions per second over the ${RATE_WINDOW[range]}.`}
+                    actions={rangeControl}
                   >
                     <RateChart
                       title="Reductions"
                       data={chartData}
-                      legendLabel={`Reductions: ${fmtRate(connection.reductionsRate.avgRate)}`}
                       series={[
                         {
                           key: "reductions",
                           label: "Reductions",
                           color: "var(--chart-3)",
+                          legend: `Reductions: ${fmtRate(connection.reductionsRate.avgRate)}`,
                         },
                       ]}
                     />

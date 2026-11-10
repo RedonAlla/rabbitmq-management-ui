@@ -623,14 +623,23 @@ export async function fetchConnections(
   }
 }
 
+export type ConnectionRateRange = 60 | 600 | 3600
+
+const CONNECTION_RATE_INCR: Record<ConnectionRateRange, number> = {
+  60: 5,
+  600: 10,
+  3600: 60,
+}
+
 export async function fetchConnectionDetail(
   token: string,
   name: string,
+  range: ConnectionRateRange = 60,
   signal?: AbortSignal
 ): Promise<ConnectionDetail> {
   const params = new URLSearchParams({
-    data_rates_age: "60",
-    data_rates_incr: "5",
+    data_rates_age: String(range),
+    data_rates_incr: String(CONNECTION_RATE_INCR[range]),
   })
   const detail = await apiGet<ApiConnectionDetail>(
     `/api/connections/${encodeURIComponent(name)}?${params.toString()}`,
