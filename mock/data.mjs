@@ -464,6 +464,9 @@ export function createState() {
         transactional: false,
         prefetch_count: spec.prefetch,
         messages_unacknowledged: spec.unacked,
+        messages_uncommitted: 0,
+        messages_unconfirmed: 0,
+        acks_uncommitted: 0,
         consumer_count: 0,
         message_stats: {
           publish_details: { rate: spec.publishRate },

@@ -52,7 +52,9 @@ import {
   type ConnectionRateSample,
 } from "@/lib/rabbit-api";
 import { useConnectionDetail } from "@/hooks/use-connection-detail";
+import { useConnectionChannels } from "@/hooks/use-connection-channels";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ChannelsTable from "@/views/connections/channels-table";
 
 const RATE_RANGES: {
   value: ConnectionRateRange;
@@ -317,6 +319,12 @@ export function ConnectionDetailView() {
   const [range, setRange] = useState<ConnectionRateRange>(60);
   const { connection, loading, error, status, retry, closeConnection } =
     useConnectionDetail(route.id, range);
+  const {
+    channels,
+    loading: channelsLoading,
+    error: channelsError,
+    retry: retryChannels,
+  } = useConnectionChannels(route.id);
   const [confirmClose, setConfirmClose] = useState(false);
   const [closeReason, setCloseReason] = useState("");
 
@@ -496,6 +504,18 @@ export function ConnectionDetailView() {
           detail={`channel max ${orDash(connection.channelMax)}`}
         />
       </KpiGrid>
+
+      <SectionFrame
+        title="Channels"
+        description="Channels opened by this connection."
+      >
+        <ChannelsTable
+          channels={channels}
+          loading={channelsLoading}
+          error={channelsError}
+          onRetry={retryChannels}
+        />
+      </SectionFrame>
 
       <DetailLayout
         main={

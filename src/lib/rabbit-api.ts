@@ -1074,6 +1074,56 @@ export async function fetchConnectionDetail(
   return mapConnectionDetail(detail)
 }
 
+interface ApiConnectionChannel {
+  name: string
+  number: number
+  user: string
+  state: string
+  vhost: string
+  consumer_count?: number
+  messages_unacknowledged?: number
+  messages_uncommitted?: number
+  messages_unconfirmed?: number
+  acks_uncommitted?: number
+}
+
+export interface ConnectionChannel {
+  name: string
+  number: number
+  user: string
+  state: string
+  vhost: string
+  consumerCount: number
+  messagesUnacknowledged: number
+  messagesUncommitted: number
+  messagesUnconfirmed: number
+  acksUncommitted: number
+}
+
+export async function fetchConnectionChannels(
+  token: string,
+  name: string,
+  signal?: AbortSignal
+): Promise<ConnectionChannel[]> {
+  const rows = await apiGet<ApiConnectionChannel[]>(
+    `/api/connections/${enc(name)}/channels`,
+    token,
+    signal
+  )
+  return rows.map((row) => ({
+    name: row.name,
+    number: row.number,
+    user: row.user,
+    state: row.state,
+    vhost: row.vhost,
+    consumerCount: row.consumer_count ?? 0,
+    messagesUnacknowledged: row.messages_unacknowledged ?? 0,
+    messagesUncommitted: row.messages_uncommitted ?? 0,
+    messagesUnconfirmed: row.messages_unconfirmed ?? 0,
+    acksUncommitted: row.acks_uncommitted ?? 0,
+  }))
+}
+
 export async function closeConnection(
   token: string,
   name: string,

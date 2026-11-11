@@ -731,6 +731,23 @@ const server = createServer(async (req, res) => {
         sendJson(res, 200, connectionPage(url))
         return
       }
+      if (
+        rest.length >= 2 &&
+        rest[rest.length - 1] === "channels" &&
+        method === "GET"
+      ) {
+        const name = rest.slice(0, -1).join("/")
+        const connection = state.connections.find((entry) => entry.name === name)
+        if (!connection) return sendError(res, 404, "not_found", `connection '${name}' not found`)
+        sendJson(
+          res,
+          200,
+          state.channels.filter(
+            (entry) => entry.connection_details.name === name
+          )
+        )
+        return
+      }
       const name = rest.join("/")
       const connection = state.connections.find((entry) => entry.name === name)
       if (rest.length && method === "GET") {
