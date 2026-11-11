@@ -202,6 +202,9 @@ interface ApiChannel {
   node: string
   prefetch_count: number
   messages_unacknowledged: number
+  messages_uncommitted?: number
+  messages_unconfirmed?: number
+  acks_uncommitted?: number
   consumer_count: number
   state: string
   confirm: boolean
@@ -390,6 +393,33 @@ export interface ConnectionsPage {
   page: number
   pageSize: number
   pageCount: number
+}
+
+interface ApiChannelsResponse {
+  total_count: number
+  item_count: number
+  filtered_count: number
+  page: number
+  page_size: number
+  page_count: number
+  items: ApiChannel[]
+}
+
+export interface ChannelsPage {
+  items: Channel[]
+  totalCount: number
+  filteredCount: number
+  page: number
+  pageSize: number
+  pageCount: number
+}
+
+export interface ChannelsQuery {
+  page: number
+  pageSize: number
+  name?: string
+  sort?: string
+  sortReverse?: boolean
 }
 
 export interface ConnectionsQuery {
@@ -665,6 +695,9 @@ function mapChannels(channels: ApiChannel[]): Channel[] {
     prefetch: channel.prefetch_count,
     unacked: channel.messages_unacknowledged,
     consumers: channel.consumer_count,
+    messagesUncommitted: channel.messages_uncommitted ?? 0,
+    messagesUnconfirmed: channel.messages_unconfirmed ?? 0,
+    acksUncommitted: channel.acks_uncommitted ?? 0,
     state: channel.state,
     publishRate: channel.message_stats?.publish_details?.rate ?? 0,
     deliverRate: channel.message_stats?.deliver_details?.rate ?? 0,
@@ -946,6 +979,31 @@ async function fetchAllConnections(
   return items.map(mapConnection)
 }
 
+async function fetchAllChannels(
+  token: string,
+  signal?: AbortSignal
+): Promise<Channel[]> {
+  const pageSize = 500
+  const first = await apiGet<ApiChannelsResponse | ApiChannel[]>(
+    `/api/channels?page=1&page_size=${pageSize}`,
+    token,
+    signal
+  )
+
+  if (Array.isArray(first)) return mapChannels(first)
+
+  const items = [...first.items]
+  for (let page = 2; page <= first.page_count; page += 1) {
+    const next = await apiGet<ApiChannelsResponse>(
+      `/api/channels?page=${page}&page_size=${pageSize}`,
+      token,
+      signal
+    )
+    items.push(...next.items)
+  }
+  return mapChannels(items)
+}
+
 export async function fetchRabbitSnapshot(
   token: string,
   signal?: AbortSignal
@@ -957,7 +1015,7 @@ export async function fetchRabbitSnapshot(
     apiExchanges,
     apiBindings,
     apiConsumers,
-    apiChannels,
+    channels,
     connections,
     apiUsers,
     apiPermissions,
@@ -975,7 +1033,7 @@ export async function fetchRabbitSnapshot(
     apiGet<ApiExchange[]>("/api/exchanges", token, signal),
     apiGet<ApiBinding[]>("/api/bindings", token, signal),
     apiGet<ApiConsumer[]>("/api/consumers", token, signal),
-    apiGet<ApiChannel[]>("/api/channels", token, signal),
+    fetchAllChannels(token, signal),
     fetchAllConnections(token, signal),
     apiGet<ApiUser[]>("/api/users", token, signal),
     apiGet<ApiPermission[]>("/api/permissions", token, signal),
@@ -1002,7 +1060,7 @@ export async function fetchRabbitSnapshot(
     bindings: mapBindings(apiBindings),
     consumers: mapConsumers(apiConsumers, connections),
     connections,
-    channels: mapChannels(apiChannels),
+    channels,
     users: mapUsers(apiUsers, apiPermissions),
     vhosts: mapVhosts(apiVhosts),
     policies: apiPolicies.map(mapPolicy),
@@ -1040,6 +1098,39 @@ export async function fetchConnections(
 
   return {
     items: page.items.map(mapConnection),
+    totalCount: page.total_count,
+    filteredCount: page.filtered_count,
+    page: page.page,
+    pageSize: page.page_size,
+    pageCount: page.page_count,
+  }
+}
+
+export async function fetchChannels(
+  token: string,
+  query: ChannelsQuery,
+  signal?: AbortSignal
+): Promise<ChannelsPage> {
+  const params = new URLSearchParams({
+    page: String(query.page),
+    page_size: String(query.pageSize),
+    name: query.name ?? "",
+    use_regex: "false",
+  })
+
+  if (query.sort) {
+    params.set("sort", query.sort)
+    params.set("sort_reverse", query.sortReverse ? "true" : "false")
+  }
+
+  const page = await apiGet<ApiChannelsResponse>(
+    `/api/channels?${params.toString()}`,
+    token,
+    signal
+  )
+
+  return {
+    items: mapChannels(page.items),
     totalCount: page.total_count,
     filteredCount: page.filtered_count,
     page: page.page,

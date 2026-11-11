@@ -93,6 +93,9 @@ export interface Channel {
   prefetch: number
   unacked: number
   consumers: number
+  messagesUncommitted: number
+  messagesUnconfirmed: number
+  acksUncommitted: number
   state: string
   publishRate: number
   deliverRate: number

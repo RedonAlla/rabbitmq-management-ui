@@ -170,6 +170,60 @@ function sortValue(connection, path) {
   return path.split(".").reduce((value, key) => value?.[key], connection) ?? ""
 }
 
+function channelPage(url) {
+  const params = url.searchParams
+  const page = Math.max(1, Number(params.get("page") ?? 1) || 1)
+  const pageSize = Math.max(0, Number(params.get("page_size") ?? 100) || 0)
+  const name = params.get("name") ?? ""
+  const useRegex = params.get("use_regex") === "true"
+  const vhost = params.get("vhost") ?? ""
+  const sort = params.get("sort") ?? ""
+  const reverse = params.get("sort_reverse") === "true"
+
+  let items = state.channels
+  if (name) {
+    const needle = name.toLowerCase()
+    let pattern = null
+    if (useRegex) {
+      try {
+        pattern = new RegExp(name, "i")
+      } catch {
+        pattern = null
+      }
+    }
+    items = items.filter((channel) =>
+      pattern ? pattern.test(channel.name) : channel.name.toLowerCase().includes(needle)
+    )
+  }
+  if (vhost) items = items.filter((channel) => channel.vhost === vhost)
+
+  if (sort) {
+    items = [...items].sort((a, b) => {
+      const left = sortValue(a, sort)
+      const right = sortValue(b, sort)
+      if (typeof left === "number" && typeof right === "number") return left - right
+      return String(left).localeCompare(String(right))
+    })
+    if (reverse) items.reverse()
+  }
+
+  const filteredCount = items.length
+  const effectiveSize = pageSize === 0 ? filteredCount || 1 : pageSize
+  const pageCount = Math.max(1, Math.ceil(filteredCount / effectiveSize))
+  const current = Math.min(page, pageCount)
+  const start = (current - 1) * effectiveSize
+
+  return {
+    total_count: state.channels.length,
+    item_count: items.slice(start, start + effectiveSize).length,
+    filtered_count: filteredCount,
+    page: current,
+    page_size: effectiveSize,
+    page_count: pageCount,
+    items: items.slice(start, start + effectiveSize),
+  }
+}
+
 function rateDetails(counter, rate, ageSeconds, incrSeconds) {
   const count = Math.max(2, Math.round(ageSeconds / incrSeconds))
   const samples = []
@@ -699,8 +753,7 @@ const server = createServer(async (req, res) => {
 
     if (resource === "channels") {
       if (!rest.length && method === "GET") {
-        const vhost = url.searchParams.get("vhost")
-        sendJson(res, 200, vhost ? state.channels.filter((entry) => entry.vhost === vhost) : state.channels)
+        sendJson(res, 200, channelPage(url))
         return
       }
       const name = rest.join("/")
