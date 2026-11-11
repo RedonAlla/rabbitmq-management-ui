@@ -99,7 +99,12 @@ export function KpiCard({ label, value, detail, trend, icon, spark, tone = "prim
             <span className="text-mono truncate text-2xl font-semibold tracking-tight">{value}</span>
           </div>
           {icon ? (
-            <IconTile variant="outline" size="sm" aria-hidden="true">
+            <IconTile
+              variant="outline"
+              size="sm"
+              className="border-0 bg-muted dark:bg-muted"
+              aria-hidden="true"
+            >
               {icon}
             </IconTile>
           ) : null}

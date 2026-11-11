@@ -1,6 +1,10 @@
 import { useState } from "react";
 import {
+  ActivityIcon,
+  ArrowDownToLineIcon,
   ArrowLeftIcon,
+  ArrowUpToLineIcon,
+  GitBranchIcon,
   HeartIcon,
   UnplugIcon,
 } from "lucide-react";
@@ -479,6 +483,7 @@ export function ConnectionDetailView() {
           label="Receiving"
           value={fmtRate(connection.recv.rate)}
           detail={`avg ${fmtRate(connection.recv.avgRate)}`}
+          icon={<ArrowDownToLineIcon aria-hidden="true" />}
           spark={chronological(connection.recv.samples)}
         />
         <KpiCard
@@ -486,6 +491,7 @@ export function ConnectionDetailView() {
           value={fmtRate(connection.send.rate)}
           detail={`avg ${fmtRate(connection.send.avgRate)}`}
           tone="success"
+          icon={<ArrowUpToLineIcon aria-hidden="true" />}
           spark={chronological(connection.send.samples)}
         />
         <KpiCard
@@ -496,12 +502,14 @@ export function ConnectionDetailView() {
               : fmtInt(connection.reductions)
           }
           detail={fmtInt(connection.reductions) + " total"}
+          icon={<ActivityIcon aria-hidden="true" />}
           spark={reductionsSamples}
         />
         <KpiCard
           label="Channels"
           value={fmtInt(connection.channels)}
           detail={`channel max ${orDash(connection.channelMax)}`}
+          icon={<GitBranchIcon aria-hidden="true" />}
         />
       </KpiGrid>
 
