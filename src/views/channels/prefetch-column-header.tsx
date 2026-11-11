@@ -6,7 +6,7 @@ import type { Column } from "@tanstack/react-table";
 import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid";
 
 type Props = {
-  column: Column<DataGridFeatures, Channel, undefined>
+  column: Column<DataGridFeatures, Channel, unknown>
 };
 
 export default function PrefetchColumnHeader({ column }: Props) {
