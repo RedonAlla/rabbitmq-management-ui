@@ -70,6 +70,14 @@ const RATE_WINDOW: Record<ConnectionRateRange, string> = {
   3600: "last hour",
 };
 
+const GC_PROPERTY_LABELS: Record<string, string> = {
+  min_bin_vheap_size: "Minimum binary virtual heap size in words (min_bin_vheap_size)",
+  min_heap_size: "Minimum heap size in words (min_heap_size)",
+  fullsweep_after: "Maximum generational collections before fullsweep (fullsweep_after)",
+  minor_gcs: "Number of minor GCs (minor_gcs)",
+  max_heap_size: "Maximum amount of heap memory (max_heap_size)",
+};
+
 const timeFmt = new Intl.DateTimeFormat("en-US", {
   hour: "2-digit",
   minute: "2-digit",
@@ -421,7 +429,10 @@ export function ConnectionDetailView() {
   const chartData = buildRateChartData(connection);
   const clientProperties = flattenProperties(connection.clientProperties);
   const garbageCollection = connection.garbageCollection
-    ? flattenProperties(connection.garbageCollection)
+    ? flattenProperties(connection.garbageCollection).map((entry) => ({
+        ...entry,
+        label: GC_PROPERTY_LABELS[entry.label] ?? entry.label,
+      }))
     : null;
   const reductionsSamples = connection.reductionsRate
     ? chronological(connection.reductionsRate.samples)
