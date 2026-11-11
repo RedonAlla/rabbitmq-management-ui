@@ -30,6 +30,7 @@ import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagina
 import { GitBranch } from "lucide-react";
 import GridEmptyState from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import PrefetchColumnHeader from "./channels/prefetch-column-header";
 
 const CHANNELS_PAGE_SIZE = 100;
 
@@ -148,6 +149,16 @@ export function ChannelsView() {
         accessorKey: "consumers",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Consumers" />,
         cell: ({ row }) => <span className="data-cell">{fmtInt(row.original.consumers)}</span>,
+        meta: numericMeta,
+      },
+      {
+        accessorKey: "prefetch",
+        header: ({ column }) => <PrefetchColumnHeader column={column} />,
+        cell: ({ row }) => (
+          <span className="data-cell">
+            {row.original.prefetch === 0 ? "∞" : fmtInt(row.original.prefetch)}
+          </span>
+        ),
         meta: numericMeta,
       },
       {

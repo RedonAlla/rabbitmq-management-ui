@@ -15,6 +15,7 @@ const SORT_FIELDS: Record<string, string> = {
   node: "node",
   state: "state",
   consumers: "consumer_count",
+  prefetch: "prefetch_count",
   unacked: "messages_unacknowledged",
   messagesUncommitted: "messages_uncommitted",
   messagesUnconfirmed: "messages_unconfirmed",
