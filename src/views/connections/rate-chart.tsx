@@ -1,0 +1,165 @@
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import { fmtCompact } from "@/lib/format";
+import type {
+  ConnectionDetail,
+  ConnectionRateSample,
+} from "@/lib/rabbit-api";
+
+const timeFmt = new Intl.DateTimeFormat("en-US", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
+export interface RateChartPoint {
+  label: string;
+  recv?: number;
+  send?: number;
+  reductions?: number;
+}
+
+function samplesToRates(
+  samples: ConnectionRateSample[]
+): Map<number, number> {
+  const ordered = [...samples].sort((a, b) => a.timestamp - b.timestamp);
+  const rates = new Map<number, number>();
+  for (let index = 1; index < ordered.length; index += 1) {
+    const previous = ordered[index - 1];
+    const current = ordered[index];
+    const seconds = (current.timestamp - previous.timestamp) / 1000;
+    if (seconds <= 0) continue;
+    rates.set(
+      current.timestamp,
+      Math.max(0, (current.sample - previous.sample) / seconds)
+    );
+  }
+  return rates;
+}
+
+export function buildRateChartData(
+  connection: ConnectionDetail
+): RateChartPoint[] {
+  const recvRates = samplesToRates(connection.recv.samples);
+  const sendRates = samplesToRates(connection.send.samples);
+  const reductionsRates = connection.reductionsRate
+    ? samplesToRates(connection.reductionsRate.samples)
+    : new Map<number, number>();
+  const timestamps = new Set<number>([
+    ...recvRates.keys(),
+    ...sendRates.keys(),
+    ...reductionsRates.keys(),
+  ]);
+
+  return [...timestamps]
+    .sort((a, b) => a - b)
+    .map((timestamp) => ({
+      label: timeFmt.format(timestamp),
+      recv: recvRates.get(timestamp),
+      send: sendRates.get(timestamp),
+      reductions: reductionsRates.get(timestamp),
+    }));
+}
+
+type RateSeriesKey = "recv" | "send" | "reductions";
+
+export function RateChart({
+  title,
+  data,
+  series,
+}: {
+  title: string;
+  data: RateChartPoint[];
+  series: { key: RateSeriesKey; label: string; color: string; legend?: string }[];
+}) {
+  const config: ChartConfig = {};
+  for (const item of series) {
+    config[item.key] = { label: item.label, color: item.color };
+  }
+  const legendItems = series.filter((item) => item.legend);
+
+  return (
+    <ChartContainer
+      config={config}
+      className="aspect-auto h-[200px] w-full"
+      role="img"
+      aria-label={`${title} chart`}
+    >
+      <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+        <XAxis
+          dataKey="label"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          minTickGap={30}
+        />
+        <YAxis
+          width={48}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={4}
+          tickFormatter={(value: number) => fmtCompact(value)}
+        />
+        <ChartTooltip
+          cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
+          content={
+            <ChartTooltipContent
+              indicator="line"
+              formatter={(value) => fmtCompact(Number(value))}
+            />
+          }
+        />
+        {series.map((item) => (
+          <Area
+            key={item.key}
+            type="monotone"
+            dataKey={item.key}
+            name={item.label}
+            stroke={`var(--color-${item.key})`}
+            fill={`var(--color-${item.key})`}
+            fillOpacity={0.14}
+            strokeWidth={1.6}
+            dot={false}
+            activeDot={{ r: 3, strokeWidth: 0 }}
+            isAnimationActive={false}
+          />
+        ))}
+        {legendItems.length ? (
+          <ChartLegend
+            content={
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pt-3 text-xs text-muted-foreground">
+                {legendItems.map((item) => (
+                  <span key={item.key} className="inline-flex items-center gap-1.5">
+                    <span
+                      aria-hidden="true"
+                      className="h-2 w-2 shrink-0 rounded-[2px]"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    {item.legend}
+                  </span>
+                ))}
+              </div>
+            }
+          />
+        ) : series.length > 1 ? (
+          <ChartLegend content={<ChartLegendContent />} />
+        ) : null}
+      </AreaChart>
+    </ChartContainer>
+  );
+}
