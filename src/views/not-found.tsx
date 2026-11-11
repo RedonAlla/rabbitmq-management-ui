@@ -21,7 +21,7 @@ export function NotFoundView({
             description={description}
             icon={<SearchXIcon />}
             action={
-              <Button render={<a href="#/overview" />}>
+              <Button nativeButton={false} render={<a href="#/overview" />}>
                 <ArrowLeftIcon data-icon="inline-start" aria-hidden="true" />
                 Back to overview
               </Button>

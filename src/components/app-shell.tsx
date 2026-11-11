@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react"
 import {
-  ActivityIcon,
   BoxesIcon,
   ChevronDownIcon,
   CircleHelpIcon,
@@ -482,14 +481,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                     Keyboard shortcuts
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={actions.simulateError}
-                >
-                  <ActivityIcon aria-hidden="true" />
-                  Simulate API error
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 

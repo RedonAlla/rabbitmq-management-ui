@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ChangeEvent } from "react"
+import { useRef, useState, type ChangeEvent } from "react"
 import {
   DownloadIcon,
   FileJsonIcon,
@@ -9,10 +9,8 @@ import { toast } from "sonner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/reui/alert"
 import { Badge } from "@/components/reui/badge"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { Spinner } from "@/components/ui/spinner"
 import { PageHeader } from "@/components/page-header"
 import { SectionFrame } from "@/components/detail"
@@ -22,12 +20,10 @@ import {
   RegionSkeleton,
 } from "@/components/region-states"
 import {
-  buildDefinitions,
   parseDefinitions,
   summarizeDefinitions,
   type BrokerDefinitions,
 } from "@/lib/definitions"
-import { IS_DEMO } from "@/lib/env"
 import { fetchDefinitions, uploadDefinitions } from "@/lib/rabbit-api"
 import { useCluster } from "@/store/cluster"
 import { useAuth } from "@/store/auth"
@@ -96,10 +92,8 @@ function downloadJson(filename: string, value: unknown) {
 export function DefinitionsView() {
   const { data, status, error, actions } = useCluster()
   const { user } = useAuth()
-  const [excluded, setExcluded] = useState<string[]>([])
   const [file, setFile] = useState<SelectedFile | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
-  const [overwrite, setOverwrite] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [importing, setImporting] = useState(false)
   const [fileName, setFileName] = useState("")
@@ -113,92 +107,31 @@ export function DefinitionsView() {
       : `${trimmedFileName}.json`
     : defaultFileName
 
-  const selected = useMemo(
-    () =>
-      data.vhosts
-        .filter((vhost) => !excluded.includes(vhost.name))
-        .map((vhost) => vhost.name),
-    [data.vhosts, excluded]
-  )
-  const selectedSet = useMemo(() => new Set(selected), [selected])
-  const allSelected =
-    data.vhosts.length > 0 && selected.length === data.vhosts.length
-
-  const counts = useMemo(
-    () => ({
-      queues: data.queues.filter((queue) => selectedSet.has(queue.vhost))
-        .length,
-      exchanges: data.exchanges.filter(
-        (exchange) => exchange.name !== "" && selectedSet.has(exchange.vhost)
-      ).length,
-      bindings: data.bindings.filter((binding) =>
-        selectedSet.has(binding.vhost)
-      ).length,
-      policies: data.policies.filter((policy) => selectedSet.has(policy.vhost))
-        .length,
-    }),
-    [data.queues, data.exchanges, data.bindings, data.policies, selectedSet]
-  )
-
-  const vhostUsage = useMemo(() => {
-    const usage = new Map<string, { queues: number; exchanges: number }>()
-    for (const vhost of data.vhosts)
-      usage.set(vhost.name, { queues: 0, exchanges: 0 })
-    for (const queue of data.queues) {
-      const entry = usage.get(queue.vhost)
-      if (entry) entry.queues += 1
-    }
-    for (const exchange of data.exchanges) {
-      if (exchange.name === "") continue
-      const entry = usage.get(exchange.vhost)
-      if (entry) entry.exchanges += 1
-    }
-    return usage
-  }, [data.vhosts, data.queues, data.exchanges])
-
-  const toggleVhost = (name: string) =>
-    setExcluded((current) =>
-      current.includes(name)
-        ? current.filter((entry) => entry !== name)
-        : [...current, name]
-    )
-
   const handleExport = async () => {
-    const filename = exportFileName
-
-    if (!IS_DEMO) {
-      const token = user?.token
-      if (!token) {
-        toast.error("Could not export definitions", {
-          description: "Your session has expired. Sign in again.",
-        })
-        return
-      }
-      setExporting(true)
-      try {
-        const definitions = await fetchDefinitions(token)
-        downloadJson(filename, definitions)
-        toast.success("Definitions exported", {
-          description: "Downloaded from the management API.",
-        })
-      } catch (cause) {
-        toast.error("Could not export definitions", {
-          description:
-            cause instanceof Error
-              ? cause.message
-              : "The management API did not respond.",
-        })
-      } finally {
-        setExporting(false)
-      }
+    const token = user?.token
+    if (!token) {
+      toast.error("Could not export definitions", {
+        description: "Your session has expired. Sign in again.",
+      })
       return
     }
-
-    const definitions = buildDefinitions(data, selected)
-    downloadJson(filename, definitions)
-    toast.success("Definitions exported", {
-      description: `${counts.queues + counts.exchanges + counts.bindings + counts.policies + data.users.length} objects across ${plural(selected.length, "virtual host")}.`,
-    })
+    setExporting(true)
+    try {
+      const definitions = await fetchDefinitions(token)
+      downloadJson(exportFileName, definitions)
+      toast.success("Definitions exported", {
+        description: "Downloaded from the management API.",
+      })
+    } catch (cause) {
+      toast.error("Could not export definitions", {
+        description:
+          cause instanceof Error
+            ? cause.message
+            : "The management API did not respond.",
+      })
+    } finally {
+      setExporting(false)
+    }
   }
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -223,43 +156,32 @@ export function DefinitionsView() {
   const handleImport = async () => {
     if (!file) return
     const summary = summarizeDefinitions(file.definitions)
-
-    if (!IS_DEMO) {
-      const token = user?.token
-      if (!token) {
-        toast.error("Could not import definitions", {
-          description: "Your session has expired. Sign in again.",
-        })
-        return
-      }
-      setImporting(true)
-      try {
-        await uploadDefinitions(token, file.raw)
-        toast.success("Definitions imported", {
-          description: `${plural(summary.total, "object")} from ${file.name}.`,
-        })
-        setFile(null)
-        setParseError(null)
-        actions.refresh()
-      } catch (cause) {
-        toast.error("Could not import definitions", {
-          description:
-            cause instanceof Error
-              ? cause.message
-              : "The management API did not respond.",
-        })
-      } finally {
-        setImporting(false)
-      }
+    const token = user?.token
+    if (!token) {
+      toast.error("Could not import definitions", {
+        description: "Your session has expired. Sign in again.",
+      })
       return
     }
-
-    actions.importDefinitions(file.definitions, overwrite)
-    toast.success("Definitions imported", {
-      description: `${plural(summary.total, "object")} from ${file.name}${overwrite ? " with overwrite" : ""}.`,
-    })
-    setFile(null)
-    setParseError(null)
+    setImporting(true)
+    try {
+      await uploadDefinitions(token, file.raw)
+      toast.success("Definitions imported", {
+        description: `${plural(summary.total, "object")} from ${file.name}.`,
+      })
+      setFile(null)
+      setParseError(null)
+      actions.refresh()
+    } catch (cause) {
+      toast.error("Could not import definitions", {
+        description:
+          cause instanceof Error
+            ? cause.message
+            : "The management API did not respond.",
+      })
+    } finally {
+      setImporting(false)
+    }
   }
 
   return (
@@ -279,22 +201,12 @@ export function DefinitionsView() {
       <div className="grid min-w-0 gap-4 xl:grid-cols-2 xl:items-start">
         <SectionFrame
           title="Export definitions"
-          description={
-            IS_DEMO
-              ? "Choose the virtual hosts to include in the snapshot."
-              : "Download the broker's definitions from the management API."
-          }
-          actions={
-            IS_DEMO ? (
-              <Badge variant="outline">{selected.length} selected</Badge>
-            ) : (
-              <Badge variant="outline">Full snapshot</Badge>
-            )
-          }
+          description="Download the broker's definitions from the management API."
+          actions={<Badge variant="outline">Full snapshot</Badge>}
         >
           {status === "loading" ? (
             <RegionSkeleton rows={6} />
-          ) : !IS_DEMO ? (
+          ) : (
             <div className="flex flex-col gap-3">
               <p className="text-sm text-muted-foreground">
                 The exported JSON contains all virtual hosts, users,
@@ -321,73 +233,6 @@ export function DefinitionsView() {
                     <DownloadIcon data-icon="inline-start" aria-hidden="true" />
                   )}
                   {exporting ? "Exporting…" : "Export definitions"}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              <Label className="flex items-center gap-2 text-sm font-medium">
-                <Checkbox
-                  checked={allSelected}
-                  onCheckedChange={(checked) =>
-                    setExcluded(
-                      checked ? [] : data.vhosts.map((vhost) => vhost.name)
-                    )
-                  }
-                />
-                All virtual hosts
-              </Label>
-
-              <div className="flex flex-col divide-y divide-border border-y border-border">
-                {data.vhosts.map((vhost) => {
-                  const usage = vhostUsage.get(vhost.name)
-                  return (
-                    <Label
-                      key={vhost.name}
-                      className="flex items-center gap-2 py-2 first:pt-0 last:pb-0"
-                    >
-                      <Checkbox
-                        checked={!excluded.includes(vhost.name)}
-                        onCheckedChange={() => toggleVhost(vhost.name)}
-                      />
-                      <span className="min-w-0 flex-1 truncate text-sm">
-                        {vhost.name}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {plural(usage?.queues ?? 0, "queue")} ·{" "}
-                        {plural(usage?.exchanges ?? 0, "exchange")}
-                      </span>
-                    </Label>
-                  )
-                })}
-              </div>
-
-              <dl className="grid grid-cols-3 gap-3 sm:grid-cols-5">
-                <CountStat label="Queues" value={counts.queues} />
-                <CountStat label="Exchanges" value={counts.exchanges} />
-                <CountStat label="Bindings" value={counts.bindings} />
-                <CountStat label="Policies" value={counts.policies} />
-                <CountStat label="Users" value={data.users.length} />
-              </dl>
-
-              <FileNameField
-                value={fileName}
-                placeholder={defaultFileName}
-                disabled={exporting}
-                onChange={setFileName}
-              />
-
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
-                <span className="text-xs text-muted-foreground">
-                  Exports the selected virtual hosts. Users are always included.
-                </span>
-                <Button
-                  type="button"
-                  onClick={handleExport}
-                  disabled={selected.length === 0}
-                >
-                  <DownloadIcon data-icon="inline-start" aria-hidden="true" />
-                  Export definitions
                 </Button>
               </div>
             </div>
@@ -495,29 +340,10 @@ export function DefinitionsView() {
               </Alert>
             ) : null}
 
-            {IS_DEMO ? (
-              <div className="flex items-start justify-between gap-4 border-t border-border pt-3">
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="text-sm font-medium">
-                    Overwrite existing definitions
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Imported queues, exchanges, users and policies replace
-                    conflicting entries.
-                  </span>
-                </div>
-                <Switch
-                  checked={overwrite}
-                  onCheckedChange={setOverwrite}
-                  aria-label="Overwrite existing definitions"
-                />
-              </div>
-            ) : (
-              <p className="border-t border-border pt-3 text-xs text-muted-foreground">
-                Existing users, virtual hosts, queues, exchanges and policies
-                with matching names are replaced.
-              </p>
-            )}
+            <p className="border-t border-border pt-3 text-xs text-muted-foreground">
+              Existing users, virtual hosts, queues, exchanges and policies with
+              matching names are replaced.
+            </p>
 
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs text-muted-foreground">

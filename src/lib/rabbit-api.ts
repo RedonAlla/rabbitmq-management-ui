@@ -1,13 +1,29 @@
 import type {
+  Binding,
+  Channel,
   ClusterInfo,
   Connection,
+  Consumer,
+  DeprecatedFeature,
+  DeprecationPhase,
+  Exchange,
+  ExchangeType,
+  FeatureFlag,
   NodeInfo,
+  Policy,
   PortInfo,
   Queue,
+  QueueType,
+  Stability,
+  User,
+  Vhost,
+  VhostLimit,
   WebContext,
 } from "@/data/types"
-import { apiDelete, apiGet, apiPostForm } from "@/lib/api"
+import { apiDelete, apiGet, apiPost, apiPostForm, apiPut } from "@/lib/api"
 import type { ClusterTotals } from "@/lib/format"
+
+const enc = encodeURIComponent
 
 interface ApiSample {
   sample: number
@@ -73,10 +89,6 @@ interface ApiOverview {
   default_queue_type?: string
   is_op_policy_updating_enabled?: boolean
   enable_queue_totals?: boolean
-  definitions?: {
-    require_definition_json_extension: boolean
-  }
-  require_definition_json_extension?: boolean
   message_stats?: Record<string, number | ApiRateDetails>
   churn_rates?: ApiChurnRates
   queue_totals?: ApiQueueTotals
@@ -87,7 +99,6 @@ interface ApiOverview {
     consumers: number
     connections: number
   }
-  statistics_db_event_queue?: number
   node: string
   listeners?: ApiListener[]
   contexts?: ApiContext[]
@@ -139,7 +150,7 @@ interface ApiQueue {
   messages_unacknowledged?: number
   consumers?: number
   memory?: number
-  policy?: string
+  policy?: string | null
   arguments?: Record<string, unknown>
   message_stats?: {
     publish_details?: { rate: number }
@@ -147,6 +158,107 @@ interface ApiQueue {
     ack_details?: { rate: number }
     redeliver?: number
   }
+}
+
+interface ApiExchange {
+  name: string
+  vhost: string
+  type: string
+  durable: boolean
+  auto_delete: boolean
+  internal: boolean
+  arguments?: Record<string, unknown>
+  message_stats?: {
+    publish_details?: { rate: number }
+    deliver_details?: { rate: number }
+  }
+}
+
+interface ApiBinding {
+  source: string
+  vhost: string
+  destination: string
+  destination_type: "queue" | "exchange"
+  routing_key: string
+  arguments?: Record<string, unknown>
+}
+
+interface ApiConsumer {
+  consumer_tag: string
+  queue: { name: string; vhost: string }
+  channel_details: { name: string; connection_name: string }
+  ack_required: boolean
+  exclusive: boolean
+  prefetch_count: number
+  connected_at?: number
+}
+
+interface ApiChannel {
+  name: string
+  number: number
+  connection_details: { name: string }
+  user: string
+  vhost: string
+  node: string
+  prefetch_count: number
+  messages_unacknowledged: number
+  consumer_count: number
+  state: string
+  confirm: boolean
+  transactional: boolean
+  message_stats?: {
+    publish_details?: { rate: number }
+    deliver_details?: { rate: number }
+  }
+}
+
+interface ApiUser {
+  name: string
+  tags: string | string[]
+  password_hash: string
+  hashing_algorithm?: string
+}
+
+interface ApiPermission {
+  user: string
+  vhost: string
+  configure: string
+  write: string
+  read: string
+}
+
+interface ApiVhost {
+  name: string
+  description?: string
+  tracing?: boolean
+}
+
+interface ApiPolicy {
+  name: string
+  vhost: string
+  pattern: string
+  "apply-to": string
+  priority: number
+  definition: Record<string, unknown>
+}
+
+interface ApiVhostLimit {
+  vhost: string
+  value: Record<string, unknown> | string
+}
+
+interface ApiFeatureFlag {
+  name: string
+  state: string | boolean
+  stability?: string
+  desc?: string
+}
+
+interface ApiDeprecatedFeature {
+  name: string
+  state?: string
+  phase?: string
+  desc?: string
 }
 
 interface ApiConnection {
@@ -295,7 +407,59 @@ export interface RabbitSnapshot {
   ports: PortInfo[]
   webContexts: WebContext[]
   queues: Queue[]
+  exchanges: Exchange[]
+  bindings: Binding[]
+  consumers: Consumer[]
+  connections: Connection[]
+  channels: Channel[]
+  users: User[]
+  vhosts: Vhost[]
+  policies: Policy[]
+  operatorPolicies: Policy[]
+  limits: VhostLimit[]
+  flags: FeatureFlag[]
+  deprecatedFeatures: DeprecatedFeature[]
   totals: ClusterTotals
+}
+
+export interface CreateQueueInput {
+  name: string
+  vhost: string
+  type: QueueType
+  durable: boolean
+  autoDelete: boolean
+  args?: Record<string, string | number>
+}
+
+export interface CreateExchangeInput {
+  name: string
+  vhost: string
+  type: ExchangeType
+  durable: boolean
+  autoDelete: boolean
+  internal: boolean
+  args?: Record<string, string | number>
+}
+
+export interface CreateUserInput {
+  username: string
+  password: string
+  tags: string[]
+  vhosts: string[]
+}
+
+export interface CreateVhostInput {
+  name: string
+  description: string
+  tracing: boolean
+}
+
+export interface PublishInput {
+  vhost: string
+  exchange: string
+  routingKey: string
+  payload: string
+  count: number
 }
 
 const PROTOCOL_LABELS: Record<string, string> = {
@@ -311,6 +475,7 @@ const PROTOCOL_LABELS: Record<string, string> = {
   stream: "Stream",
 }
 
+const BYTES_PER_MB = 1024 * 1024
 const BYTES_PER_GB = 1024 * 1024 * 1024
 
 function mapNodes(nodes: ApiNode[]): NodeInfo[] {
@@ -385,12 +550,19 @@ function queueState(state: string | undefined): Queue["state"] {
   return "degraded"
 }
 
-function queueType(type: string | undefined): Queue["type"] {
+function queueType(queue: ApiQueue): QueueType {
+  const declared = queue.arguments?.["x-queue-type"]
+  const type = typeof declared === "string" ? declared : queue.type
   if (type === "quorum" || type === "stream") return type
   return "classic"
 }
 
-function queueArguments(
+function exchangeType(type: string): ExchangeType {
+  if (type === "fanout" || type === "topic" || type === "headers") return type
+  return "direct"
+}
+
+function plainArguments(
   args: Record<string, unknown> | undefined
 ): Record<string, string | number> {
   const mapped: Record<string, string | number> = {}
@@ -403,13 +575,12 @@ function queueArguments(
 }
 
 function mapQueues(queues: ApiQueue[]): Queue[] {
-  const created = new Date().getTime()
   return queues.map((queue) => {
     const stats = queue.message_stats ?? {}
     return {
       name: queue.name,
       vhost: queue.vhost,
-      type: queueType(queue.type),
+      type: queueType(queue),
       durable: queue.durable,
       autoDelete: queue.auto_delete,
       exclusive: queue.exclusive,
@@ -421,12 +592,36 @@ function mapQueues(queues: ApiQueue[]): Queue[] {
       deliverRate: stats.deliver_details?.rate ?? 0,
       ackRate: stats.ack_details?.rate ?? 0,
       redelivered: stats.redeliver ?? 0,
-      memory: (queue.memory ?? 0) / BYTES_PER_GB,
+      memory: (queue.memory ?? 0) / BYTES_PER_MB,
       policy: queue.policy ?? null,
-      args: queueArguments(queue.arguments),
-      created,
+      args: plainArguments(queue.arguments),
     }
   })
+}
+
+function mapExchanges(exchanges: ApiExchange[]): Exchange[] {
+  return exchanges.map((exchange) => ({
+    name: exchange.name,
+    vhost: exchange.vhost,
+    type: exchangeType(exchange.type),
+    durable: exchange.durable,
+    autoDelete: exchange.auto_delete,
+    internal: exchange.internal,
+    publishRate: exchange.message_stats?.publish_details?.rate ?? 0,
+    deliverRate: exchange.message_stats?.deliver_details?.rate ?? 0,
+    args: plainArguments(exchange.arguments),
+  }))
+}
+
+function mapBindings(bindings: ApiBinding[]): Binding[] {
+  return bindings.map((binding) => ({
+    source: binding.source,
+    vhost: binding.vhost,
+    destination: binding.destination,
+    destType: binding.destination_type === "exchange" ? "exchange" : "queue",
+    routingKey: binding.routing_key,
+    args: plainArguments(binding.arguments),
+  }))
 }
 
 function mapConnection(connection: ApiConnection): Connection {
@@ -457,6 +652,168 @@ function mapConnection(connection: ApiConnection): Connection {
     client: client.length > 0 ? client.join(" / ") : "Unknown",
     clientVersion: properties.version,
   }
+}
+
+function mapChannels(channels: ApiChannel[]): Channel[] {
+  return channels.map((channel) => ({
+    id: channel.name,
+    number: channel.number,
+    connection: channel.connection_details.name,
+    user: channel.user,
+    vhost: channel.vhost,
+    node: channel.node,
+    prefetch: channel.prefetch_count,
+    unacked: channel.messages_unacknowledged,
+    consumers: channel.consumer_count,
+    state: channel.state,
+    publishRate: channel.message_stats?.publish_details?.rate ?? 0,
+    deliverRate: channel.message_stats?.deliver_details?.rate ?? 0,
+    confirmMode: channel.confirm,
+    transactional: channel.transactional,
+  }))
+}
+
+function mapConsumers(
+  consumers: ApiConsumer[],
+  connections: Connection[]
+): Consumer[] {
+  const connectedAt = new Map(
+    connections.map((connection) => [connection.id, connection.connectedAt])
+  )
+  const now = new Date().getTime()
+
+  return consumers.map((consumer) => ({
+    tag: consumer.consumer_tag,
+    queue: consumer.queue.name,
+    channel: consumer.channel_details.name,
+    connection: consumer.channel_details.connection_name,
+    ackRequired: consumer.ack_required,
+    exclusive: consumer.exclusive,
+    prefetch: consumer.prefetch_count,
+    since:
+      consumer.connected_at ??
+      connectedAt.get(consumer.channel_details.connection_name) ??
+      now,
+  }))
+}
+
+function mapUsers(users: ApiUser[], permissions: ApiPermission[]): User[] {
+  const vhostsByUser = new Map<string, string[]>()
+  for (const permission of permissions) {
+    const list = vhostsByUser.get(permission.user) ?? []
+    list.push(permission.vhost)
+    vhostsByUser.set(permission.user, list)
+  }
+
+  return users.map((user) => ({
+    username: user.name,
+    tags: Array.isArray(user.tags)
+      ? user.tags
+      : String(user.tags ?? "")
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+    vhosts: vhostsByUser.get(user.name) ?? [],
+    hash:
+      user.password_hash ||
+      user.hashing_algorithm ||
+      "rabbit_password_hashing_sha256",
+  }))
+}
+
+function mapVhosts(vhosts: ApiVhost[]): Vhost[] {
+  return vhosts.map((vhost) => ({
+    name: vhost.name,
+    description: vhost.description ?? "",
+    tracing: Boolean(vhost.tracing),
+  }))
+}
+
+function mapPolicy(policy: ApiPolicy): Policy {
+  return {
+    name: policy.name,
+    vhost: policy.vhost,
+    pattern: policy.pattern,
+    applyTo: policy["apply-to"] ?? "queues",
+    priority: policy.priority ?? 0,
+    definition: plainArguments(policy.definition),
+  }
+}
+
+function limitValue(
+  value: Record<string, unknown> | string | undefined,
+  key: string
+): number {
+  let record = value
+  if (typeof value === "string") {
+    try {
+      record = JSON.parse(value) as Record<string, unknown>
+    } catch {
+      return 0
+    }
+  }
+  const raw = (record as Record<string, unknown> | undefined)?.[key]
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function mapVhostLimits(limits: ApiVhostLimit[]): VhostLimit[] {
+  return limits.map((limit) => ({
+    vhost: limit.vhost,
+    maxConnections: limitValue(limit.value, "max-connections"),
+    maxQueues: limitValue(limit.value, "max-queues"),
+  }))
+}
+
+function mapFeatureFlags(flags: ApiFeatureFlag[]): FeatureFlag[] {
+  const stability = (value: string | undefined): Stability =>
+    value === "experimental" ? "experimental" : "stable"
+
+  return flags.map((flag) => ({
+    name: flag.name,
+    enabled:
+      typeof flag.state === "boolean" ? flag.state : flag.state === "enabled",
+    stability: stability(flag.stability),
+    desc: flag.desc ?? "",
+  }))
+}
+
+function usedFeatureNames(used: unknown): Set<string> {
+  if (!Array.isArray(used)) return new Set()
+  const names = used
+    .map((entry) => {
+      if (typeof entry === "string") return entry
+      if (entry && typeof entry === "object" && "name" in entry) {
+        return String((entry as { name: unknown }).name)
+      }
+      return ""
+    })
+    .filter(Boolean)
+  return new Set(names)
+}
+
+function mapDeprecatedFeatures(
+  features: ApiDeprecatedFeature[],
+  used: unknown
+): DeprecatedFeature[] {
+  const inUse = usedFeatureNames(used)
+  const phase = (value: string | undefined): DeprecationPhase => {
+    if (
+      value === "denied_by_default" ||
+      value === "disconnect" ||
+      value === "removed"
+    ) {
+      return value
+    }
+    return "permitted_by_default"
+  }
+
+  return features.map((feature) => ({
+    name: feature.name,
+    phase: phase(feature.phase ?? feature.state),
+    desc: feature.desc ?? "",
+    inUse: inUse.has(feature.name),
+  }))
 }
 
 function mapRate(details: ApiRateDetails | undefined): ConnectionRate {
@@ -566,13 +923,69 @@ function mapCluster(overview: ApiOverview, nodes: NodeInfo[]): ClusterInfo {
   }
 }
 
+async function fetchAllConnections(
+  token: string,
+  signal?: AbortSignal
+): Promise<Connection[]> {
+  const pageSize = 500
+  const first = await apiGet<ApiConnectionsResponse>(
+    `/api/connections?page=1&page_size=${pageSize}`,
+    token,
+    signal
+  )
+
+  const items = [...first.items]
+  for (let page = 2; page <= first.page_count; page += 1) {
+    const next = await apiGet<ApiConnectionsResponse>(
+      `/api/connections?page=${page}&page_size=${pageSize}`,
+      token,
+      signal
+    )
+    items.push(...next.items)
+  }
+  return items.map(mapConnection)
+}
+
 export async function fetchRabbitSnapshot(
-  token: string
+  token: string,
+  signal?: AbortSignal
 ): Promise<RabbitSnapshot> {
-  const [overview, apiNodes, apiQueues] = await Promise.all([
-    apiGet<ApiOverview>("/api/overview", token),
-    apiGet<ApiNode[]>("/api/nodes", token),
-    apiGet<ApiQueue[]>("/api/queues", token),
+  const [
+    overview,
+    apiNodes,
+    apiQueues,
+    apiExchanges,
+    apiBindings,
+    apiConsumers,
+    apiChannels,
+    connections,
+    apiUsers,
+    apiPermissions,
+    apiVhosts,
+    apiPolicies,
+    apiOperatorPolicies,
+    apiLimits,
+    apiFlags,
+    apiDeprecated,
+    deprecatedUsed,
+  ] = await Promise.all([
+    apiGet<ApiOverview>("/api/overview", token, signal),
+    apiGet<ApiNode[]>("/api/nodes", token, signal),
+    apiGet<ApiQueue[]>("/api/queues", token, signal),
+    apiGet<ApiExchange[]>("/api/exchanges", token, signal),
+    apiGet<ApiBinding[]>("/api/bindings", token, signal),
+    apiGet<ApiConsumer[]>("/api/consumers", token, signal),
+    apiGet<ApiChannel[]>("/api/channels", token, signal),
+    fetchAllConnections(token, signal),
+    apiGet<ApiUser[]>("/api/users", token, signal),
+    apiGet<ApiPermission[]>("/api/permissions", token, signal),
+    apiGet<ApiVhost[]>("/api/vhosts", token, signal),
+    apiGet<ApiPolicy[]>("/api/policies", token, signal),
+    apiGet<ApiPolicy[]>("/api/operator-policies", token, signal),
+    apiGet<ApiVhostLimit[]>("/api/vhost-limits", token, signal),
+    apiGet<ApiFeatureFlag[]>("/api/feature-flags", token, signal),
+    apiGet<ApiDeprecatedFeature[]>("/api/deprecated-features", token, signal),
+    apiGet<unknown>("/api/deprecated-features/used", token, signal),
   ])
 
   const nodes = mapNodes(apiNodes)
@@ -585,6 +998,18 @@ export async function fetchRabbitSnapshot(
     ports: mapPorts(listeners),
     webContexts: mapWebContexts(overview.contexts ?? [], listeners),
     queues,
+    exchanges: mapExchanges(apiExchanges),
+    bindings: mapBindings(apiBindings),
+    consumers: mapConsumers(apiConsumers, connections),
+    connections,
+    channels: mapChannels(apiChannels),
+    users: mapUsers(apiUsers, apiPermissions),
+    vhosts: mapVhosts(apiVhosts),
+    policies: apiPolicies.map(mapPolicy),
+    operatorPolicies: apiOperatorPolicies.map(mapPolicy),
+    limits: mapVhostLimits(apiLimits),
+    flags: mapFeatureFlags(apiFlags),
+    deprecatedFeatures: mapDeprecatedFeatures(apiDeprecated, deprecatedUsed),
     totals: mapTotals(overview, queues),
   }
 }
@@ -642,7 +1067,7 @@ export async function fetchConnectionDetail(
     data_rates_incr: String(CONNECTION_RATE_INCR[range]),
   })
   const detail = await apiGet<ApiConnectionDetail>(
-    `/api/connections/${encodeURIComponent(name)}?${params.toString()}`,
+    `/api/connections/${enc(name)}?${params.toString()}`,
     token,
     signal
   )
@@ -654,10 +1079,176 @@ export async function closeConnection(
   name: string,
   reason: string
 ): Promise<void> {
-  await apiDelete(
-    `/api/connections/${encodeURIComponent(name)}`,
+  await apiDelete(`/api/connections/${enc(name)}`, token, {
+    reason: reason.trim() || "Closed via management UI",
+  })
+}
+
+export async function closeChannel(
+  token: string,
+  name: string
+): Promise<void> {
+  await apiDelete(`/api/channels/${enc(name)}`, token)
+}
+
+export async function createQueue(
+  token: string,
+  input: CreateQueueInput
+): Promise<void> {
+  await apiPut(`/api/queues/${enc(input.vhost)}/${enc(input.name)}`, token, {
+    durable: input.durable,
+    auto_delete: input.autoDelete,
+    arguments: { ...input.args, "x-queue-type": input.type },
+  })
+}
+
+export async function deleteQueue(
+  token: string,
+  vhost: string,
+  name: string
+): Promise<void> {
+  await apiDelete(`/api/queues/${enc(vhost)}/${enc(name)}`, token)
+}
+
+export async function purgeQueue(
+  token: string,
+  vhost: string,
+  name: string
+): Promise<void> {
+  await apiDelete(`/api/queues/${enc(vhost)}/${enc(name)}/contents`, token)
+}
+
+export async function createExchange(
+  token: string,
+  input: CreateExchangeInput
+): Promise<void> {
+  await apiPut(`/api/exchanges/${enc(input.vhost)}/${enc(input.name)}`, token, {
+    type: input.type,
+    durable: input.durable,
+    auto_delete: input.autoDelete,
+    internal: input.internal,
+    arguments: input.args ?? {},
+  })
+}
+
+export async function deleteExchange(
+  token: string,
+  vhost: string,
+  name: string
+): Promise<void> {
+  await apiDelete(`/api/exchanges/${enc(vhost)}/${enc(name)}`, token)
+}
+
+export async function publishMessage(
+  token: string,
+  input: PublishInput
+): Promise<void> {
+  const count = Math.max(1, Math.floor(input.count))
+  for (let index = 0; index < count; index += 1) {
+    await apiPost(
+      `/api/exchanges/${enc(input.vhost)}/${enc(input.exchange)}/publish`,
+      token,
+      {
+        properties: {},
+        routing_key: input.routingKey,
+        payload: input.payload,
+        payload_encoding: "string",
+      }
+    )
+  }
+}
+
+export async function createUser(
+  token: string,
+  input: CreateUserInput
+): Promise<void> {
+  await apiPut(`/api/users/${enc(input.username)}`, token, {
+    password: input.password,
+    tags: input.tags.join(","),
+  })
+  for (const vhost of input.vhosts) {
+    await apiPut(
+      `/api/permissions/${enc(vhost)}/${enc(input.username)}`,
+      token,
+      { configure: ".*", write: ".*", read: ".*" }
+    )
+  }
+}
+
+export async function deleteUser(
+  token: string,
+  username: string
+): Promise<void> {
+  await apiDelete(`/api/users/${enc(username)}`, token)
+}
+
+export async function createVhost(
+  token: string,
+  input: CreateVhostInput
+): Promise<void> {
+  await apiPut(`/api/vhosts/${enc(input.name)}`, token, {
+    description: input.description,
+    tracing: input.tracing,
+  })
+}
+
+export async function deleteVhost(
+  token: string,
+  name: string
+): Promise<void> {
+  await apiDelete(`/api/vhosts/${enc(name)}`, token)
+}
+
+export async function savePolicy(
+  token: string,
+  policy: Policy,
+  operator = false
+): Promise<void> {
+  const resource = operator ? "operator-policies" : "policies"
+  await apiPut(
+    `/api/${resource}/${enc(policy.vhost)}/${enc(policy.name)}`,
     token,
-    { reason: reason.trim() || "Closed via management UI" }
+    {
+      pattern: policy.pattern,
+      "apply-to": policy.applyTo,
+      priority: policy.priority,
+      definition: policy.definition,
+    }
+  )
+}
+
+export async function deletePolicy(
+  token: string,
+  vhost: string,
+  name: string,
+  operator = false
+): Promise<void> {
+  const resource = operator ? "operator-policies" : "policies"
+  await apiDelete(`/api/${resource}/${enc(vhost)}/${enc(name)}`, token)
+}
+
+export async function updateVhostLimits(
+  token: string,
+  vhost: string,
+  maxConnections: number,
+  maxQueues: number
+): Promise<void> {
+  await apiPut(`/api/vhost-limits/${enc(vhost)}/max-connections`, token, {
+    value: maxConnections,
+  })
+  await apiPut(`/api/vhost-limits/${enc(vhost)}/max-queues`, token, {
+    value: maxQueues,
+  })
+}
+
+export async function setFeatureFlag(
+  token: string,
+  name: string,
+  enabled: boolean
+): Promise<void> {
+  await apiPost(
+    `/api/feature-flags/${enc(name)}/${enabled ? "enable" : "disable"}`,
+    token
   )
 }
 
@@ -669,9 +1260,14 @@ export async function fetchDefinitions(
 
 export async function uploadDefinitions(
   token: string,
-  file: File
+  file: File,
+  overwrite = true
 ): Promise<void> {
   const body = new FormData()
   body.append("file", file)
-  await apiPostForm("/api/definitions", body, token)
+  await apiPostForm(
+    `/api/definitions?overwrite=${overwrite ? "true" : "false"}`,
+    body,
+    token
+  )
 }

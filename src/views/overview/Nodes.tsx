@@ -4,12 +4,12 @@ import { IconTile } from "@/components/reui/icon-tile"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { RegionEmpty, RegionSkeleton } from "@/components/region-states"
-import type { SeedData } from "@/data/types"
+import type { ClusterSnapshot } from "@/data/types"
 import { fmtDuration, pct } from "@/lib/format"
 import { ServerIcon } from "lucide-react"
 
 type Props = {
-  data: SeedData
+  data: ClusterSnapshot
   loading: boolean
   onRetry: () => void
 }

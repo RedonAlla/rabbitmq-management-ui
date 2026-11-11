@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
 import { ApiError } from "@/lib/api"
-import { IS_DEMO } from "@/lib/env"
 import {
   closeConnection as closeConnectionRequest,
   fetchConnectionDetail,
@@ -37,7 +36,7 @@ export function useConnectionDetail(
   const requestKey = `${name ?? ""}|${range}|${refreshId}`
 
   useEffect(() => {
-    if (IS_DEMO || !token || !name) return undefined
+    if (!token || !name) return undefined
 
     const controller = new AbortController()
 
@@ -72,17 +71,6 @@ export function useConnectionDetail(
     },
     [token, name]
   )
-
-  if (IS_DEMO) {
-    return {
-      connection: null,
-      loading: false,
-      error: null,
-      status: null,
-      retry,
-      closeConnection,
-    }
-  }
 
   const requestError = failure?.key === requestKey ? failure.message : null
   const requestStatus = failure?.key === requestKey ? failure.status : null

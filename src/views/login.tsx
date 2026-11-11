@@ -16,7 +16,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -29,7 +28,6 @@ import {
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { useTheme } from "@/components/theme-provider"
-import { IS_DEMO } from "@/lib/env"
 import { useAuth } from "@/store/auth"
 import { useCluster } from "@/store/cluster"
 
@@ -104,7 +102,9 @@ export function LoginView() {
           <div className="flex flex-col gap-0.5">
             <CardTitle>RabbitMQ Management</CardTitle>
             <CardDescription>
-              Sign in to manage {data.cluster.name}.
+              {data.cluster.name
+                ? `Sign in to manage ${data.cluster.name}.`
+                : "Sign in with your RabbitMQ credentials."}
             </CardDescription>
           </div>
         </CardHeader>
@@ -207,13 +207,6 @@ export function LoginView() {
             </Button>
           </form>
         </CardContent>
-
-        {IS_DEMO ? (
-          <CardFooter className="flex-col items-start gap-1 text-xs text-muted-foreground">
-            <span>Demo credentials</span>
-            <span className="text-mono text-foreground">admin / admin</span>
-          </CardFooter>
-        ) : null}
       </Card>
     </main>
   )

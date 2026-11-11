@@ -7,7 +7,6 @@ import {
   type ReactNode,
 } from "react"
 import { ApiError, loginWithPassword } from "@/lib/api"
-import { IS_DEMO } from "@/lib/env"
 
 export interface AuthUser {
   username: string
@@ -15,17 +14,7 @@ export interface AuthUser {
   token: string
 }
 
-interface DemoAccount {
-  password: string
-  role: string
-}
-
 const STORAGE_KEY = "rmq-session"
-
-const DEMO_ACCOUNTS: Record<string, DemoAccount> = {
-  admin: { password: "admin", role: "administrator" },
-  guest: { password: "guest", role: "administrator" },
-}
 
 interface AuthContextValue {
   user: AuthUser | null
@@ -54,20 +43,6 @@ function readStoredUser(): AuthUser | null {
   }
 }
 
-async function demoLogin(
-  username: string,
-  password: string
-): Promise<AuthUser | null> {
-  await new Promise((resolve) => setTimeout(resolve, 650))
-  const account = DEMO_ACCOUNTS[username]
-  if (!account || account.password !== password) return null
-  return {
-    username,
-    role: account.role,
-    token: btoa(`${username}:${password}`),
-  }
-}
-
 async function apiLogin(
   username: string,
   password: string
@@ -76,7 +51,7 @@ async function apiLogin(
   return {
     username: user.name,
     role: user.tags.join(", ") || "monitoring",
-    token: token.value,
+    token,
   }
 }
 
@@ -89,10 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (username: string, password: string) => {
     setPending(true)
     try {
-      const next = IS_DEMO
-        ? await demoLogin(username, password)
-        : await apiLogin(username, password)
-      if (!next) return "Invalid username or password."
+      const next = await apiLogin(username, password)
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
       setUser(next)
       return null

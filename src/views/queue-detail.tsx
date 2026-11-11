@@ -27,7 +27,6 @@ import { useRoute, routeHref } from "@/lib/router";
 import {
   definitionSummary,
   fmtBytesMb,
-  fmtDate,
   fmtInt,
   fmtRate,
   fmtSince,
@@ -101,17 +100,31 @@ export function QueueDetailView() {
     );
   }
 
-  const confirmAction = () => {
+  const confirmAction = async () => {
     if (confirm === "purge") {
-      actions.purgeQueue(queue.name);
-      toast.success("Queue purged", {
-        description: `${fmtInt(queue.ready)} messages removed from ${queue.name}.`,
-      });
+      try {
+        await actions.purgeQueue(queue.vhost, queue.name);
+        toast.success("Queue purged", {
+          description: `${fmtInt(queue.ready)} messages removed from ${queue.name}.`,
+        });
+      } catch (cause) {
+        toast.error("Queue was not purged", {
+          description:
+            cause instanceof Error ? cause.message : "The management API did not respond.",
+        });
+      }
     }
     if (confirm === "delete") {
-      actions.deleteQueue(queue.name);
-      toast.success("Queue deleted", { description: `${queue.name} was removed.` });
-      navigate(routeHref("queues"));
+      try {
+        await actions.deleteQueue(queue.vhost, queue.name);
+        toast.success("Queue deleted", { description: `${queue.name} was removed.` });
+        navigate(routeHref("queues"));
+      } catch (cause) {
+        toast.error("Queue was not deleted", {
+          description:
+            cause instanceof Error ? cause.message : "The management API did not respond.",
+        });
+      }
     }
     setConfirm(null);
   };
@@ -127,7 +140,7 @@ export function QueueDetailView() {
             <VhostBadge>{queue.vhost}</VhostBadge>
           </>
         }
-        description={`${queue.type} queue on virtual host ${queue.vhost} · created ${fmtDate(queue.created)}`}
+        description={`${queue.type} queue on virtual host ${queue.vhost}`}
         actions={
           <>
             <DropdownMenu>
@@ -263,7 +276,6 @@ export function QueueDetailView() {
                 { label: "Auto-delete", value: queue.autoDelete ? "Yes" : "No" },
                 { label: "Exclusive", value: queue.exclusive ? "Yes" : "No" },
                 { label: "Policy", value: queue.policy ?? "—", mono: Boolean(queue.policy) },
-                { label: "Created", value: fmtDate(queue.created) },
               ]}
             />
 

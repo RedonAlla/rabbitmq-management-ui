@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "demo": "vite --mode demo",
+    "mock": "node mock/server.mjs",
     "build": "npm run build-prod",
     "build-prod": "tsc -b && vite build --mode production",
     "build-demo": "tsc -b && vite build --mode demo",

@@ -27,7 +27,6 @@ export interface Queue {
   memory: number
   policy: string | null
   args: Record<string, string | number>
-  created: number
 }
 
 export interface Exchange {
@@ -140,16 +139,6 @@ export interface DeprecatedFeature {
   inUse: boolean
 }
 
-export type EventTone = "warn" | "info" | "ok" | "error"
-
-export interface ClusterEvent {
-  id: string
-  type: EventTone
-  title: string
-  detail: string
-  time: number
-}
-
 export interface ClusterInfo {
   name: string
   node: string
@@ -198,7 +187,7 @@ export interface WebContext {
   node: string
 }
 
-export interface SeedData {
+export interface ClusterSnapshot {
   cluster: ClusterInfo
   nodes: NodeInfo[]
   ports: PortInfo[]
@@ -216,7 +205,6 @@ export interface SeedData {
   limits: VhostLimit[]
   flags: FeatureFlag[]
   deprecatedFeatures: DeprecatedFeature[]
-  events: ClusterEvent[]
 }
 
 export type RangeKey = "1m" | "5m" | "1h" | "1d"

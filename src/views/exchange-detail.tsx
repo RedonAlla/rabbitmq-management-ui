@@ -263,10 +263,18 @@ export function ExchangeDetailView() {
         description={`This removes ${exchange.name} and every binding that leaves it. Bound queues keep their messages.`}
         confirmLabel="Delete exchange"
         tone="destructive"
-        onConfirm={() => {
-          actions.deleteExchange(exchange.name);
-          toast.success("Exchange deleted", { description: `${exchange.name} was removed.` });
-          navigate(routeHref("exchanges"));
+        onConfirm={async () => {
+          setConfirmDelete(false);
+          try {
+            await actions.deleteExchange(exchange.vhost, exchange.name);
+            toast.success("Exchange deleted", { description: `${exchange.name} was removed.` });
+            navigate(routeHref("exchanges"));
+          } catch (cause) {
+            toast.error("Exchange was not deleted", {
+              description:
+                cause instanceof Error ? cause.message : "The management API did not respond.",
+            });
+          }
         }}
       />
     </div>

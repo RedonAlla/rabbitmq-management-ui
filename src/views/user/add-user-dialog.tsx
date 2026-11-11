@@ -17,7 +17,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import type { User } from "@/data/types";
 import { cn } from "@/lib/utils";
 import FormError from "@/components/ui/form-error";
 import { useCluster } from "@/store/cluster";
@@ -70,7 +69,7 @@ export default function AddUserDialog({ open, onClose }: { open: boolean; onClos
   const [tag, setTag] = useState("management");
   const [error, setError] = useState("");
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     const clean = username.trim();
 
@@ -83,22 +82,26 @@ export default function AddUserDialog({ open, onClose }: { open: boolean; onClos
     if (password.trim().length < 4)
       return setError("Use a password of at least 4 characters.");
 
-    const user: User = {
-      username: clean,
-      tags: [tag],
-      vhosts: ["/"],
-      hash: "rabbit_password_hashing_sha256",
-    };
+    try {
+      await actions.addUser({
+        username: clean,
+        password,
+        tags: [tag],
+        vhosts: ["/"],
+      });
 
-    actions.addUser(user);
+      toast.success("User created", { description: `${clean} has the ${tag} tag.` });
 
-    toast.success("User created", { description: `${clean} has the ${tag} tag.` });
-    
-    setUsername("");
-    setPassword("");
-    setTag("management");
-    setError("");
-    onClose();
+      setUsername("");
+      setPassword("");
+      setTag("management");
+      setError("");
+      onClose();
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "The management API did not respond."
+      );
+    }
   };
 
   return (

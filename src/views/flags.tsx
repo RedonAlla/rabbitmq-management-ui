@@ -27,11 +27,18 @@ export function FlagsView() {
   const experimental = flags.filter((flag) => flag.stability === "experimental");
   const enabled = data.flags.filter((flag) => flag.enabled).length;
 
-  const toggle = (name: string, value: boolean) => {
-    actions.toggleFlag(name);
-    toast.success(value ? "Feature flag enabled" : "Feature flag disabled", {
-      description: `${name} is now ${value ? "enabled" : "disabled"}.`,
-    });
+  const toggle = async (name: string, value: boolean) => {
+    try {
+      await actions.toggleFlag(name, value);
+      toast.success(value ? "Feature flag enabled" : "Feature flag disabled", {
+        description: `${name} is now ${value ? "enabled" : "disabled"}.`,
+      });
+    } catch (cause) {
+      toast.error("Feature flag was not changed", {
+        description:
+          cause instanceof Error ? cause.message : "The management API did not respond.",
+      });
+    }
   };
 
   const renderFlags = (list: typeof flags) => (

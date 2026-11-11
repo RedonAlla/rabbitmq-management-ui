@@ -166,14 +166,22 @@ export default function UserPolicies() {
         }
         confirmLabel="Delete policy"
         tone="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingDelete) return
-          actions.deletePolicy(pendingDelete.name)
-          toast.success("Policy deleted", {
-            description: `${pendingDelete.name} no longer applies.`,
-          })
+          const policy = pendingDelete
           setDrawerOpen(false)
           setPendingDelete(null)
+          try {
+            await actions.deletePolicy(policy.vhost, policy.name)
+            toast.success("Policy deleted", {
+              description: `${policy.name} no longer applies.`,
+            })
+          } catch (cause) {
+            toast.error("Policy was not deleted", {
+              description:
+                cause instanceof Error ? cause.message : "The management API did not respond.",
+            })
+          }
         }}
       />
 

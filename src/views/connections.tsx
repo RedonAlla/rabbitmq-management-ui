@@ -12,10 +12,8 @@ import { PageHeader } from "@/components/page-header";
 import { FilterBar } from "@/components/filters-bar";
 import { ConnectionStateBadge, TlsBadge, VhostBadge } from "@/components/badges";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { useCluster } from "@/store/cluster";
 import { useRoute, routeHref } from "@/lib/router";
 import { fmtRate, fmtSince, fmtInt } from "@/lib/format";
-import { IS_DEMO } from "@/lib/env";
 import type { Connection } from "@/data/types";
 import { useConnections } from "@/hooks/use-connections";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -38,7 +36,6 @@ import { Textarea } from "@/components/ui/textarea";
 const CONNECTIONS_PAGE_SIZE = 100;
 
 export function ConnectionsView() {
-  const { data } = useCluster();
   const { navigate } = useRoute();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -249,9 +246,7 @@ export function ConnectionsView() {
         description="Open AMQP and HTTP connections across the cluster."
         actions={
           <Badge variant="outline">
-            {IS_DEMO
-              ? `${fmtInt(data.connections.length)} connections · ${fmtInt(data.channels.length)} channels`
-              : `${fmtInt(totalCount)} connections`}
+            {fmtInt(totalCount)} connections
           </Badge>
         }
       />

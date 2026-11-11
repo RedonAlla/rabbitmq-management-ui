@@ -167,14 +167,22 @@ export default function OperatorPolicies() {
         }
         confirmLabel="Delete operator policy"
         tone="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingDelete) return
-          actions.deleteOperatorPolicy(pendingDelete.name)
-          toast.success("Operator policy deleted", {
-            description: `${pendingDelete.name} no longer overrides user policies.`,
-          })
+          const policy = pendingDelete
           setDrawerOpen(false)
           setPendingDelete(null)
+          try {
+            await actions.deletePolicy(policy.vhost, policy.name, true)
+            toast.success("Operator policy deleted", {
+              description: `${policy.name} no longer overrides user policies.`,
+            })
+          } catch (cause) {
+            toast.error("Operator policy was not deleted", {
+              description:
+                cause instanceof Error ? cause.message : "The management API did not respond.",
+            })
+          }
         }}
       />
 

@@ -14,14 +14,13 @@ import ListeningPorts from "./overview/ListeningPorts"
 import WebContexts from "./overview/WebContexts"
 import Kpis from "./overview/Kpis"
 import Nodes from "./overview/Nodes"
-import RecentActivity from "./overview/RecentActivity"
 
 function fmtOpsRate(value: number): string {
   return value > 0 && value < 1 ? value.toFixed(2) : fmtCompact(value)
 }
 
 export function OverviewView() {
-  const { data, totals, history, live, status, error, actions, lastUpdated } =
+  const { data, totals, history, status, error, actions, lastUpdated } =
     useCluster()
   const { navigate } = useRoute()
   const [range, setRange] = useState<RangeKey>("1m")
@@ -100,14 +99,11 @@ export function OverviewView() {
         />
       </div>
 
-      <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] xl:items-start">
-        <QueuesNeedAttention
-          queues={attention}
-          total={data.queues.length}
-          loading={status === "loading"}
-        />
-        <RecentActivity events={data.events} live={live} />
-      </div>
+      <QueuesNeedAttention
+        queues={attention}
+        total={data.queues.length}
+        loading={status === "loading"}
+      />
 
       <div className="grid min-w-0 gap-4 xl:grid-cols-2 xl:items-start">
         <ChartPanel

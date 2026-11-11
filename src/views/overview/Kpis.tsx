@@ -1,5 +1,5 @@
 import { KpiCard, KpiGrid } from "@/components/kpi"
-import type { HistoryPoint, RangeKey, SeedData } from "@/data/types"
+import type { HistoryPoint, RangeKey, ClusterSnapshot } from "@/data/types"
 import { fmtCompact, fmtInt, fmtRate, type ClusterTotals } from "@/lib/format"
 import {
   InboxIcon,
@@ -10,7 +10,7 @@ import {
 import { useMemo } from "react"
 
 type Props = {
-  data: SeedData
+  data: ClusterSnapshot
   range: RangeKey
   totals: ClusterTotals
   history: Record<RangeKey, HistoryPoint[]>

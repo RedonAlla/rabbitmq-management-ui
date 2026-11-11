@@ -57,10 +57,6 @@ const DialogsContext = createContext<DialogsContextValue | null>(null);
 
 const DEFAULT_EXCHANGE = "__default__";
 
-function nowMs() {
-  return new Date().getTime();
-}
-
 function Field({
   label,
   hint,
@@ -155,7 +151,7 @@ function AddQueueDialog({ open, onClose }: { open: boolean; onClose: () => void 
     setError("");
   };
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     const clean = name.trim();
     if (!clean) return setError("Enter a queue name.");
@@ -166,29 +162,23 @@ function AddQueueDialog({ open, onClose }: { open: boolean; onClose: () => void 
     if (maxLength.trim() && Number.isFinite(Number(maxLength))) {
       args["x-max-length"] = Number(maxLength);
     }
-    actions.addQueue({
-      name: clean,
-      vhost,
-      type,
-      durable,
-      autoDelete,
-      exclusive: false,
-      state: "idle",
-      ready: 0,
-      unacked: 0,
-      consumers: 0,
-      publishRate: 0,
-      deliverRate: 0,
-      ackRate: 0,
-      redelivered: 0,
-      memory: 0.1,
-      policy: null,
-      args,
-      created: nowMs(),
-    });
-    toast.success("Queue created", { description: `${clean} declared on ${vhost}.` });
-    reset();
-    onClose();
+    try {
+      await actions.addQueue({
+        name: clean,
+        vhost,
+        type,
+        durable,
+        autoDelete,
+        args,
+      });
+      toast.success("Queue created", { description: `${clean} declared on ${vhost}.` });
+      reset();
+      onClose();
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "The management API did not respond."
+      );
+    }
   };
 
   return (
@@ -278,28 +268,32 @@ function AddExchangeDialog({ open, onClose }: { open: boolean; onClose: () => vo
   const [internal, setInternal] = useState(false);
   const [error, setError] = useState("");
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     const clean = name.trim();
     if (!clean) return setError("Enter an exchange name.");
     if (data.exchanges.some((exchange) => exchange.name === clean && exchange.vhost === vhost)) {
       return setError(`An exchange named ${clean} already exists on ${vhost}.`);
     }
-    actions.addExchange({
-      name: clean,
-      vhost,
-      type,
-      durable,
-      autoDelete,
-      internal,
-      publishRate: 0,
-      deliverRate: 0,
-      args: {},
-    });
-    toast.success("Exchange created", { description: `${clean} (${type}) on ${vhost}.` });
-    setName("");
-    setError("");
-    onClose();
+    try {
+      await actions.addExchange({
+        name: clean,
+        vhost,
+        type,
+        durable,
+        autoDelete,
+        internal,
+        args: {},
+      });
+      toast.success("Exchange created", { description: `${clean} (${type}) on ${vhost}.` });
+      setName("");
+      setError("");
+      onClose();
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "The management API did not respond."
+      );
+    }
   };
 
   return (
@@ -471,7 +465,7 @@ function PolicyDialog({
   const [definition, setDefinition] = useState("max-length=50000");
   const [error, setError] = useState("");
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     const clean = name.trim();
     if (!clean) return setError("Enter a policy name.");
@@ -496,17 +490,19 @@ function PolicyDialog({
       priority: Number(priority) || 0,
       definition: parsed,
     };
-    if (operator) {
-      actions.addOperatorPolicy(policy);
-    } else {
-      actions.addPolicy(policy);
+    try {
+      await actions.addPolicy(policy, operator);
+      toast.success(operator ? "Operator policy created" : "Policy created", {
+        description: `${clean} applies to ${applyTo} on ${vhost}.`,
+      });
+      setName("");
+      setError("");
+      onClose();
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "The management API did not respond."
+      );
     }
-    toast.success(operator ? "Operator policy created" : "Policy created", {
-      description: `${clean} applies to ${applyTo} on ${vhost}.`,
-    });
-    setName("");
-    setError("");
-    onClose();
   };
 
   return (
@@ -625,25 +621,31 @@ function PublishDialog({
     ? routeTargets(exchangeRecord, routingKey, data.bindings, data.queues)
     : [];
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     const amount = Number(count);
     if (!Number.isFinite(amount) || amount < 1) return setError("Publish at least one message.");
-    actions.publish({
-      exchange: resolvedName,
-      vhost,
-      routingKey: routingKey.trim(),
-      targets,
-      count: Math.floor(amount),
-    });
-    toast.success("Message published", {
-      description:
-        targets.length > 0
-          ? `${fmtInt(amount)} to ${targets.join(", ")}`
-          : "No bindings matched, the message was dropped.",
-    });
-    setError("");
-    onClose();
+    try {
+      await actions.publish({
+        exchange: resolvedName,
+        vhost,
+        routingKey: routingKey.trim(),
+        payload,
+        count: Math.floor(amount),
+      });
+      toast.success("Message published", {
+        description:
+          targets.length > 0
+            ? `${fmtInt(amount)} to ${targets.join(", ")}`
+            : "No bindings matched, the message was dropped.",
+      });
+      setError("");
+      onClose();
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "The management API did not respond."
+      );
+    }
   };
 
   return (

@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
 import type { Connection } from "@/data/types"
-import { IS_DEMO } from "@/lib/env"
-import { closeConnection as closeConnectionRequest, fetchConnections, type ConnectionsPage } from "@/lib/rabbit-api"
+import {
+  closeConnection as closeConnectionRequest,
+  fetchConnections,
+  type ConnectionsPage,
+} from "@/lib/rabbit-api"
 import { useAuth } from "@/store/auth"
-import { useCluster } from "@/store/cluster"
 
 const SORT_FIELDS: Record<string, string> = {
   name: "client_properties.connection_name",
@@ -19,21 +21,6 @@ const SORT_FIELDS: Record<string, string> = {
   connectedAt: "connected_at",
   client: "client_properties.product",
 }
-
-const SORT_VALUES: Record<string, (connection: Connection) => string | number> =
-  {
-    name: (connection) => connection.userProvidedName ?? connection.name,
-    user: (connection) => connection.user,
-    vhost: (connection) => connection.vhost,
-    state: (connection) => connection.state,
-    node: (connection) => connection.node,
-    protocol: (connection) => connection.protocol,
-    channels: (connection) => connection.channels,
-    recvRate: (connection) => connection.recvRate,
-    sendRate: (connection) => connection.sendRate,
-    connectedAt: (connection) => connection.connectedAt,
-    client: (connection) => connection.client,
-  }
 
 const EMPTY_PAGE: ConnectionsPage = {
   items: [],
@@ -63,55 +50,9 @@ interface ConnectionsQueryResult {
   closeConnection: (connection: Connection, reason: string) => Promise<void>
 }
 
-function compareValues(a: string | number, b: string | number): number {
-  if (typeof a === "number" && typeof b === "number") return a - b
-  return String(a).localeCompare(String(b))
-}
-
-function demoPage(
-  connections: Connection[],
-  options: ConnectionsQueryOptions
-): ConnectionsPage {
-  const term = options.search.trim().toLowerCase()
-  const filtered = connections.filter(
-    (connection) =>
-      (!term || connection.name.toLowerCase().includes(term)) &&
-      (!options.vhost || connection.vhost === options.vhost)
-  )
-
-  const sort = options.sorting[0]
-  const sorted = sort
-    ? [...filtered].sort((a, b) => {
-        const accessor = SORT_VALUES[sort.id]
-        if (!accessor) return 0
-        const result = compareValues(accessor(a), accessor(b))
-        return sort.desc ? -result : result
-      })
-    : filtered
-
-  const pageCount = Math.max(
-    1,
-    Math.ceil(sorted.length / options.pageSize)
-  )
-  const pageIndex = Math.min(options.pageIndex, pageCount - 1)
-
-  return {
-    items: sorted.slice(
-      pageIndex * options.pageSize,
-      (pageIndex + 1) * options.pageSize
-    ),
-    totalCount: connections.length,
-    filteredCount: sorted.length,
-    page: pageIndex + 1,
-    pageSize: options.pageSize,
-    pageCount,
-  }
-}
-
 export function useConnections(
   options: ConnectionsQueryOptions
 ): ConnectionsQueryResult {
-  const { data, status, error: clusterError, actions } = useCluster()
   const { user } = useAuth()
   const [result, setResult] = useState<{
     key: string
@@ -139,7 +80,7 @@ export function useConnections(
   ].join("|")
 
   useEffect(() => {
-    if (IS_DEMO || !token) return undefined
+    if (!token) return undefined
 
     const controller = new AbortController()
 
@@ -173,46 +114,20 @@ export function useConnections(
     return () => controller.abort()
   }, [token, pageIndex, pageSize, search, vhost, sortField, sortReverse, requestKey])
 
-  const localPage = useMemo(
-    () => demoPage(data.connections, options),
-    [data.connections, options]
-  )
-
   const retry = useCallback(() => {
-    if (IS_DEMO) {
-      actions.retry()
-      return
-    }
     setRefreshId((current) => current + 1)
-  }, [actions])
+  }, [])
 
   const closeConnection = useCallback(
     async (connection: Connection, reason: string) => {
-      if (IS_DEMO) {
-        actions.closeConnection(connection.id)
-        return
-      }
       if (!token) {
         throw new Error("Your session has expired. Sign in again.")
       }
       await closeConnectionRequest(token, connection.name, reason)
       setRefreshId((current) => current + 1)
     },
-    [actions, token]
+    [token]
   )
-
-  if (IS_DEMO) {
-    return {
-      connections: localPage.items,
-      totalCount: localPage.totalCount,
-      filteredCount: localPage.filteredCount,
-      pageCount: localPage.pageCount,
-      loading: status === "loading",
-      error: clusterError,
-      retry,
-      closeConnection,
-    }
-  }
 
   const requestError = failure?.key === requestKey ? failure.message : null
   const currentPage = requestError ? EMPTY_PAGE : (result?.page ?? EMPTY_PAGE)

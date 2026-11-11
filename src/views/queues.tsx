@@ -197,16 +197,30 @@ export function QueuesView() {
     [openDialog]
   );
 
-  const confirmQueue = () => {
+  const confirmQueue = async () => {
     if (!confirm) return;
     if (confirm.kind === "purge") {
-      actions.purgeQueue(confirm.queue.name);
-      toast.success("Queue purged", {
-        description: `${fmtInt(confirm.queue.ready)} messages removed from ${confirm.queue.name}.`,
-      });
+      try {
+        await actions.purgeQueue(confirm.queue.vhost, confirm.queue.name);
+        toast.success("Queue purged", {
+          description: `${fmtInt(confirm.queue.ready)} messages removed from ${confirm.queue.name}.`,
+        });
+      } catch (cause) {
+        toast.error("Queue was not purged", {
+          description:
+            cause instanceof Error ? cause.message : "The management API did not respond.",
+        });
+      }
     } else {
-      actions.deleteQueue(confirm.queue.name);
-      toast.success("Queue deleted", { description: `${confirm.queue.name} was removed.` });
+      try {
+        await actions.deleteQueue(confirm.queue.vhost, confirm.queue.name);
+        toast.success("Queue deleted", { description: `${confirm.queue.name} was removed.` });
+      } catch (cause) {
+        toast.error("Queue was not deleted", {
+          description:
+            cause instanceof Error ? cause.message : "The management API did not respond.",
+        });
+      }
     }
     setConfirm(null);
   };
