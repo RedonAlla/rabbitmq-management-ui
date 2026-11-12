@@ -26,6 +26,7 @@ import { fmtDuration, fmtInt } from "@/lib/format";
 import type { ChannelConsumer } from "@/lib/rabbit-api";
 import { routeHref } from "@/lib/router";
 import ConsumerActiveColumnHeader from "./consumer-active-column-header";
+import { VhostBadge } from "@/components/badges";
 
 type Props = {
   consumers: ChannelConsumer[];
@@ -153,7 +154,7 @@ export default function ConsumersTable({
                       />
                     </a>
                     <span className="truncate text-xs text-muted-foreground">
-                      {consumer.vhost}
+                      <VhostBadge>{consumer.vhost}</VhostBadge>
                     </span>
                   </div>
                 </TableCell>

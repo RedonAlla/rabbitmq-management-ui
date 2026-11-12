@@ -1,22 +1,19 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { InfoIcon, RefreshCwIcon, XIcon } from "lucide-react";
-import { toast } from "sonner";
+import { RefreshCwIcon } from "lucide-react";
 import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { DetailLayout, FactPanel, SectionFrame } from "@/components/detail";
 import { StateBadge, VhostBadge } from "@/components/badges";
-import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   ChartSkeleton,
   RegionEmpty,
   RegionError,
 } from "@/components/region-states";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCluster } from "@/store/cluster";
 import { useChannelDetail } from "@/hooks/use-channel-detail";
-import { useRoute, routeHref } from "@/lib/router";
+import { useRoute } from "@/lib/router";
 import { fmtInt, fmtRate } from "@/lib/format";
 import type { ChannelRateKey, ChannelRateRange } from "@/lib/rabbit-api";
 import { NotFoundView } from "@/views/not-found";
@@ -28,6 +25,7 @@ import {
   buildRateChartDataFromSamples,
   type RateChartPoint,
 } from "@/views/connections/rate-chart";
+import PrefetchHint from "./channels/prefetch-hint";
 
 const RATE_SERIES: { key: ChannelRateKey; label: string; color: string }[] = [
   { key: "ack", label: "Ack", color: "var(--chart-1)" },
@@ -120,36 +118,9 @@ function RateChartFrame({
   );
 }
 
-function PrefetchHint() {
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <span
-            tabIndex={0}
-            aria-label="About channel prefetch count"
-            className="inline-flex text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-3.5"
-          >
-            <InfoIcon />
-          </span>
-        }
-      />
-      <TooltipContent side="top" className="max-w-72 flex-col items-start gap-1">
-        <span className="font-medium">Channel prefetch count.</span>
-        <span>
-          Each channel can have a prefetch count. The prefetch is the number of
-          messages that will be held by the client. Setting a value of 0 will
-          result in an unlimited prefetch.
-        </span>
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
 export function ChannelDetailView() {
-  const { route, navigate } = useRoute();
-  const { data, actions } = useCluster();
-  const [confirmClose, setConfirmClose] = useState(false);
+  const { route } = useRoute();
+  const { data } = useCluster();
   const [range, setRange] = useState<ChannelRateRange>(60);
   const {
     detail,
@@ -228,12 +199,6 @@ export function ChannelDetailView() {
           connection
             ? `Multiplexed on ${connection.name} · ${connection.protocol}`
             : "Connection details unavailable"
-        }
-        actions={
-          <Button type="button" variant="destructive" onClick={() => setConfirmClose(true)}>
-            <XIcon data-icon="inline-start" aria-hidden="true" />
-            Close channel
-          </Button>
         }
       />
 
@@ -332,20 +297,6 @@ export function ChannelDetailView() {
             />
           </>
         }
-      />
-
-      <ConfirmDialog
-        open={confirmClose}
-        onOpenChange={setConfirmClose}
-        title="Close channel?"
-        description={`Channel ${channel.id} will be closed. Its consumers stop receiving messages and unacked deliveries are requeued.`}
-        confirmLabel="Close channel"
-        tone="destructive"
-        onConfirm={() => {
-          actions.closeChannel(channel.id);
-          toast.success("Channel closed", { description: `Channel ${channel.id} was closed.` });
-          navigate(routeHref("channels"));
-        }}
       />
     </div>
   );
