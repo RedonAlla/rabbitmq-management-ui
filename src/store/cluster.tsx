@@ -140,6 +140,7 @@ function reducer(state: ClusterState, action: Action): ClusterState {
           getEmpty: channel.getEmptyRate,
           getNoAck: channel.getNoAckRate,
           redeliver: channel.redeliverRate,
+          reductions: channel.reductionsRate,
         }
         const series =
           last && time - last.at < CHANNEL_RATE_MIN_GAP_MS

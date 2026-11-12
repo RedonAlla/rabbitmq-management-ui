@@ -108,6 +108,7 @@ export interface Channel {
   getEmptyRate: number
   getNoAckRate: number
   redeliverRate: number
+  reductionsRate: number
   confirmMode: boolean
   transactional: boolean
 }
@@ -122,6 +123,7 @@ export interface ChannelRatePoint {
   getEmpty: number
   getNoAck: number
   redeliver: number
+  reductions: number
 }
 
 export interface User {

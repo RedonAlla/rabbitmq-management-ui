@@ -42,6 +42,12 @@ const RATE_SERIES: { key: ChannelRateKey; label: string; color: string }[] = [
   { key: "redeliver", label: "Redeliver", color: "var(--chart-8)" },
 ];
 
+const REDUCTIONS_SERIES: {
+  key: ChannelRateKey;
+  label: string;
+  color: string;
+} = { key: "reductions", label: "Reductions", color: "var(--chart-3)" };
+
 export function ChannelDetailView() {
   const { route, navigate } = useRoute();
   const { data, actions, channelRates } = useCluster();
@@ -67,7 +73,7 @@ export function ChannelDetailView() {
   );
   const rateAverages = useMemo(() => {
     const averages = {} as Record<ChannelRateKey, number>;
-    for (const series of RATE_SERIES) {
+    for (const series of [...RATE_SERIES, REDUCTIONS_SERIES]) {
       averages[series.key] = ratePoints.length
         ? ratePoints.reduce((sum, point) => sum + point[series.key], 0) /
           ratePoints.length
@@ -154,6 +160,27 @@ export function ChannelDetailView() {
                     ...series,
                     legend: `${series.label} avg ${fmtRate(rateAverages[series.key])}`,
                   }))}
+                />
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Collecting rate samples. The chart fills in as new snapshots arrive.
+                </p>
+              )}
+            </SectionFrame>
+            <SectionFrame
+              title="Reductions"
+              description="Reductions per second, sampled every 5 seconds."
+            >
+              {chartData.length > 1 ? (
+                <RateChart
+                  title="Reductions"
+                  data={chartData}
+                  series={[
+                    {
+                      ...REDUCTIONS_SERIES,
+                      legend: `Reductions avg ${fmtRate(rateAverages.reductions)}`,
+                    },
+                  ]}
                 />
               ) : (
                 <p className="text-xs text-muted-foreground">

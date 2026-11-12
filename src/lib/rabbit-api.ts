@@ -222,6 +222,7 @@ interface ApiChannel {
     get_no_ack_details?: { rate: number }
     redeliver_details?: { rate: number }
   }
+  reductions_details?: { rate: number }
 }
 
 interface ApiUser {
@@ -719,6 +720,7 @@ function mapChannels(channels: ApiChannel[]): Channel[] {
     getEmptyRate: channel.message_stats?.get_empty_details?.rate ?? 0,
     getNoAckRate: channel.message_stats?.get_no_ack_details?.rate ?? 0,
     redeliverRate: channel.message_stats?.redeliver_details?.rate ?? 0,
+    reductionsRate: channel.reductions_details?.rate ?? 0,
     confirmMode: channel.confirm,
     transactional: channel.transactional,
   }))
