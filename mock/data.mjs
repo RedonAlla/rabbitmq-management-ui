@@ -467,6 +467,8 @@ export function createState() {
         messages_uncommitted: 0,
         messages_unconfirmed: 0,
         acks_uncommitted: 0,
+        pending_raft_commands: 0,
+        cached_segments: 0,
         consumer_count: 0,
         message_stats: {
           publish_details: { rate: spec.publishRate },

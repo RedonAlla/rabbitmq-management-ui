@@ -205,6 +205,8 @@ interface ApiChannel {
   messages_uncommitted?: number
   messages_unconfirmed?: number
   acks_uncommitted?: number
+  pending_raft_commands?: number
+  cached_segments?: number
   consumer_count: number
   state: string
   confirm: boolean
@@ -698,6 +700,8 @@ function mapChannels(channels: ApiChannel[]): Channel[] {
     messagesUncommitted: channel.messages_uncommitted ?? 0,
     messagesUnconfirmed: channel.messages_unconfirmed ?? 0,
     acksUncommitted: channel.acks_uncommitted ?? 0,
+    pendingRaftCommands: channel.pending_raft_commands ?? 0,
+    cachedSegments: channel.cached_segments ?? 0,
     state: channel.state,
     publishRate: channel.message_stats?.publish_details?.rate ?? 0,
     deliverRate: channel.message_stats?.deliver_details?.rate ?? 0,

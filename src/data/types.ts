@@ -96,6 +96,8 @@ export interface Channel {
   messagesUncommitted: number
   messagesUnconfirmed: number
   acksUncommitted: number
+  pendingRaftCommands: number
+  cachedSegments: number
   state: string
   publishRate: number
   deliverRate: number

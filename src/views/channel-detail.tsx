@@ -110,7 +110,19 @@ export function ChannelDetailView() {
                 { label: "Connection", value: channel.connection, mono: true },
                 { label: "User", value: channel.user, mono: true },
                 { label: "Virtual host", value: channel.vhost, mono: true },
-                { label: "Node", value: channel.node.replace("rabbit@", ""), mono: true },
+                { label: "Node", value: channel.node, mono: true },
+              ]}
+            />
+            <FactPanel
+              title="In-flight counters"
+              description="Work held by this channel that has not yet been settled."
+              facts={[
+                { label: "Acks uncommitted", value: fmtInt(channel.acksUncommitted) },
+                { label: "Messages uncommitted", value: fmtInt(channel.messagesUncommitted) },
+                { label: "Messages unconfirmed", value: fmtInt(channel.messagesUnconfirmed) },
+                { label: "Messages unacknowledged", value: fmtInt(channel.unacked) },
+                { label: "Pending raft commands", value: fmtInt(channel.pendingRaftCommands) },
+                { label: "Cached segments", value: fmtInt(channel.cachedSegments) },
               ]}
             />
             <FactPanel
