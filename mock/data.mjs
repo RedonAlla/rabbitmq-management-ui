@@ -475,6 +475,13 @@ export function createState() {
           deliver_details: { rate: spec.deliverRate },
           ack_details: { rate: Math.max(0, spec.deliverRate - 0.3) },
         },
+        garbage_collection: {
+          fullsweep_after: 65535,
+          max_heap_size: 0,
+          min_bin_vheap_size: 46422,
+          min_heap_size: 233,
+          minor_gcs: 40 + spec.number * 7,
+        },
       })
     }
     delete connection._channels

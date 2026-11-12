@@ -17,7 +17,12 @@ import { KpiCard, KpiGrid } from "@/components/kpi";
 import { DetailLayout, FactPanel, SectionFrame } from "@/components/detail";
 import { StateBadge, VhostBadge } from "@/components/badges";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { ChartSkeleton, RegionEmpty, RegionError } from "@/components/region-states";
+import {
+  ChartSkeleton,
+  RegionEmpty,
+  RegionError,
+  RegionSkeleton,
+} from "@/components/region-states";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCluster } from "@/store/cluster";
@@ -76,6 +81,10 @@ function averageSeries(data: RateChartPoint[], key: string): number {
     }
   }
   return count ? sum / count : 0;
+}
+
+function gcValue(value: number | null): string {
+  return value === null ? "—" : fmtInt(value);
 }
 
 interface RateChartFrameProps {
@@ -187,6 +196,7 @@ export function ChannelDetailView() {
     }
     return averages;
   }, [chartData]);
+  const garbageCollection = detail?.garbageCollection ?? null;
 
   const rangeControl = (
     <Tabs
@@ -331,6 +341,60 @@ export function ChannelDetailView() {
                 </ul>
               ) : (
                 <p className="text-xs text-muted-foreground">This channel carries no consumers.</p>
+              )}
+            </SectionFrame>
+            <SectionFrame
+              title="Garbage collection"
+              description="Erlang garbage collection statistics reported for the channel process."
+            >
+              {detailError ? (
+                <RegionError message={detailError} onRetry={retryDetail} />
+              ) : detailLoading ? (
+                <RegionSkeleton rows={5} />
+              ) : garbageCollection ? (
+                <dl className="flex flex-col divide-y divide-border">
+                  {[
+                    {
+                      label: "Number of minor GCs (minor_gcs)",
+                      value: garbageCollection.minorGcs },
+                    {
+                      label: "Maximum generational collections before fullsweep (fullsweep_after)",
+                      value: garbageCollection.fullsweepAfter,
+                    },
+                    {
+                      label: "Maximum heap size in words (max_heap_size)",
+                      value: garbageCollection.maxHeapSize },
+                    {
+                      label: "Minimum heap size in words (min_heap_size)",
+                      value: garbageCollection.minHeapSize
+                    },
+                    {
+                      label: "Minimum binary virtual heap size in words (min_bin_vheap_size)",
+                      value: garbageCollection.minBinVheapSize,
+                    },
+                  ].map((fact) => (
+                    <div
+                      key={fact.label}
+                      className="flex items-start justify-between gap-4 py-2 first:pt-0 last:pb-0"
+                    >
+                      <dt className="text-xs text-muted-foreground">{fact.label}</dt>
+                      <dd className="data-cell text-right text-sm tabular-nums">
+                        {gcValue(fact.value)}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <RegionEmpty
+                  title="No garbage collection statistics"
+                  description="The broker did not report garbage collection statistics for this channel."
+                  action={
+                    <Button type="button" variant="outline" size="sm" onClick={retryDetail}>
+                      <RefreshCwIcon data-icon="inline-start" aria-hidden="true" />
+                      Retry
+                    </Button>
+                  }
+                />
               )}
             </SectionFrame>
           </>

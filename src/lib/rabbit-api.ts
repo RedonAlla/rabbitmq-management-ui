@@ -213,6 +213,15 @@ interface ApiChannel {
   transactional: boolean
   message_stats?: ApiChannelMessageStats
   reductions_details?: ApiRateDetails
+  garbage_collection?: ApiGarbageCollection
+}
+
+interface ApiGarbageCollection {
+  fullsweep_after?: number
+  max_heap_size?: number
+  min_bin_vheap_size?: number
+  min_heap_size?: number
+  minor_gcs?: number
 }
 
 interface ApiChannelMessageStats {
@@ -409,9 +418,18 @@ export type ChannelRateKey =
 
 export type ChannelRate = ConnectionRate
 
+export interface ChannelGarbageCollection {
+  fullsweepAfter: number | null
+  maxHeapSize: number | null
+  minBinVheapSize: number | null
+  minHeapSize: number | null
+  minorGcs: number | null
+}
+
 export interface ChannelDetail {
   name: string
   rates: Record<ChannelRateKey, ChannelRate>
+  garbageCollection: ChannelGarbageCollection | null
 }
 
 interface ApiConnectionsResponse {
@@ -911,8 +929,18 @@ function mapRate(details: ApiRateDetails | undefined): ConnectionRate {
 
 function mapChannelDetail(detail: ApiChannel): ChannelDetail {
   const stats = detail.message_stats ?? {}
+  const gc = detail.garbage_collection
   return {
     name: detail.name,
+    garbageCollection: gc
+      ? {
+          fullsweepAfter: gc.fullsweep_after ?? null,
+          maxHeapSize: gc.max_heap_size ?? null,
+          minBinVheapSize: gc.min_bin_vheap_size ?? null,
+          minHeapSize: gc.min_heap_size ?? null,
+          minorGcs: gc.minor_gcs ?? null,
+        }
+      : null,
     rates: {
       ack: mapRate(stats.ack_details),
       deliver: mapRate(stats.deliver_details),
