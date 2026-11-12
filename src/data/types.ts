@@ -113,19 +113,6 @@ export interface Channel {
   transactional: boolean
 }
 
-export interface ChannelRatePoint {
-  at: number
-  ack: number
-  deliver: number
-  deliverGet: number
-  deliverNoAck: number
-  get: number
-  getEmpty: number
-  getNoAck: number
-  redeliver: number
-  reductions: number
-}
-
 export interface User {
   username: string
   tags: string[]

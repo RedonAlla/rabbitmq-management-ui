@@ -211,18 +211,20 @@ interface ApiChannel {
   state: string
   confirm: boolean
   transactional: boolean
-  message_stats?: {
-    publish_details?: { rate: number }
-    deliver_details?: { rate: number }
-    ack_details?: { rate: number }
-    deliver_get_details?: { rate: number }
-    deliver_no_ack_details?: { rate: number }
-    get_details?: { rate: number }
-    get_empty_details?: { rate: number }
-    get_no_ack_details?: { rate: number }
-    redeliver_details?: { rate: number }
-  }
-  reductions_details?: { rate: number }
+  message_stats?: ApiChannelMessageStats
+  reductions_details?: ApiRateDetails
+}
+
+interface ApiChannelMessageStats {
+  publish_details?: ApiRateDetails
+  deliver_details?: ApiRateDetails
+  ack_details?: ApiRateDetails
+  deliver_get_details?: ApiRateDetails
+  deliver_no_ack_details?: ApiRateDetails
+  get_details?: ApiRateDetails
+  get_empty_details?: ApiRateDetails
+  get_no_ack_details?: ApiRateDetails
+  redeliver_details?: ApiRateDetails
 }
 
 interface ApiUser {
@@ -384,6 +386,32 @@ export interface ConnectionDetail {
   reductionsRate: ConnectionRate | null
   clientProperties: Record<string, unknown>
   garbageCollection: Record<string, unknown> | null
+}
+
+export type ChannelRateRange = 60 | 600 | 3600
+
+const CHANNEL_RATE_INCR: Record<ChannelRateRange, number> = {
+  60: 5,
+  600: 5,
+  3600: 60,
+}
+
+export type ChannelRateKey =
+  | "ack"
+  | "deliver"
+  | "deliverGet"
+  | "deliverNoAck"
+  | "get"
+  | "getEmpty"
+  | "getNoAck"
+  | "redeliver"
+  | "reductions"
+
+export type ChannelRate = ConnectionRate
+
+export interface ChannelDetail {
+  name: string
+  rates: Record<ChannelRateKey, ChannelRate>
 }
 
 interface ApiConnectionsResponse {
@@ -881,6 +909,24 @@ function mapRate(details: ApiRateDetails | undefined): ConnectionRate {
   }
 }
 
+function mapChannelDetail(detail: ApiChannel): ChannelDetail {
+  const stats = detail.message_stats ?? {}
+  return {
+    name: detail.name,
+    rates: {
+      ack: mapRate(stats.ack_details),
+      deliver: mapRate(stats.deliver_details),
+      deliverGet: mapRate(stats.deliver_get_details),
+      deliverNoAck: mapRate(stats.deliver_no_ack_details),
+      get: mapRate(stats.get_details),
+      getEmpty: mapRate(stats.get_empty_details),
+      getNoAck: mapRate(stats.get_no_ack_details),
+      redeliver: mapRate(stats.redeliver_details),
+      reductions: mapRate(detail.reductions_details),
+    },
+  }
+}
+
 function mapConnectionDetail(detail: ApiConnectionDetail): ConnectionDetail {
   const properties = detail.client_properties ?? {}
   const client = [properties.product, properties.platform].filter(
@@ -1183,6 +1229,26 @@ export async function fetchConnectionDetail(
     signal
   )
   return mapConnectionDetail(detail)
+}
+
+export async function fetchChannelDetail(
+  token: string,
+  name: string,
+  range: ChannelRateRange = 60,
+  signal?: AbortSignal
+): Promise<ChannelDetail> {
+  const params = new URLSearchParams({
+    data_rates_age: String(range),
+    data_rates_incr: String(CHANNEL_RATE_INCR[range]),
+    msg_rates_age: String(range),
+    msg_rates_incr: String(CHANNEL_RATE_INCR[range]),
+  })
+  const detail = await apiGet<ApiChannel>(
+    `/api/channels/${enc(name)}?${params.toString()}`,
+    token,
+    signal
+  )
+  return mapChannelDetail(detail)
 }
 
 interface ApiConnectionChannel {

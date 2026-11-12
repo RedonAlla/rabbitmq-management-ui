@@ -31,6 +31,10 @@ export interface RateChartPoint {
   [series: string]: string | number | undefined;
 }
 
+function formatRateValue(value: number): string {
+  return value > 0 && value < 1 ? value.toFixed(2) : fmtCompact(value);
+}
+
 function samplesToRates(
   samples: ConnectionRateSample[]
 ): Map<number, number> {
@@ -49,28 +53,38 @@ function samplesToRates(
   return rates;
 }
 
-export function buildRateChartData(
-  connection: ConnectionDetail
+export function buildRateChartDataFromSamples(
+  series: { key: string; samples: ConnectionRateSample[] }[]
 ): RateChartPoint[] {
-  const recvRates = samplesToRates(connection.recv.samples);
-  const sendRates = samplesToRates(connection.send.samples);
-  const reductionsRates = connection.reductionsRate
-    ? samplesToRates(connection.reductionsRate.samples)
-    : new Map<number, number>();
-  const timestamps = new Set<number>([
-    ...recvRates.keys(),
-    ...sendRates.keys(),
-    ...reductionsRates.keys(),
-  ]);
+  const rateMaps = new Map<string, Map<number, number>>();
+  const timestamps = new Set<number>();
+  for (const item of series) {
+    const rates = samplesToRates(item.samples);
+    rateMaps.set(item.key, rates);
+    for (const timestamp of rates.keys()) timestamps.add(timestamp);
+  }
 
   return [...timestamps]
     .sort((a, b) => a - b)
-    .map((timestamp) => ({
-      label: timeFmt.format(timestamp),
-      recv: recvRates.get(timestamp),
-      send: sendRates.get(timestamp),
-      reductions: reductionsRates.get(timestamp),
-    }));
+    .map((timestamp) => {
+      const point: RateChartPoint = { label: timeFmt.format(timestamp) };
+      for (const item of series) {
+        point[item.key] = rateMaps.get(item.key)?.get(timestamp);
+      }
+      return point;
+    });
+}
+
+export function buildRateChartData(
+  connection: ConnectionDetail
+): RateChartPoint[] {
+  return buildRateChartDataFromSamples([
+    { key: "recv", samples: connection.recv.samples },
+    { key: "send", samples: connection.send.samples },
+    ...(connection.reductionsRate
+      ? [{ key: "reductions", samples: connection.reductionsRate.samples }]
+      : []),
+  ]);
 }
 
 export function RateChart({
@@ -109,14 +123,14 @@ export function RateChart({
           tickLine={false}
           axisLine={false}
           tickMargin={4}
-          tickFormatter={(value: number) => fmtCompact(value)}
+          tickFormatter={(value: number) => formatRateValue(value)}
         />
         <ChartTooltip
           cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
           content={
             <ChartTooltipContent
               indicator="line"
-              formatter={(value) => fmtCompact(Number(value))}
+              formatter={(value) => formatRateValue(Number(value))}
             />
           }
         />

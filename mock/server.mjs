@@ -760,7 +760,31 @@ const server = createServer(async (req, res) => {
       const channel = state.channels.find((entry) => entry.name === name)
       if (rest.length && method === "GET") {
         if (!channel) return sendError(res, 404, "not_found", `channel '${name}' not found`)
-        sendJson(res, 200, channel)
+        const age = Math.max(60, Number(url.searchParams.get("data_rates_age") ?? 60) || 60)
+        const incr = Math.max(5, Number(url.searchParams.get("data_rates_incr") ?? 5) || 5)
+        const msgAge = Math.max(60, Number(url.searchParams.get("msg_rates_age") ?? age) || age)
+        const msgIncr = Math.max(5, Number(url.searchParams.get("msg_rates_incr") ?? incr) || incr)
+        const stats = channel.message_stats ?? {}
+        const rateOf = (details) => details?.rate ?? 0
+        const detail = (rate) =>
+          rateDetails(Math.round(rate * msgAge), rate, msgAge, msgIncr)
+        const publishRate = rateOf(stats.publish_details)
+        const deliverRate = rateOf(stats.deliver_details)
+        sendJson(res, 200, {
+          ...channel,
+          message_stats: {
+            publish_details: detail(publishRate),
+            deliver_details: detail(deliverRate),
+            ack_details: detail(rateOf(stats.ack_details)),
+            deliver_get_details: detail(deliverRate),
+            deliver_no_ack_details: detail(0),
+            get_details: detail(0),
+            get_empty_details: detail(0),
+            get_no_ack_details: detail(0),
+            redeliver_details: detail(deliverRate * 0.02),
+          },
+          reductions_details: detail(publishRate * 6 + deliverRate * 2),
+        })
         return
       }
       if (rest.length && method === "DELETE") {
