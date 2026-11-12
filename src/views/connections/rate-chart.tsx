@@ -28,9 +28,7 @@ const timeFmt = new Intl.DateTimeFormat("en-US", {
 
 export interface RateChartPoint {
   label: string;
-  recv?: number;
-  send?: number;
-  reductions?: number;
+  [series: string]: string | number | undefined;
 }
 
 function samplesToRates(
@@ -75,8 +73,6 @@ export function buildRateChartData(
     }));
 }
 
-type RateSeriesKey = "recv" | "send" | "reductions";
-
 export function RateChart({
   title,
   data,
@@ -84,7 +80,7 @@ export function RateChart({
 }: {
   title: string;
   data: RateChartPoint[];
-  series: { key: RateSeriesKey; label: string; color: string; legend?: string }[];
+  series: { key: string; label: string; color: string; legend?: string }[];
 }) {
   const config: ChartConfig = {};
   for (const item of series) {

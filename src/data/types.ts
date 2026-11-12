@@ -101,8 +101,27 @@ export interface Channel {
   state: string
   publishRate: number
   deliverRate: number
+  ackRate: number
+  deliverGetRate: number
+  deliverNoAckRate: number
+  getRate: number
+  getEmptyRate: number
+  getNoAckRate: number
+  redeliverRate: number
   confirmMode: boolean
   transactional: boolean
+}
+
+export interface ChannelRatePoint {
+  at: number
+  ack: number
+  deliver: number
+  deliverGet: number
+  deliverNoAck: number
+  get: number
+  getEmpty: number
+  getNoAck: number
+  redeliver: number
 }
 
 export interface User {

@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react"
 import type {
+  ChannelRatePoint,
   HistoryPoint,
   Policy,
   RangeKey,
@@ -26,6 +27,8 @@ import { useAuth } from "@/store/auth"
 
 const POLL_MS = 5000
 const SAMPLE_RETENTION_MS = 24 * 60 * 60 * 1000
+const CHANNEL_RATE_RETENTION_MS = 5 * 60 * 1000
+const CHANNEL_RATE_MIN_GAP_MS = 2000
 
 const EMPTY_TOTALS: ClusterTotals = {
   queues: 0,
@@ -87,6 +90,7 @@ interface ClusterState {
   data: ClusterSnapshot
   totals: ClusterTotals
   samples: HistorySample[]
+  channelRates: Record<string, ChannelRatePoint[]>
   live: boolean
   status: "loading" | "ready"
   error: string | null
@@ -122,6 +126,29 @@ function reducer(state: ClusterState, action: Action): ClusterState {
         ...state.samples,
         { at: time, totals: snapshot.totals },
       ].filter((sample) => time - sample.at <= SAMPLE_RETENTION_MS)
+      const channelRates: Record<string, ChannelRatePoint[]> = {}
+      for (const channel of snapshot.channels) {
+        const previous = state.channelRates[channel.id] ?? []
+        const last = previous[previous.length - 1]
+        const point = {
+          at: time,
+          ack: channel.ackRate,
+          deliver: channel.deliverRate,
+          deliverGet: channel.deliverGetRate,
+          deliverNoAck: channel.deliverNoAckRate,
+          get: channel.getRate,
+          getEmpty: channel.getEmptyRate,
+          getNoAck: channel.getNoAckRate,
+          redeliver: channel.redeliverRate,
+        }
+        const series =
+          last && time - last.at < CHANNEL_RATE_MIN_GAP_MS
+            ? [...previous.slice(0, -1), point]
+            : [...previous, point]
+        channelRates[channel.id] = series.filter(
+          (entry) => time - entry.at <= CHANNEL_RATE_RETENTION_MS
+        )
+      }
       return {
         ...state,
         data: {
@@ -133,6 +160,7 @@ function reducer(state: ClusterState, action: Action): ClusterState {
         },
         totals: snapshot.totals,
         samples,
+        channelRates,
         status: "ready",
         error: null,
         lastUpdated: time,
@@ -154,6 +182,7 @@ function createInitialState(): ClusterState {
     data: emptyData(),
     totals: EMPTY_TOTALS,
     samples: [],
+    channelRates: {},
     live: true,
     status: "loading",
     error: null,

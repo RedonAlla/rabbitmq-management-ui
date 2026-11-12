@@ -1,5 +1,12 @@
 import { useMemo, useState } from "react";
-import { ArrowRightIcon, XIcon } from "lucide-react";
+import {
+  ArrowRightIcon,
+  MessageSquareIcon,
+  SendIcon,
+  TimerIcon,
+  UsersIcon,
+  XIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,10 +19,32 @@ import { useCluster } from "@/store/cluster";
 import { useRoute, routeHref } from "@/lib/router";
 import { fmtInt, fmtRate, fmtSince } from "@/lib/format";
 import { NotFoundView } from "@/views/not-found";
+import { RateChart, type RateChartPoint } from "@/views/connections/rate-chart";
+import type { ChannelRatePoint } from "@/data/types";
+
+const chartTime = new Intl.DateTimeFormat("en-US", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
+type ChannelRateKey = Exclude<keyof ChannelRatePoint, "at">;
+
+const RATE_SERIES: { key: ChannelRateKey; label: string; color: string }[] = [
+  { key: "ack", label: "Ack", color: "var(--chart-1)" },
+  { key: "deliver", label: "Deliver", color: "var(--chart-2)" },
+  { key: "deliverGet", label: "Deliver (get)", color: "var(--chart-3)" },
+  { key: "deliverNoAck", label: "Deliver no ack", color: "var(--chart-4)" },
+  { key: "get", label: "Get", color: "var(--chart-5)" },
+  { key: "getEmpty", label: "Get empty", color: "var(--chart-6)" },
+  { key: "getNoAck", label: "Get no ack", color: "var(--chart-7)" },
+  { key: "redeliver", label: "Redeliver", color: "var(--chart-8)" },
+];
 
 export function ChannelDetailView() {
   const { route, navigate } = useRoute();
-  const { data, actions } = useCluster();
+  const { data, actions, channelRates } = useCluster();
   const [confirmClose, setConfirmClose] = useState(false);
 
   const channel = data.channels.find((entry) => entry.id === route.id);
@@ -24,6 +53,28 @@ export function ChannelDetailView() {
     () => data.consumers.filter((consumer) => consumer.channel === route.id),
     [data.consumers, route.id]
   );
+  const ratePoints = useMemo(
+    () => (route.id ? (channelRates[route.id] ?? []) : []),
+    [channelRates, route.id]
+  );
+  const chartData = useMemo<RateChartPoint[]>(
+    () =>
+      ratePoints.map(({ at, ...rates }) => ({
+        label: chartTime.format(at),
+        ...rates,
+      })),
+    [ratePoints]
+  );
+  const rateAverages = useMemo(() => {
+    const averages = {} as Record<ChannelRateKey, number>;
+    for (const series of RATE_SERIES) {
+      averages[series.key] = ratePoints.length
+        ? ratePoints.reduce((sum, point) => sum + point[series.key], 0) /
+          ratePoints.length
+        : 0;
+    }
+    return averages;
+  }, [ratePoints]);
 
   if (!channel) {
     return (
@@ -60,45 +111,88 @@ export function ChannelDetailView() {
       />
 
       <KpiGrid>
-        <KpiCard label="Consumers" value={fmtInt(channel.consumers)} detail={`${consumers.length} subscriptions`} />
-        <KpiCard label="Unacked" value={fmtInt(channel.unacked)} detail="Awaiting acknowledgement" tone="warning" />
-        <KpiCard label="Publish" value={fmtRate(channel.publishRate)} detail="Messages in per second" />
-        <KpiCard label="Deliver" value={fmtRate(channel.deliverRate)} detail="Messages out per second" tone="success" />
+        <KpiCard
+          label="Consumers"
+          value={fmtInt(channel.consumers)}
+          detail={`${consumers.length} subscriptions`}
+          icon={<UsersIcon aria-hidden="true" />}
+        />
+        <KpiCard
+          label="Unacked"
+          value={fmtInt(channel.unacked)}
+          detail="Awaiting acknowledgement"
+          tone="warning"
+          icon={<TimerIcon aria-hidden="true" />}
+        />
+        <KpiCard
+          label="Publish"
+          value={fmtRate(channel.publishRate)}
+          detail="Messages in per second"
+          icon={<MessageSquareIcon aria-hidden="true" />}
+        />
+        <KpiCard
+          label="Deliver"
+          value={fmtRate(channel.deliverRate)}
+          detail="Messages out per second"
+          tone="success"
+          icon={<SendIcon aria-hidden="true" />}
+        />
       </KpiGrid>
 
       <DetailLayout
         main={
-          <SectionFrame
-            title="Consumers"
-            description={`${consumers.length} subscriptions on this channel.`}
-          >
-            {consumers.length ? (
-              <ul className="flex flex-col divide-y divide-border">
-                {consumers.map((consumer) => (
-                  <li key={consumer.tag} className="flex flex-col gap-1 py-2 first:pt-0 last:pb-0">
-                    <div className="flex min-w-0 items-center justify-between gap-2">
-                      <a
-                        href={routeHref("queue", consumer.queue)}
-                        className="flex min-w-0 items-center gap-1.5 text-sm font-medium transition-colors hover:text-primary"
-                      >
-                        {consumer.queue}
-                        <ArrowRightIcon aria-hidden="true" className="size-3.5 text-muted-foreground" />
-                      </a>
-                      <span className="data-cell text-xs text-muted-foreground">{consumer.tag}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      prefetch {consumer.prefetch === 0 ? "unlimited" : consumer.prefetch} ·{" "}
-                      {consumer.ackRequired ? "manual ack" : "auto ack"} ·{" "}
-                      {consumer.exclusive ? "exclusive" : "shared"} · active{" "}
-                      {fmtSince(consumer.since, new Date().getTime())}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-xs text-muted-foreground">This channel carries no consumers.</p>
-            )}
-          </SectionFrame>
+          <>
+            <SectionFrame
+              title="Message rates"
+              description="Delivery, get and acknowledgement rates per second, sampled every 5 seconds."
+            >
+              {chartData.length > 1 ? (
+                <RateChart
+                  title="Message rates"
+                  data={chartData}
+                  series={RATE_SERIES.map((series) => ({
+                    ...series,
+                    legend: `${series.label} avg ${fmtRate(rateAverages[series.key])}`,
+                  }))}
+                />
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Collecting rate samples. The chart fills in as new snapshots arrive.
+                </p>
+              )}
+            </SectionFrame>
+            <SectionFrame
+              title="Consumers"
+              description={`${consumers.length} subscriptions on this channel.`}
+            >
+              {consumers.length ? (
+                <ul className="flex flex-col divide-y divide-border">
+                  {consumers.map((consumer) => (
+                    <li key={consumer.tag} className="flex flex-col gap-1 py-2 first:pt-0 last:pb-0">
+                      <div className="flex min-w-0 items-center justify-between gap-2">
+                        <a
+                          href={routeHref("queue", consumer.queue)}
+                          className="flex min-w-0 items-center gap-1.5 text-sm font-medium transition-colors hover:text-primary"
+                        >
+                          {consumer.queue}
+                          <ArrowRightIcon aria-hidden="true" className="size-3.5 text-muted-foreground" />
+                        </a>
+                        <span className="data-cell text-xs text-muted-foreground">{consumer.tag}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        prefetch {consumer.prefetch === 0 ? "unlimited" : consumer.prefetch} ·{" "}
+                        {consumer.ackRequired ? "manual ack" : "auto ack"} ·{" "}
+                        {consumer.exclusive ? "exclusive" : "shared"} · active{" "}
+                        {fmtSince(consumer.since, new Date().getTime())}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-muted-foreground">This channel carries no consumers.</p>
+              )}
+            </SectionFrame>
+          </>
         }
         side={
           <>

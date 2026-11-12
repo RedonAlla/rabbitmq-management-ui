@@ -214,6 +214,13 @@ interface ApiChannel {
   message_stats?: {
     publish_details?: { rate: number }
     deliver_details?: { rate: number }
+    ack_details?: { rate: number }
+    deliver_get_details?: { rate: number }
+    deliver_no_ack_details?: { rate: number }
+    get_details?: { rate: number }
+    get_empty_details?: { rate: number }
+    get_no_ack_details?: { rate: number }
+    redeliver_details?: { rate: number }
   }
 }
 
@@ -705,6 +712,13 @@ function mapChannels(channels: ApiChannel[]): Channel[] {
     state: channel.state,
     publishRate: channel.message_stats?.publish_details?.rate ?? 0,
     deliverRate: channel.message_stats?.deliver_details?.rate ?? 0,
+    ackRate: channel.message_stats?.ack_details?.rate ?? 0,
+    deliverGetRate: channel.message_stats?.deliver_get_details?.rate ?? 0,
+    deliverNoAckRate: channel.message_stats?.deliver_no_ack_details?.rate ?? 0,
+    getRate: channel.message_stats?.get_details?.rate ?? 0,
+    getEmptyRate: channel.message_stats?.get_empty_details?.rate ?? 0,
+    getNoAckRate: channel.message_stats?.get_no_ack_details?.rate ?? 0,
+    redeliverRate: channel.message_stats?.redeliver_details?.rate ?? 0,
     confirmMode: channel.confirm,
     transactional: channel.transactional,
   }))
