@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import {
   ArrowRightIcon,
+  InfoIcon,
   MessageSquareIcon,
   RefreshCwIcon,
   SendIcon,
@@ -17,6 +18,7 @@ import { DetailLayout, FactPanel, SectionFrame } from "@/components/detail";
 import { StateBadge, VhostBadge } from "@/components/badges";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ChartSkeleton, RegionEmpty, RegionError } from "@/components/region-states";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCluster } from "@/store/cluster";
 import { useChannelDetail } from "@/hooks/use-channel-detail";
@@ -118,6 +120,32 @@ function RateChartFrame({
         />
       )}
     </SectionFrame>
+  );
+}
+
+function PrefetchHint() {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span
+            tabIndex={0}
+            aria-label="About channel prefetch count"
+            className="inline-flex text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-3.5"
+          >
+            <InfoIcon />
+          </span>
+        }
+      />
+      <TooltipContent side="top" className="max-w-72 flex-col items-start gap-1">
+        <span className="font-medium">Channel prefetch count.</span>
+        <span>
+          Each channel can have a prefetch count. The prefetch is the number of
+          messages that will be held by the client. Setting a value of 0 will
+          result in an unlimited prefetch.
+        </span>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -336,8 +364,19 @@ export function ChannelDetailView() {
             <FactPanel
               title="Flow control"
               facts={[
-                { label: "Prefetch", value: channel.prefetch === 0 ? "Unlimited" : String(channel.prefetch) },
-                { label: "Confirm mode", value: channel.confirmMode ? "Enabled" : "Disabled" },
+                {
+                  label: "Prefetch",
+                  hint: <PrefetchHint />,
+                  value: channel.prefetch === 0 ? "Unlimited" : String(channel.prefetch),
+                },
+                {
+                  label: "Confirm mode",
+                  value: (
+                    <Badge variant={channel.confirmMode ? "success-light" : "outline"}>
+                      {channel.confirmMode ? "Enabled" : "Disabled"}
+                    </Badge>
+                  ),
+                },
                 { label: "Transactional", value: channel.transactional ? "Yes" : "No" },
                 { label: "Consumers", value: String(channel.consumers) },
               ]}

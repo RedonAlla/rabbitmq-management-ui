@@ -12,6 +12,7 @@ export interface Fact {
   label: string;
   value: ReactNode;
   mono?: boolean;
+  hint?: ReactNode;
 }
 
 export function FactPanel({
@@ -38,7 +39,15 @@ export function FactPanel({
               key={fact.label}
               className="flex items-start justify-between gap-4 py-2 first:pt-0 last:pb-0"
             >
-              <dt className="text-xs text-muted-foreground">{fact.label}</dt>
+              <dt
+                className={cn(
+                  "text-xs text-muted-foreground",
+                  fact.hint && "flex items-center gap-1"
+                )}
+              >
+                {fact.label}
+                {fact.hint}
+              </dt>
               <dd
                 className={cn(
                   "max-w-[65%] text-right text-sm [overflow-wrap:anywhere]",
