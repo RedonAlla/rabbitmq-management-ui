@@ -129,8 +129,20 @@ export function RateChart({
           cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
           content={
             <ChartTooltipContent
-              indicator="line"
-              formatter={(value) => formatRateValue(Number(value))}
+              indicator="dot"
+              formatter={(value, name, item) => (
+                <div className="flex w-full items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                    style={{ backgroundColor: item.color ?? item.stroke }}
+                  />
+                  <span className="flex-1 text-muted-foreground">{name}</span>
+                  <span className="font-mono font-medium text-foreground tabular-nums">
+                    {formatRateValue(Number(value))}/s
+                  </span>
+                </div>
+              )}
             />
           }
         />
