@@ -784,6 +784,19 @@ const server = createServer(async (req, res) => {
             redeliver_details: detail(deliverRate * 0.02),
           },
           reductions_details: detail(publishRate * 6 + deliverRate * 2),
+          consumer_details: state.consumers
+            .filter((consumer) => consumer.channel_details.name === name)
+            .map((consumer) => ({
+              consumer_tag: consumer.consumer_tag,
+              queue: consumer.queue,
+              ack_required: consumer.ack_required,
+              exclusive: consumer.exclusive,
+              prefetch_count: consumer.prefetch_count,
+              active: consumer.active ?? true,
+              activity_status: consumer.activity_status ?? "up",
+              consumer_timeout: consumer.consumer_timeout,
+              arguments: consumer.arguments ?? {},
+            })),
         })
         return
       }

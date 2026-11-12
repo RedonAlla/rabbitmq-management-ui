@@ -214,6 +214,19 @@ interface ApiChannel {
   message_stats?: ApiChannelMessageStats
   reductions_details?: ApiRateDetails
   garbage_collection?: ApiGarbageCollection
+  consumer_details?: ApiChannelConsumer[]
+}
+
+interface ApiChannelConsumer {
+  consumer_tag: string
+  queue: { name: string; vhost: string }
+  ack_required: boolean
+  active: boolean
+  activity_status?: string
+  exclusive?: boolean
+  prefetch_count: number
+  consumer_timeout?: number
+  arguments?: Record<string, unknown>
 }
 
 interface ApiGarbageCollection {
@@ -426,10 +439,23 @@ export interface ChannelGarbageCollection {
   minorGcs: number | null
 }
 
+export interface ChannelConsumer {
+  tag: string
+  queue: string
+  vhost: string
+  ackRequired: boolean
+  active: boolean
+  activityStatus: string
+  prefetchCount: number
+  consumerTimeout: number | null
+  arguments: Record<string, unknown>
+}
+
 export interface ChannelDetail {
   name: string
   rates: Record<ChannelRateKey, ChannelRate>
   garbageCollection: ChannelGarbageCollection | null
+  consumers: ChannelConsumer[]
 }
 
 interface ApiConnectionsResponse {
@@ -941,6 +967,17 @@ function mapChannelDetail(detail: ApiChannel): ChannelDetail {
           minorGcs: gc.minor_gcs ?? null,
         }
       : null,
+    consumers: (detail.consumer_details ?? []).map((consumer) => ({
+      tag: consumer.consumer_tag,
+      queue: consumer.queue.name,
+      vhost: consumer.queue.vhost,
+      ackRequired: consumer.ack_required,
+      active: consumer.active,
+      activityStatus: consumer.activity_status ?? (consumer.active ? "up" : "down"),
+      prefetchCount: consumer.prefetch_count,
+      consumerTimeout: consumer.consumer_timeout ?? null,
+      arguments: consumer.arguments ?? {},
+    })),
     rates: {
       ack: mapRate(stats.ack_details),
       deliver: mapRate(stats.deliver_details),

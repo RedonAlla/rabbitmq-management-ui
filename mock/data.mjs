@@ -543,9 +543,12 @@ export function createState() {
       exclusive: false,
       prefetch_count: prefetch,
       active: true,
-      activity_status: "up",
+      activity_status: tag.startsWith("ctag-orders") ? "blocked" : "up",
+      consumer_timeout: 1800000,
       connected_at: connection.connected_at,
-      arguments: {},
+      arguments: tag.startsWith("ctag-orders")
+        ? { "x-priority": 10, "x-cancel-on-ha-failover": true }
+        : {},
     }
   })
 

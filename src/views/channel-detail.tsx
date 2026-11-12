@@ -1,10 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import {
-  ArrowRightIcon,
-  InfoIcon,
-  RefreshCwIcon,
-  XIcon,
-} from "lucide-react";
+import { InfoIcon, RefreshCwIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,10 +17,11 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCluster } from "@/store/cluster";
 import { useChannelDetail } from "@/hooks/use-channel-detail";
 import { useRoute, routeHref } from "@/lib/router";
-import { fmtInt, fmtRate, fmtSince } from "@/lib/format";
+import { fmtInt, fmtRate } from "@/lib/format";
 import type { ChannelRateKey, ChannelRateRange } from "@/lib/rabbit-api";
 import { NotFoundView } from "@/views/not-found";
 import GarbageCollectionFrame from "@/views/channels/garbage-collection-frame";
+import ConsumersTable from "@/views/channels/consumers-table";
 import ChannelKpis from "@/views/channels/kpis";
 import {
   RateChart,
@@ -164,10 +160,7 @@ export function ChannelDetailView() {
 
   const channel = data.channels.find((entry) => entry.id === route.id);
   const connection = data.connections.find((entry) => entry.id === channel?.connection);
-  const consumers = useMemo(
-    () => data.consumers.filter((consumer) => consumer.channel === route.id),
-    [data.consumers, route.id]
-  );
+  const consumers = detail?.consumers ?? [];
   const chartData = useMemo<RateChartPoint[]>(() => {
     if (!detail) return [];
     return buildRateChartDataFromSamples([
@@ -277,37 +270,12 @@ export function ChannelDetailView() {
               error={detailError}
               onRetry={retryDetail}
             />
-            <SectionFrame
-              title="Consumers"
-              description={`${consumers.length} subscriptions on this channel.`}
-            >
-              {consumers.length ? (
-                <ul className="flex flex-col divide-y divide-border">
-                  {consumers.map((consumer) => (
-                    <li key={consumer.tag} className="flex flex-col gap-1 py-2 first:pt-0 last:pb-0">
-                      <div className="flex min-w-0 items-center justify-between gap-2">
-                        <a
-                          href={routeHref("queue", consumer.queue)}
-                          className="flex min-w-0 items-center gap-1.5 text-sm font-medium transition-colors hover:text-primary"
-                        >
-                          {consumer.queue}
-                          <ArrowRightIcon aria-hidden="true" className="size-3.5 text-muted-foreground" />
-                        </a>
-                        <span className="data-cell text-xs text-muted-foreground">{consumer.tag}</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        prefetch {consumer.prefetch === 0 ? "unlimited" : consumer.prefetch} ·{" "}
-                        {consumer.ackRequired ? "manual ack" : "auto ack"} ·{" "}
-                        {consumer.exclusive ? "exclusive" : "shared"} · active{" "}
-                        {fmtSince(consumer.since, new Date().getTime())}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-xs text-muted-foreground">This channel carries no consumers.</p>
-              )}
-            </SectionFrame>
+            <ConsumersTable
+              consumers={consumers}
+              loading={detailLoading}
+              error={detailError}
+              onRetry={retryDetail}
+            />
             <GarbageCollectionFrame
               collection={garbageCollection}
               loading={detailLoading}
