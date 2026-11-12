@@ -2,18 +2,13 @@ import { useMemo, useState, type ReactNode } from "react";
 import {
   ArrowRightIcon,
   InfoIcon,
-  MessageSquareIcon,
   RefreshCwIcon,
-  SendIcon,
-  TimerIcon,
-  UsersIcon,
   XIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
-import { KpiCard, KpiGrid } from "@/components/kpi";
 import { DetailLayout, FactPanel, SectionFrame } from "@/components/detail";
 import { StateBadge, VhostBadge } from "@/components/badges";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -31,6 +26,7 @@ import { fmtInt, fmtRate, fmtSince } from "@/lib/format";
 import type { ChannelRateKey, ChannelRateRange } from "@/lib/rabbit-api";
 import { NotFoundView } from "@/views/not-found";
 import GarbageCollectionFrame from "@/views/channels/garbage-collection-frame";
+import ChannelKpis from "@/views/channels/kpis";
 import {
   RateChart,
   buildRateChartDataFromSamples,
@@ -248,34 +244,7 @@ export function ChannelDetailView() {
         }
       />
 
-      <KpiGrid>
-        <KpiCard
-          label="Consumers"
-          value={fmtInt(channel.consumers)}
-          detail={`${consumers.length} subscriptions`}
-          icon={<UsersIcon aria-hidden="true" />}
-        />
-        <KpiCard
-          label="Unacked"
-          value={fmtInt(channel.unacked)}
-          detail="Awaiting acknowledgement"
-          tone="warning"
-          icon={<TimerIcon aria-hidden="true" />}
-        />
-        <KpiCard
-          label="Publish"
-          value={fmtRate(channel.publishRate)}
-          detail="Messages in per second"
-          icon={<MessageSquareIcon aria-hidden="true" />}
-        />
-        <KpiCard
-          label="Deliver"
-          value={fmtRate(channel.deliverRate)}
-          detail="Messages out per second"
-          tone="success"
-          icon={<SendIcon aria-hidden="true" />}
-        />
-      </KpiGrid>
+      <ChannelKpis channel={channel} subscriptions={consumers.length} />
 
       <DetailLayout
         main={
