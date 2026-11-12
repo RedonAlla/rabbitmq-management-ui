@@ -105,7 +105,7 @@ export function RateChart({
   return (
     <ChartContainer
       config={config}
-      className="aspect-auto h-[200px] w-full"
+      className="aspect-auto h-[200px] w-full [&_.recharts-tooltip-wrapper]:z-50"
       role="img"
       aria-label={`${title} chart`}
     >

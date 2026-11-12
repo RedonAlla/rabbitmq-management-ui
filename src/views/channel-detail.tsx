@@ -318,6 +318,7 @@ export function ChannelDetailView() {
                 { label: "User", value: channel.user, mono: true },
                 { label: "Virtual host", value: channel.vhost, mono: true },
                 { label: "Node", value: channel.node, mono: true },
+                { label: "State", value: <StateBadge state={channel.state} /> },
               ]}
             />
             <FactPanel
