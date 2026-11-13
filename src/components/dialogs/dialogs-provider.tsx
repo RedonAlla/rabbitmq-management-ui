@@ -986,29 +986,48 @@ function AddQueueDrawer({
                           Select one or more to add to the arguments.
                         </PopoverDescription>
                       </PopoverHeader>
-                      <div className="flex flex-col gap-1">
-                        {ARGUMENT_PRESETS[type].map((preset) => (
-                          <div
-                            key={preset.id}
-                            className="flex items-start gap-2 p-1 transition-colors hover:bg-accent"
-                          >
-                            <Checkbox
-                              aria-label={preset.label}
-                              checked={presetSelection.includes(preset.id)}
-                              onCheckedChange={(checked) =>
-                                togglePreset(preset.id, checked)
-                              }
-                            />
-                            <div className="flex min-w-0 flex-col gap-0.5">
-                              <span className="text-sm font-medium">
-                                {preset.label}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {preset.notes}
+                      <div className="flex flex-col gap-2">
+                        {ARGUMENT_PRESETS[type].map((preset) => {
+                          const selected = presetSelection.includes(preset.id);
+                          return (
+                            <div
+                              key={preset.id}
+                              className={cn(
+                                "flex cursor-pointer items-start gap-3 rounded-lg border px-2.5 py-1 transition-colors",
+                                selected
+                                  ? "border-primary bg-primary/5"
+                                  : "border-input hover:bg-accent/50"
+                              )}
+                              onClick={(event) => {
+                                if (
+                                  (event.target as HTMLElement).closest(
+                                    "[role=checkbox]"
+                                  )
+                                ) {
+                                  return;
+                                }
+                                togglePreset(preset.id, !selected);
+                              }}
+                            >
+                              <Checkbox
+                                aria-label={preset.label}
+                                checked={selected}
+                                onCheckedChange={(checked) =>
+                                  togglePreset(preset.id, checked)
+                                }
+                                className="mt-0.5"
+                              />
+                              <span className="flex min-w-0 flex-col gap-0.5">
+                                <span className="text-sm font-medium">
+                                  {preset.label}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {preset.notes}
+                                </span>
                               </span>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       <Button
                         type="button"
