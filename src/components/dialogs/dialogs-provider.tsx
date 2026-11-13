@@ -8,7 +8,8 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
-import { PlusIcon, XIcon } from "lucide-react";
+import { ListPlusIcon, PlusIcon, XIcon } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -28,6 +29,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Sheet,
   SheetClose,
@@ -111,6 +120,220 @@ const ARGUMENT_PAIRS_PLACEHOLDER =
   "x-max-length=50000\nx-dead-letter-exchange=dlx";
 
 const ARGUMENT_JSON_PLACEHOLDER = '{\n  "x-max-length": 50000\n}';
+
+type ArgumentPreset = {
+  id: string;
+  label: string;
+  notes: string;
+  args: { key: string; type: ArgumentType; value: string }[];
+};
+
+const CLASSIC_ARGUMENT_PRESETS: ArgumentPreset[] = [
+  {
+    id: "auto-expire",
+    label: "Auto expire",
+    notes:
+      "How long a queue can be unused for before it is automatically deleted (milliseconds).",
+    args: [{ key: "x-expires", type: "number", value: "" }],
+  },
+  {
+    id: "message-ttl",
+    label: "Message TTL",
+    notes: "Per-queue message expiry (ms)",
+    args: [{ key: "x-message-ttl", type: "number", value: "" }],
+  },
+  {
+    id: "overflow",
+    label: "Overflow behaviour",
+    notes: "drop-head, reject-publish, reject-publish-dlx",
+    args: [{ key: "x-overflow", type: "string", value: "" }],
+  },
+  {
+    id: "single-active-consumer",
+    label: "Single active consumer",
+    notes: "Only one consumer receives at a time",
+    args: [{ key: "x-single-active-consumer", type: "boolean", value: "true" }],
+  },
+  {
+    id: "dead-letter-exchange",
+    label: "Dead letter exchange",
+    notes: "Exchange for rejected or expired messages",
+    args: [{ key: "x-dead-letter-exchange", type: "string", value: "" }],
+  },
+  {
+    id: "dead-letter-routing-key",
+    label: "Dead letter routing key",
+    notes: "Routing key applied to dead-lettered messages",
+    args: [{ key: "x-dead-letter-routing-key", type: "string", value: "" }],
+  },
+  {
+    id: "max-length",
+    label: "Max length",
+    notes: "Max number of messages",
+    args: [{ key: "x-max-length", type: "number", value: "" }],
+  },
+  {
+    id: "max-length-bytes",
+    label: "Max length bytes",
+    notes: "Max total size",
+    args: [{ key: "x-max-length-bytes", type: "number", value: "" }],
+  },
+  {
+    id: "max-priority",
+    label: "Maximum priority",
+    notes: "0-255, fixed at declaration time",
+    args: [{ key: "x-max-priority", type: "number", value: "" }],
+  },
+  {
+    id: "leader-locator",
+    label: "Leader locator",
+    notes: "Node placement for the queue",
+    args: [{ key: "x-queue-leader-locator", type: "string", value: "" }],
+  },
+];
+
+const QUORUM_ARGUMENT_PRESETS: ArgumentPreset[] = [
+  {
+    id: "auto-expire",
+    label: "Auto expire",
+    notes:
+      "How long a queue can be unused for before it is automatically deleted (milliseconds).",
+    args: [{ key: "x-expires", type: "number", value: "" }],
+  },
+  {
+    id: "message-ttl",
+    label: "Message TTL",
+    notes: "Per-queue message expiry (ms)",
+    args: [{ key: "x-message-ttl", type: "number", value: "" }],
+  },
+  {
+    id: "overflow",
+    label: "Overflow behaviour",
+    notes: "drop-head, reject-publish, reject-publish-dlx",
+    args: [{ key: "x-overflow", type: "string", value: "" }],
+  },
+  {
+    id: "single-active-consumer",
+    label: "Single active consumer",
+    notes: "Only one consumer receives at a time",
+    args: [{ key: "x-single-active-consumer", type: "boolean", value: "true" }],
+  },
+  {
+    id: "dead-letter-exchange",
+    label: "Dead letter exchange",
+    notes: "Exchange for rejected or expired messages",
+    args: [{ key: "x-dead-letter-exchange", type: "string", value: "" }],
+  },
+  {
+    id: "dead-letter-routing-key",
+    label: "Dead letter routing key",
+    notes: "Routing key applied to dead-lettered messages",
+    args: [{ key: "x-dead-letter-routing-key", type: "string", value: "" }],
+  },
+  {
+    id: "dead-letter-strategy",
+    label: "Dead letter strategy",
+    notes: "at-most-once (default) or at-least-once",
+    args: [{ key: "x-dead-letter-strategy", type: "string", value: "at-most-once" }],
+  },
+  {
+    id: "max-length",
+    label: "Max length / bytes",
+    notes: "Cap the queue by message count and total size",
+    args: [
+      { key: "x-max-length", type: "number", value: "" },
+      { key: "x-max-length-bytes", type: "number", value: "" },
+    ],
+  },
+  {
+    id: "delivery-limit",
+    label: "Delivery limit",
+    notes: "Max redeliveries before dead-lettering/dropping",
+    args: [{ key: "x-delivery-limit", type: "number", value: "20" }],
+  },
+  {
+    id: "initial-group-size",
+    label: "Initial group size",
+    notes: "Number of replicas at creation",
+    args: [{ key: "x-quorum-initial-group-size", type: "number", value: "3" }],
+  },
+  {
+    id: "target-group-size",
+    label: "Target group size",
+    notes: "Replica count the cluster tries to maintain",
+    args: [{ key: "x-quorum-target-group-size", type: "number", value: "" }],
+  },
+  {
+    id: "leader-locator",
+    label: "Leader locator",
+    notes: "Node placement for the queue",
+    args: [{ key: "x-queue-leader-locator", type: "string", value: "" }],
+  },
+  {
+    id: "delayed-retry",
+    label: "Delayed retry (4.3+)",
+    notes: "Requires the delayed retry feature flag",
+    args: [
+      { key: "x-delayed-retry-type", type: "string", value: "" },
+      { key: "x-delayed-retry-min", type: "number", value: "" },
+      { key: "x-delayed-retry-max", type: "number", value: "" },
+    ],
+  },
+  {
+    id: "consumer-timeout",
+    label: "Consumer timeout (4.3+)",
+    notes: "Handled by quorum queues (and JMS queues) in 4.3+",
+    args: [{ key: "x-consumer-timeout", type: "number", value: "" }],
+  },
+];
+
+const STREAM_ARGUMENT_PRESETS: ArgumentPreset[] = [
+  {
+    id: "max-length-bytes",
+    label: "Max length bytes",
+    notes: "Retention by total size",
+    args: [{ key: "x-max-length-bytes", type: "number", value: "" }],
+  },
+  {
+    id: "max-age",
+    label: "Max age",
+    notes: "Retention by age, e.g. 7D, 12h",
+    args: [{ key: "x-max-age", type: "string", value: "7D" }],
+  },
+  {
+    id: "max-segment-size",
+    label: "Max segment size",
+    notes: "Size of each stream segment file",
+    args: [
+      { key: "x-stream-max-segment-size-bytes", type: "number", value: "500000000" },
+    ],
+  },
+  {
+    id: "initial-cluster-size",
+    label: "Initial cluster size",
+    notes: "Number of replicas",
+    args: [{ key: "x-initial-cluster-size", type: "number", value: "3" }],
+  },
+  {
+    id: "filter-size",
+    label: "Stream filter size",
+    notes: "Bloom filter size for filtering",
+    args: [{ key: "x-stream-filter-size-bytes", type: "number", value: "16" }],
+  },
+  {
+    id: "leader-locator",
+    label: "Leader locator",
+    notes: "Node placement for the queue",
+    args: [{ key: "x-queue-leader-locator", type: "string", value: "" }],
+  },
+];
+
+const ARGUMENT_PRESETS: Record<QueueDeclarationType, ArgumentPreset[]> = {
+  default: CLASSIC_ARGUMENT_PRESETS,
+  classic: CLASSIC_ARGUMENT_PRESETS,
+  quorum: QUORUM_ARGUMENT_PRESETS,
+  stream: STREAM_ARGUMENT_PRESETS,
+};
 
 function parsePairValue(raw: string): QueueArgumentValue {
   const text = raw.trim();
@@ -221,9 +444,8 @@ function rowsToArgumentObject(
     switch (row.type) {
       case "number": {
         const value = row.value.trim();
-        if (value !== "" && Number.isFinite(Number(value))) {
-          args[key] = Number(value);
-        }
+        args[key] =
+          value !== "" && Number.isFinite(Number(value)) ? Number(value) : "";
         break;
       }
       case "boolean":
@@ -452,6 +674,8 @@ function AddQueueDrawer({
   const [argumentMode, setArgumentMode] = useState<ArgumentMode>("inputs");
   const [argumentText, setArgumentText] = useState("");
   const [argumentJson, setArgumentJson] = useState("");
+  const [presetOpen, setPresetOpen] = useState(false);
+  const [presetSelection, setPresetSelection] = useState<string[]>([]);
   const [error, setError] = useState("");
   const nextArgumentId = useRef(0);
 
@@ -518,6 +742,44 @@ function AddQueueDrawer({
     setArgumentMode(mode);
   };
 
+  const togglePreset = (id: string, checked: boolean) => {
+    setPresetSelection((selected) =>
+      checked ? [...selected, id] : selected.filter((item) => item !== id)
+    );
+  };
+
+  const applyPresets = () => {
+    const presets = ARGUMENT_PRESETS[type].filter((preset) =>
+      presetSelection.includes(preset.id)
+    );
+    if (presets.length === 0) return;
+    const nextId = () => (nextArgumentId.current += 1);
+    const base =
+      argumentMode === "pairs"
+        ? parsePairsToRows(argumentText, nextId)
+        : argumentMode === "json"
+          ? parseJsonToRows(argumentJson, nextId)
+          : argumentRows;
+    const seen = new Set(
+      base.map((row) => row.key.trim()).filter((key) => key.length > 0)
+    );
+    const added: ArgumentRow[] = [];
+    for (const preset of presets) {
+      for (const arg of preset.args) {
+        if (arg.key === "x-queue-type" || seen.has(arg.key)) continue;
+        seen.add(arg.key);
+        added.push({ id: nextId(), key: arg.key, type: arg.type, value: arg.value });
+      }
+    }
+    const rows = [...base, ...added];
+    setArgumentRows(rows);
+    if (argumentMode === "pairs") setArgumentText(rowsToArgumentText(rows));
+    if (argumentMode === "json") setArgumentJson(rowsToJsonText(rows));
+    setPresetSelection([]);
+    setPresetOpen(false);
+    setError("");
+  };
+
   const reset = () => {
     setName("");
     setVhost("/");
@@ -528,6 +790,8 @@ function AddQueueDrawer({
     setArgumentMode("inputs");
     setArgumentText("");
     setArgumentJson("");
+    setPresetOpen(false);
+    setPresetSelection([]);
     setError("");
   };
 
@@ -636,7 +900,10 @@ function AddQueueDrawer({
               <Field label="Queue type">
                 <Select
                   value={type}
-                  onValueChange={(next) => setType(String(next) as QueueDeclarationType)}
+                  onValueChange={(next) => {
+                    setType(String(next) as QueueDeclarationType);
+                    setPresetSelection([]);
+                  }}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />
@@ -689,11 +956,72 @@ function AddQueueDrawer({
                   changeArgumentMode(String(next) as ArgumentMode)
                 }
               >
-                <TabsList>
-                  <TabsTrigger value="inputs">Inputs</TabsTrigger>
-                  <TabsTrigger value="pairs">Key / value</TabsTrigger>
-                  <TabsTrigger value="json">JSON</TabsTrigger>
-                </TabsList>
+                <div className="flex flex-wrap items-center justify-between gap-1">
+                  <TabsList>
+                    <TabsTrigger value="inputs">Inputs</TabsTrigger>
+                    <TabsTrigger value="pairs">Key / value</TabsTrigger>
+                    <TabsTrigger value="json">JSON</TabsTrigger>
+                  </TabsList>
+                  <Popover open={presetOpen} onOpenChange={setPresetOpen}>
+                    <PopoverTrigger
+                      render={<Button type="button" variant="outline" size="sm" />}
+                    >
+                      <ListPlusIcon data-icon="inline-start" aria-hidden="true" />
+                      Presets
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="end"
+                      className="max-h-(--available-height) w-80 overflow-y-auto"
+                    >
+                      <PopoverHeader>
+                        <PopoverTitle>
+                          {type === "quorum"
+                            ? "Quorum"
+                            : type === "stream"
+                              ? "Stream"
+                              : "Classic"}{" "}
+                          arguments
+                        </PopoverTitle>
+                        <PopoverDescription>
+                          Select one or more to add to the arguments.
+                        </PopoverDescription>
+                      </PopoverHeader>
+                      <div className="flex flex-col gap-1">
+                        {ARGUMENT_PRESETS[type].map((preset) => (
+                          <div
+                            key={preset.id}
+                            className="flex items-start gap-2 p-1 transition-colors hover:bg-accent"
+                          >
+                            <Checkbox
+                              aria-label={preset.label}
+                              checked={presetSelection.includes(preset.id)}
+                              onCheckedChange={(checked) =>
+                                togglePreset(preset.id, checked)
+                              }
+                            />
+                            <div className="flex min-w-0 flex-col gap-0.5">
+                              <span className="text-sm font-medium">
+                                {preset.label}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {preset.notes}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="w-full"
+                        disabled={presetSelection.length === 0}
+                        onClick={applyPresets}
+                      >
+                        Add selected
+                      </Button>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <TabsContent value="inputs" className="flex flex-col gap-2">
                   {argumentRows.map((row) => (
                     <div key={row.id} className="flex items-center gap-2">
