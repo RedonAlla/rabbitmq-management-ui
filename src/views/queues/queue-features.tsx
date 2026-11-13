@@ -17,6 +17,7 @@ const DEDICATED_ARGS = new Set([
   "x-dead-letter-routing-key",
   "x-max-priority",
   "x-overflow",
+  "x-queue-type"
 ])
 
 function queueFeatures(queue: Queue): Feature[] {
@@ -87,6 +88,13 @@ function queueFeatures(queue: Queue): Feature[] {
       description:
         "Behaviour when max length is reached (drop-head, reject-publish, reject-publish-dlx).",
       active: hasArg("x-overflow"),
+    },
+    {
+      short: "DR",
+      name: "Delayed retry",
+      description:
+        "Returned messages are held back with a backoff before redelivery.",
+      active: queue.type == "quorum",
     },
     {
       short: "Args",
