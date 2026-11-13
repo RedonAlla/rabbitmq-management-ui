@@ -17,7 +17,6 @@ import {
   TriangleAlertIcon,
   UsersIcon,
   WaypointsIcon,
-  ZapIcon,
 } from "lucide-react";
 import {
   Command,
@@ -57,7 +56,7 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
-  const { data, live, actions } = useCluster();
+  const { data, actions } = useCluster();
   const { navigate } = useRoute();
   const { openDialog } = useDialogs();
   const { theme, setTheme } = useTheme();
@@ -143,13 +142,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             >
               <SendIcon aria-hidden="true" />
               Publish message
-            </CommandItem>
-            <CommandItem
-              value="toggle live updates pause"
-              onSelect={() => run(() => actions.setLive(!live))}
-            >
-              <ZapIcon aria-hidden="true" />
-              {live ? "Pause live updates" : "Resume live updates"}
             </CommandItem>
             <CommandItem
               value="theme dark light mode"

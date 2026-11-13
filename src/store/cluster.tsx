@@ -24,8 +24,11 @@ import {
 import * as rabbit from "@/lib/rabbit-api"
 import { useAuth } from "@/store/auth"
 
-const POLL_MS = 5000
+const DEFAULT_REFRESH_SECONDS = 5
 const SAMPLE_RETENTION_MS = 24 * 60 * 60 * 1000
+
+export type RefreshInterval = 5 | 15 | 30
+export const REFRESH_INTERVALS: RefreshInterval[] = [5, 15, 30]
 
 const EMPTY_TOTALS: ClusterTotals = {
   queues: 0,
@@ -87,7 +90,7 @@ interface ClusterState {
   data: ClusterSnapshot
   totals: ClusterTotals
   samples: HistorySample[]
-  live: boolean
+  refreshInterval: RefreshInterval
   status: "loading" | "ready"
   error: string | null
   lastUpdated: number
@@ -97,7 +100,7 @@ type Action =
   | { type: "loaded"; snapshot: rabbit.RabbitSnapshot; time: number }
   | { type: "failed"; message: string }
   | { type: "refresh" }
-  | { type: "set-live"; value: boolean }
+  | { type: "set-refresh-interval"; value: RefreshInterval }
 
 function trendsFrom(
   samples: HistorySample[],
@@ -142,8 +145,8 @@ function reducer(state: ClusterState, action: Action): ClusterState {
       return { ...state, status: "ready", error: action.message }
     case "refresh":
       return { ...state, status: "loading", error: null }
-    case "set-live":
-      return { ...state, live: action.value }
+    case "set-refresh-interval":
+      return { ...state, refreshInterval: action.value }
     default:
       return state
   }
@@ -154,7 +157,7 @@ function createInitialState(): ClusterState {
     data: emptyData(),
     totals: EMPTY_TOTALS,
     samples: [],
-    live: true,
+    refreshInterval: DEFAULT_REFRESH_SECONDS,
     status: "loading",
     error: null,
     lastUpdated: new Date().getTime(),
@@ -168,7 +171,7 @@ export interface LimitInput {
 }
 
 export interface ClusterActions {
-  setLive: (value: boolean) => void
+  setRefreshInterval: (value: RefreshInterval) => void
   refresh: () => void
   retry: () => void
   purgeQueue: (vhost: string, name: string) => Promise<void>
@@ -207,7 +210,7 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
   const [refreshNonce, setRefreshNonce] = useState(0)
 
   useEffect(() => {
-    if (!token || !state.live) return undefined
+    if (!token) return undefined
 
     let cancelled = false
     const controller = new AbortController()
@@ -238,13 +241,16 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
     }
 
     void load()
-    const timer = window.setInterval(() => void load(), POLL_MS)
+    const timer = window.setInterval(
+      () => void load(),
+      state.refreshInterval * 1000
+    )
     return () => {
       cancelled = true
       controller.abort()
       window.clearInterval(timer)
     }
-  }, [token, state.live, refreshNonce])
+  }, [token, state.refreshInterval, refreshNonce])
 
   const history = useMemo(
     () => historyFromSamples(state.samples, state.lastUpdated),
@@ -262,7 +268,8 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
 
   const actions = useMemo<ClusterActions>(
     () => ({
-      setLive: (value) => dispatch({ type: "set-live", value }),
+      setRefreshInterval: (value) =>
+        dispatch({ type: "set-refresh-interval", value }),
       refresh: () => {
         dispatch({ type: "refresh" })
         setRefreshNonce((value) => value + 1)

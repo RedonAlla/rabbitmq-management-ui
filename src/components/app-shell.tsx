@@ -21,6 +21,7 @@ import {
   ServerIcon,
   ShieldCheckIcon,
   SunIcon,
+  TimerIcon,
   TriangleAlertIcon,
   UsersIcon,
   WaypointsIcon,
@@ -34,6 +35,8 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
@@ -57,7 +60,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Spinner } from "@/components/ui/spinner"
-import { Switch } from "@/components/ui/switch"
 import {
   Tooltip,
   TooltipContent,
@@ -70,7 +72,11 @@ import { useTheme } from "@/components/theme-provider"
 import { routeHref, useRoute } from "@/lib/router"
 import { fmtAgo } from "@/lib/format"
 import { useAuth } from "@/store/auth"
-import { useCluster } from "@/store/cluster"
+import {
+  REFRESH_INTERVALS,
+  useCluster,
+  type RefreshInterval,
+} from "@/store/cluster"
 
 const NAV_GROUPS = [
   {
@@ -215,7 +221,8 @@ function SidebarNav({ activeFor }: { activeFor: (view: string) => boolean }) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { route, navigate } = useRoute()
-  const { totals, data, live, status, actions, lastUpdated } = useCluster()
+  const { totals, data, status, actions, lastUpdated, refreshInterval } =
+    useCluster()
   const { user, logout } = useAuth()
   const { theme, setTheme } = useTheme()
   const { openDialog } = useDialogs()
@@ -402,35 +409,48 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Button>
 
           <div className="flex items-center gap-1.5">
-            <div className="hidden items-center gap-1.5 md:flex">
-              <span className="text-xs text-muted-foreground">Live</span>
-              <Switch
-                checked={live}
-                onCheckedChange={actions.setLive}
-                aria-label="Live updates"
-                size="sm"
-              />
-            </div>
-            <Tooltip>
-              <TooltipTrigger
+            <DropdownMenu>
+              <DropdownMenuTrigger
                 render={
                   <Button
                     type="button"
                     variant="ghost"
-                    size="icon-sm"
-                    aria-label="Refresh snapshot"
-                    onClick={actions.refresh}
+                    size="sm"
+                    aria-label={`Auto-refresh every ${refreshInterval} seconds`}
                   />
                 }
               >
-                {status === "loading" ? (
-                  <Spinner />
-                ) : (
-                  <RefreshCwIcon aria-hidden="true" />
-                )}
-              </TooltipTrigger>
-              <TooltipContent>Refresh snapshot</TooltipContent>
-            </Tooltip>
+                <TimerIcon aria-hidden="true" />
+                <span className="tabular-nums">{refreshInterval}s</span>
+                <ChevronDownIcon
+                  aria-hidden="true"
+                  className="size-3.5 text-muted-foreground"
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Auto-refresh</DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={String(refreshInterval)}
+                    onValueChange={(value) =>
+                      actions.setRefreshInterval(
+                        Number(value) as RefreshInterval
+                      )
+                    }
+                  >
+                    {REFRESH_INTERVALS.map((seconds) => (
+                      <DropdownMenuRadioItem
+                        key={seconds}
+                        value={String(seconds)}
+                        closeOnClick
+                      >
+                        Every {seconds}s
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Tooltip>
               <TooltipTrigger
                 render={
