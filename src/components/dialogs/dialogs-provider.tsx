@@ -38,6 +38,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useCluster } from "@/store/cluster";
 import { routeTargets } from "@/lib/topology";
@@ -103,6 +104,260 @@ const ARGUMENT_VALUE_PLACEHOLDER: Record<
   number: "0",
   list: "a, b, c",
 };
+
+type ArgumentMode = "inputs" | "pairs" | "json";
+
+const ARGUMENT_PAIRS_PLACEHOLDER =
+  "x-max-length=50000\nx-dead-letter-exchange=dlx";
+
+const ARGUMENT_JSON_PLACEHOLDER = '{\n  "x-max-length": 50000\n}';
+
+function parsePairValue(raw: string): QueueArgumentValue {
+  const text = raw.trim();
+  if (text === "true") return true;
+  if (text === "false") return false;
+  if (text.startsWith('"') && text.endsWith('"') && text.length > 1) {
+    try {
+      return String(JSON.parse(text));
+    } catch {
+      return text.slice(1, -1);
+    }
+  }
+  if (text.startsWith("[") && text.endsWith("]")) {
+    try {
+      const parsed: unknown = JSON.parse(text);
+      if (
+        Array.isArray(parsed) &&
+        parsed.every(
+          (item) =>
+            typeof item === "string" ||
+            typeof item === "number" ||
+            typeof item === "boolean"
+        )
+      ) {
+        return parsed as Array<string | number | boolean>;
+      }
+    } catch {
+      // Treat unparseable arrays as plain strings.
+    }
+  }
+  if (text !== "" && Number.isFinite(Number(text))) return Number(text);
+  return text;
+}
+
+function parseArgumentPairs(text: string): {
+  args: Record<string, QueueArgumentValue>;
+  error: string | null;
+} {
+  const args: Record<string, QueueArgumentValue> = {};
+  const lines = text.split("\n");
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index].trim();
+    if (!line) continue;
+    const separator = line.search(/[=:]/);
+    const label = `Line ${index + 1}`;
+    if (separator === -1) {
+      return { args, error: `${label}: use key=value.` };
+    }
+    const key = line.slice(0, separator).trim();
+    if (!key) {
+      return { args, error: `${label}: add a key before the separator.` };
+    }
+    if (key === "x-queue-type") {
+      return { args, error: "x-queue-type is set by the queue type selector." };
+    }
+    if (key in args) {
+      return { args, error: `Argument ${key} is defined more than once.` };
+    }
+    args[key] = parsePairValue(line.slice(separator + 1));
+  }
+  return { args, error: null };
+}
+
+function rowValueToText(row: ArgumentRow): string {
+  switch (row.type) {
+    case "boolean":
+      return row.value === "true" ? "true" : "false";
+    case "list": {
+      const items = row.value
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
+      return JSON.stringify(items);
+    }
+    default:
+      return row.value.trim();
+  }
+}
+
+function rowsToArgumentText(rows: ArgumentRow[]): string {
+  return rows
+    .filter((row) => row.key.trim())
+    .map((row) => `${row.key.trim()}=${rowValueToText(row)}`)
+    .join("\n");
+}
+
+function pairTextToRow(raw: string): Pick<ArgumentRow, "type" | "value"> {
+  const value = parsePairValue(raw);
+  if (typeof value === "boolean") {
+    return { type: "boolean", value: value ? "true" : "false" };
+  }
+  if (typeof value === "number") {
+    return { type: "number", value: String(value) };
+  }
+  if (Array.isArray(value)) {
+    return { type: "list", value: value.map((item) => String(item)).join(", ") };
+  }
+  return { type: "string", value };
+}
+
+function rowsToArgumentObject(
+  rows: ArgumentRow[]
+): Record<string, QueueArgumentValue> {
+  const args: Record<string, QueueArgumentValue> = {};
+  for (const row of rows) {
+    const key = row.key.trim();
+    if (!key) continue;
+    switch (row.type) {
+      case "number": {
+        const value = row.value.trim();
+        if (value !== "" && Number.isFinite(Number(value))) {
+          args[key] = Number(value);
+        }
+        break;
+      }
+      case "boolean":
+        args[key] = row.value === "true";
+        break;
+      case "list":
+        args[key] = row.value
+          .split(",")
+          .map((item) => item.trim())
+          .filter((item) => item.length > 0);
+        break;
+      default:
+        args[key] = row.value;
+    }
+  }
+  return args;
+}
+
+function rowsToJsonText(rows: ArgumentRow[]): string {
+  return JSON.stringify(rowsToArgumentObject(rows), null, 2);
+}
+
+function jsonValueToRow(
+  value: unknown
+): Pick<ArgumentRow, "type" | "value"> | null {
+  if (typeof value === "boolean") {
+    return { type: "boolean", value: value ? "true" : "false" };
+  }
+  if (typeof value === "number") {
+    return { type: "number", value: String(value) };
+  }
+  if (typeof value === "string") {
+    return { type: "string", value };
+  }
+  if (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        typeof item === "string" ||
+        typeof item === "number" ||
+        typeof item === "boolean"
+    )
+  ) {
+    return { type: "list", value: value.map((item) => String(item)).join(", ") };
+  }
+  return null;
+}
+
+function parsePairsToRows(
+  text: string,
+  nextId: () => number
+): ArgumentRow[] {
+  const rows: ArgumentRow[] = [];
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const separator = trimmed.search(/[=:]/);
+    if (separator === -1) continue;
+    const key = trimmed.slice(0, separator).trim();
+    if (!key || key === "x-queue-type") continue;
+    rows.push({
+      id: nextId(),
+      key,
+      ...pairTextToRow(trimmed.slice(separator + 1)),
+    });
+  }
+  return rows;
+}
+
+function parseJsonToRows(text: string, nextId: () => number): ArgumentRow[] {
+  if (!text.trim()) return [];
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return [];
+    }
+    const rows: ArgumentRow[] = [];
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!key || key === "x-queue-type") continue;
+      const row = jsonValueToRow(value);
+      if (row) rows.push({ id: nextId(), key, ...row });
+    }
+    return rows;
+  } catch {
+    return [];
+  }
+}
+
+function parseArgumentsJson(text: string): {
+  args: Record<string, QueueArgumentValue>;
+  error: string | null;
+} {
+  if (!text.trim()) return { args: {}, error: null };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return { args: {}, error: "Arguments must be valid JSON." };
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return { args: {}, error: "Arguments must be a JSON object." };
+  }
+  const args: Record<string, QueueArgumentValue> = {};
+  for (const [key, value] of Object.entries(parsed)) {
+    if (key === "x-queue-type") {
+      return { args, error: "x-queue-type is set by the queue type selector." };
+    }
+    if (
+      typeof value === "string" ||
+      typeof value === "boolean" ||
+      (typeof value === "number" && Number.isFinite(value))
+    ) {
+      args[key] = value;
+      continue;
+    }
+    if (
+      Array.isArray(value) &&
+      value.every(
+        (item) =>
+          typeof item === "string" ||
+          typeof item === "number" ||
+          typeof item === "boolean"
+      )
+    ) {
+      args[key] = value as Array<string | number | boolean>;
+      continue;
+    }
+    return {
+      args,
+      error: `Argument ${key} must be a string, number, boolean, or list.`,
+    };
+  }
+  return { args, error: null };
+}
 
 function Field({
   label,
@@ -194,6 +449,9 @@ function AddQueueDrawer({
   const [durable, setDurable] = useState(true);
   const [autoDelete, setAutoDelete] = useState(false);
   const [argumentRows, setArgumentRows] = useState<ArgumentRow[]>([]);
+  const [argumentMode, setArgumentMode] = useState<ArgumentMode>("inputs");
+  const [argumentText, setArgumentText] = useState("");
+  const [argumentJson, setArgumentJson] = useState("");
   const [error, setError] = useState("");
   const nextArgumentId = useRef(0);
 
@@ -244,6 +502,22 @@ function AddQueueDrawer({
     setError("");
   };
 
+  const changeArgumentMode = (mode: ArgumentMode) => {
+    if (mode === argumentMode) return;
+    setError("");
+    const nextId = () => (nextArgumentId.current += 1);
+    const rows =
+      argumentMode === "pairs"
+        ? parsePairsToRows(argumentText, nextId)
+        : argumentMode === "json"
+          ? parseJsonToRows(argumentJson, nextId)
+          : argumentRows;
+    setArgumentRows(rows);
+    if (mode === "pairs") setArgumentText(rowsToArgumentText(rows));
+    if (mode === "json") setArgumentJson(rowsToJsonText(rows));
+    setArgumentMode(mode);
+  };
+
   const reset = () => {
     setName("");
     setVhost("/");
@@ -251,6 +525,9 @@ function AddQueueDrawer({
     setDurable(true);
     setAutoDelete(false);
     setArgumentRows([]);
+    setArgumentMode("inputs");
+    setArgumentText("");
+    setArgumentJson("");
     setError("");
   };
 
@@ -262,38 +539,48 @@ function AddQueueDrawer({
       return setError(`A queue named ${clean} already exists on ${vhost}.`);
     }
     const args: Record<string, QueueArgumentValue> = {};
-    for (const row of argumentRows) {
-      const key = row.key.trim();
-      if (!key) {
-        if (row.value.trim()) return setError("Add a key for every argument value.");
-        continue;
-      }
-      if (key === "x-queue-type") {
-        return setError("x-queue-type is set by the queue type selector.");
-      }
-      if (key in args) {
-        return setError(`Argument ${key} is defined more than once.`);
-      }
-      switch (row.type) {
-        case "number": {
-          const value = row.value.trim();
-          if (value === "" || !Number.isFinite(Number(value))) {
-            return setError(`Argument ${key} must be a number.`);
-          }
-          args[key] = Number(value);
-          break;
+    if (argumentMode === "pairs") {
+      const parsed = parseArgumentPairs(argumentText);
+      if (parsed.error) return setError(parsed.error);
+      Object.assign(args, parsed.args);
+    } else if (argumentMode === "json") {
+      const parsed = parseArgumentsJson(argumentJson);
+      if (parsed.error) return setError(parsed.error);
+      Object.assign(args, parsed.args);
+    } else {
+      for (const row of argumentRows) {
+        const key = row.key.trim();
+        if (!key) {
+          if (row.value.trim()) return setError("Add a key for every argument value.");
+          continue;
         }
-        case "boolean":
-          args[key] = row.value === "true";
-          break;
-        case "list":
-          args[key] = row.value
-            .split(",")
-            .map((item) => item.trim())
-            .filter((item) => item.length > 0);
-          break;
-        default:
-          args[key] = row.value;
+        if (key === "x-queue-type") {
+          return setError("x-queue-type is set by the queue type selector.");
+        }
+        if (key in args) {
+          return setError(`Argument ${key} is defined more than once.`);
+        }
+        switch (row.type) {
+          case "number": {
+            const value = row.value.trim();
+            if (value === "" || !Number.isFinite(Number(value))) {
+              return setError(`Argument ${key} must be a number.`);
+            }
+            args[key] = Number(value);
+            break;
+          }
+          case "boolean":
+            args[key] = row.value === "true";
+            break;
+          case "list":
+            args[key] = row.value
+              .split(",")
+              .map((item) => item.trim())
+              .filter((item) => item.length > 0);
+            break;
+          default:
+            args[key] = row.value;
+        }
       }
     }
     try {
@@ -387,93 +674,137 @@ function AddQueueDrawer({
             <Field
               label="Arguments"
               hint={
-                type === "default"
-                  ? "Optional key/value pairs with a type. List values are comma-separated."
-                  : "Optional key/value pairs with a type. List values are comma-separated; x-queue-type is added from the queue type selector."
+                argumentMode === "pairs"
+                  ? "One key=value pair per line. true/false, numbers, and [JSON arrays] are typed automatically; quote a value to keep it a string."
+                  : argumentMode === "json"
+                    ? "A JSON object of arguments. Values may be strings, numbers, booleans, or arrays; x-queue-type is added from the queue type selector."
+                    : type === "default"
+                      ? "Optional key/value pairs with a type. List values are comma-separated."
+                      : "Optional key/value pairs with a type. List values are comma-separated; x-queue-type is added from the queue type selector."
               }
             >
-              <div className="flex flex-col gap-2">
-                {argumentRows.map((row) => (
-                  <div key={row.id} className="flex items-center gap-2">
-                    <Input
-                      aria-label="Argument key"
-                      placeholder="x-max-length"
-                      value={row.key}
-                      className="min-w-0 flex-1 font-mono"
-                      onChange={(event) =>
-                        updateArgumentRow(row.id, { key: event.target.value })
-                      }
-                    />
-                    <Select
-                      value={row.type}
-                      onValueChange={(next) =>
-                        updateArgumentRow(row.id, {
-                          type: String(next) as ArgumentType,
-                        })
-                      }
-                    >
-                      <SelectTrigger
-                        aria-label="Argument type"
-                        className="w-24 shrink-0"
+              <Tabs
+                value={argumentMode}
+                onValueChange={(next) =>
+                  changeArgumentMode(String(next) as ArgumentMode)
+                }
+              >
+                <TabsList>
+                  <TabsTrigger value="inputs">Inputs</TabsTrigger>
+                  <TabsTrigger value="pairs">Key / value</TabsTrigger>
+                  <TabsTrigger value="json">JSON</TabsTrigger>
+                </TabsList>
+                <TabsContent value="inputs" className="flex flex-col gap-2">
+                  {argumentRows.map((row) => (
+                    <div key={row.id} className="flex items-center gap-2">
+                      <Input
+                        aria-label="Argument key"
+                        placeholder="x-max-length"
+                        value={row.key}
+                        className="min-w-0 flex-1 font-mono"
+                        onChange={(event) =>
+                          updateArgumentRow(row.id, { key: event.target.value })
+                        }
+                      />
+                      <Select
+                        value={row.type}
+                        onValueChange={(next) =>
+                          updateArgumentRow(row.id, {
+                            type: String(next) as ArgumentType,
+                          })
+                        }
                       >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ARGUMENT_TYPE_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {row.type === "boolean" ? (
-                      <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
-                        <Switch
+                        <SelectTrigger
+                          aria-label="Argument type"
+                          className="w-24 shrink-0"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ARGUMENT_TYPE_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {row.type === "boolean" ? (
+                        <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+                          <Switch
+                            aria-label="Argument value"
+                            className="shrink-0"
+                            checked={row.value === "true"}
+                            onCheckedChange={(checked) =>
+                              updateArgumentRow(row.id, {
+                                value: checked ? "true" : "false",
+                              })
+                            }
+                          />
+                        </div>
+                      ) : (
+                        <Input
                           aria-label="Argument value"
-                          className="shrink-0"
-                          checked={row.value === "true"}
-                          onCheckedChange={(checked) =>
+                          type={row.type === "number" ? "number" : "text"}
+                          step={row.type === "number" ? "any" : undefined}
+                          placeholder={ARGUMENT_VALUE_PLACEHOLDER[row.type]}
+                          value={row.value}
+                          className="min-w-0 flex-1 font-mono"
+                          onChange={(event) =>
                             updateArgumentRow(row.id, {
-                              value: checked ? "true" : "false",
+                              value: event.target.value,
                             })
                           }
                         />
-                      </div>
-                    ) : (
-                      <Input
-                        aria-label="Argument value"
-                        type={row.type === "number" ? "number" : "text"}
-                        step={row.type === "number" ? "any" : undefined}
-                        placeholder={ARGUMENT_VALUE_PLACEHOLDER[row.type]}
-                        value={row.value}
-                        className="min-w-0 flex-1 font-mono"
-                        onChange={(event) =>
-                          updateArgumentRow(row.id, { value: event.target.value })
-                        }
-                      />
-                    )}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Remove argument"
-                      onClick={() => removeArgumentRow(row.id)}
-                    >
-                      <XIcon aria-hidden="true" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="self-start"
-                  onClick={addArgumentRow}
-                >
-                  <PlusIcon data-icon="inline-start" aria-hidden="true" />
-                  Add argument
-                </Button>
-              </div>
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Remove argument"
+                        onClick={() => removeArgumentRow(row.id)}
+                      >
+                        <XIcon aria-hidden="true" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="self-start"
+                    onClick={addArgumentRow}
+                  >
+                    <PlusIcon data-icon="inline-start" aria-hidden="true" />
+                    Add argument
+                  </Button>
+                </TabsContent>
+                <TabsContent value="pairs">
+                  <Textarea
+                    aria-label="Arguments as key value pairs"
+                    placeholder={ARGUMENT_PAIRS_PLACEHOLDER}
+                    value={argumentText}
+                    className="font-mono"
+                    rows={4}
+                    onChange={(event) => {
+                      setArgumentText(event.target.value);
+                      setError("");
+                    }}
+                  />
+                </TabsContent>
+                <TabsContent value="json">
+                  <Textarea
+                    aria-label="Arguments as JSON"
+                    placeholder={ARGUMENT_JSON_PLACEHOLDER}
+                    value={argumentJson}
+                    className="font-mono"
+                    rows={5}
+                    onChange={(event) => {
+                      setArgumentJson(event.target.value);
+                      setError("");
+                    }}
+                  />
+                </TabsContent>
+              </Tabs>
             </Field>
             <FormError>{error}</FormError>
           </div>
