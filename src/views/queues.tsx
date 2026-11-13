@@ -43,6 +43,17 @@ import GridEmptyState from "@/components/ui/empty-state";
 
 const QUEUES_PAGE_SIZE = 100;
 
+const fitMeta = {
+  headerClassName: "w-px whitespace-nowrap",
+  cellClassName: "w-px whitespace-nowrap",
+};
+
+const numericFitMeta = {
+  ...numericMeta,
+  headerClassName: `w-px whitespace-nowrap ${numericMeta.headerClassName}`,
+  cellClassName: `w-px whitespace-nowrap ${numericMeta.cellClassName}`,
+};
+
 export function QueuesView() {
   const { data } = useCluster();
   const { openDialog } = useDialogs();
@@ -169,26 +180,26 @@ export function QueuesView() {
         accessorKey: "type",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Type" />,
         cell: ({ row }) => <TypeBadge type={row.original.type} />,
-        meta: { skeleton: <Skeleton className="h-5 w-16" /> }
+        meta: { ...fitMeta, skeleton: <Skeleton className="h-5 w-16" /> }
       },
       {
         id: "features",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Features" />,
         cell: ({ row }) => <QueueFeatures queue={row.original} />,
         enableSorting: false,
-        meta: { skeleton: <Skeleton className="h-5 w-24" /> }
+        meta: { ...fitMeta, skeleton: <Skeleton className="h-5 w-24" /> }
       },
       {
         accessorKey: "consumers",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Consumers" />,
         cell: ({ row }) => <span className="data-cell">{fmtInt(row.original.consumers)}</span>,
-        meta: numericMeta,
+        meta: numericFitMeta,
       },
       {
         accessorKey: "state",
         header: ({ column }) => <DataGridColumnHeader column={column} title="State" />,
         cell: ({ row }) => <StateBadge state={row.original.state} />,
-        meta: { skeleton: <Skeleton className="h-5 w-16" /> }
+        meta: { ...fitMeta, skeleton: <Skeleton className="h-5 w-16" /> }
       },
       {
         accessorKey: "ready",
@@ -201,25 +212,25 @@ export function QueuesView() {
             ) : null}
           </span>
         ),
-        meta: numericMeta,
+        meta: numericFitMeta,
       },
       {
         accessorKey: "unacked",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Unacked" />,
         cell: ({ row }) => <span className="data-cell">{fmtInt(row.original.unacked)}</span>,
-        meta: numericMeta,
+        meta: numericFitMeta,
       },
       {
         accessorKey: "memory",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Memory" />,
         cell: ({ row }) => <span className="data-cell">{fmtBytesMb(row.original.memory)}</span>,
-        meta: numericMeta,
+        meta: numericFitMeta,
       },
       {
         id: "actions",
         header: () => <span className="sr-only">Actions</span>,
         cell: ({ row }) => (<GridActions rowData={row.original} openDialog={openDialog} setConfirm={setConfirm} />),
-        meta: { skeleton: <Skeleton className="h-4 w-12" /> }
+        meta: { ...fitMeta, skeleton: <Skeleton className="h-4 w-12" /> }
       },
     ],
     [openDialog]
@@ -314,7 +325,6 @@ export function QueuesView() {
           headerBorder: true,
           width: "auto",
         }}
-        tableClassNames={{ base: "min-w-[1000px]" }}
       >
         <Frame spacing="sm" className="min-w-0">
           <FrameHeader>
