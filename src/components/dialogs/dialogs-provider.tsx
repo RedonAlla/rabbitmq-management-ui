@@ -26,6 +26,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useCluster } from "@/store/cluster";
@@ -37,7 +46,7 @@ import FormError from "../ui/form-error";
 import AddUserDialog from "@/views/user/add-user-dialog";
 
 export type DialogRequest =
-  | { type: "add-queue" }
+  | { type: "add-queue"; onCreated?: () => void }
   | { type: "add-exchange" }
   | { type: "add-user" }
   | { type: "add-vhost" }
@@ -131,7 +140,15 @@ function DialogBody({ children }: { children: ReactNode }) {
   return <div className="flex min-w-0 flex-col gap-4">{children}</div>;
 }
 
-function AddQueueDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+function AddQueueDrawer({
+  open,
+  onClose,
+  onCreated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreated?: () => void;
+}) {
   const { data, actions } = useCluster();
   const [name, setName] = useState("");
   const [vhost, setVhost] = useState("/");
@@ -173,6 +190,7 @@ function AddQueueDialog({ open, onClose }: { open: boolean; onClose: () => void 
       });
       toast.success("Queue created", { description: `${clean} declared on ${vhost}.` });
       reset();
+      onCreated?.();
       onClose();
     } catch (cause) {
       setError(
@@ -182,14 +200,16 @@ function AddQueueDialog({ open, onClose }: { open: boolean; onClose: () => void 
   };
 
   return (
-    <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
-      <DialogContent className="sm:max-w-lg">
-        <form onSubmit={submit} className="flex min-w-0 flex-col gap-4">
-          <DialogHeader>
-            <DialogTitle>Add queue</DialogTitle>
-            <DialogDescription>Declare a durable queue on an existing virtual host.</DialogDescription>
-          </DialogHeader>
-          <DialogBody>
+    <Sheet open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
+      <SheetContent side="right" className="sm:max-w-md">
+        <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
+          <SheetHeader className="gap-2">
+            <SheetTitle>Add queue</SheetTitle>
+            <SheetDescription>
+              Declare a durable queue on an existing virtual host.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
             <Field label="Queue name" htmlFor="queue-name">
               <Input
                 id="queue-name"
@@ -247,14 +267,14 @@ function AddQueueDialog({ open, onClose }: { open: boolean; onClose: () => void 
               />
             </div>
             <FormError>{error}</FormError>
-          </DialogBody>
-          <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+          </div>
+          <SheetFooter className="border-t sm:flex-row sm:justify-end">
+            <SheetClose render={<Button type="button" variant="outline" />}>Cancel</SheetClose>
             <Button type="submit">Declare queue</Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -885,7 +905,11 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
   return (
     <DialogsContext.Provider value={value}>
       {children}
-      <AddQueueDialog open={dialog?.type === "add-queue"} onClose={closeDialog} />
+      <AddQueueDrawer
+        open={dialog?.type === "add-queue"}
+        onClose={closeDialog}
+        onCreated={dialog?.type === "add-queue" ? dialog.onCreated : undefined}
+      />
       <AddExchangeDialog open={dialog?.type === "add-exchange"} onClose={closeDialog} />
       <AddUserDialog open={dialog?.type === "add-user"} onClose={closeDialog} />
       <AddVhostDialog open={dialog?.type === "add-vhost"} onClose={closeDialog} />

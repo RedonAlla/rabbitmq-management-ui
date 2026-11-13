@@ -206,7 +206,6 @@ export function ExchangesView() {
         }
         tableLayout={{
           dense: true,
-          headerBorder: true,
           width: "auto",
         }}
         tableClassNames={{ base: "min-w-[900px]" }}

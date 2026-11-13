@@ -225,6 +225,11 @@ export function QueuesView() {
     [openDialog]
   );
 
+  const handleQueueCreated = useCallback(() => {
+    resetPage();
+    retry();
+  }, [resetPage, retry]);
+
   const confirmQueue = async () => {
     if (!confirm) return;
     const { kind, queue } = confirm;
@@ -277,7 +282,7 @@ export function QueuesView() {
               <SendIcon data-icon="inline-start" aria-hidden="true" />
               Publish
             </Button>
-            <Button type="button" onClick={() => openDialog({ type: "add-queue" })}>
+            <Button type="button" onClick={() => openDialog({ type: "add-queue", onCreated: handleQueueCreated })}>
               <PlusIcon data-icon="inline-start" aria-hidden="true" />
               Add queue
             </Button>

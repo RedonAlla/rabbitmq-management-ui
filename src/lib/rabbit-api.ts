@@ -1455,6 +1455,8 @@ export async function createQueue(
   input: CreateQueueInput
 ): Promise<void> {
   await apiPut(`/api/queues/${enc(input.vhost)}/${enc(input.name)}`, token, {
+    name: input.name,
+    vhost: input.vhost,
     durable: input.durable,
     auto_delete: input.autoDelete,
     arguments: { ...input.args, "x-queue-type": input.type },
