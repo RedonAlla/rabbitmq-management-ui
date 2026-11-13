@@ -1,7 +1,14 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ListOrdered, PlusIcon, SendIcon } from "lucide-react";
 import { toast } from "sonner";
-import { useTable, type ColumnDef } from "@tanstack/react-table";
+import {
+  useTable,
+  type ColumnDef,
+  type OnChangeFn,
+  type PaginationState,
+  type SortingState,
+} from "@tanstack/react-table";
+import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { FilterBar } from "@/components/filters-bar";
@@ -9,7 +16,6 @@ import { Filters } from "@/components/reui/filters/filters";
 import {
   createFilterQuery,
   flattenFilterConditions,
-  type FilterCondition,
 } from "@/components/reui/filters/filters-query";
 import type { FilterField, FilterQuery } from "@/components/reui/filters/filters-types";
 import { StateBadge, TypeBadge, VhostBadge } from "@/components/badges";
@@ -17,76 +23,118 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useDialogs } from "@/components/dialogs/dialogs-provider";
 import { useCluster } from "@/store/cluster";
 import { useRoute, routeHref } from "@/lib/router";
-import { fmtBytesMb, fmtInt, fmtRate } from "@/lib/format";
-import { matchesText } from "@/lib/filtering";
+import { fmtBytesMb, fmtInt } from "@/lib/format";
 import type { Queue } from "@/data/types";
+import { useQueues } from "@/hooks/use-queues";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
 import type { ConfirmState } from "./queues/grid-actions";
 import GridActions from "./queues/grid-actions";
+import QueueFeatures from "./queues/queue-features";
 import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
-import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
+import { DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
 import { numericMeta } from "@/components/table-meta-numeric";
 import { Skeleton } from "@/components/ui/skeleton";
 import GridEmptyState from "@/components/ui/empty-state";
 
-function matchesCondition(value: string, condition: FilterCondition): boolean {
-  const selected = condition.values.map(String);
-  const pending = selected.length === 0;
-  let matches: boolean;
-  switch (condition.operator) {
-    case "empty":
-      matches = value === "";
-      break;
-    case "not_empty":
-      matches = value !== "";
-      break;
-    case "is":
-    case "is_any_of":
-      matches = pending || selected.includes(value);
-      break;
-    case "is_not":
-    case "is_none_of":
-      matches = pending || !selected.includes(value);
-      break;
-    default:
-      matches = true;
-  }
-  return condition.negated ? !matches : matches;
-}
+const QUEUES_PAGE_SIZE = 100;
 
 export function QueuesView() {
-  const { data, status, error, actions } = useCluster();
+  const { data } = useCluster();
   const { openDialog } = useDialogs();
   const { navigate } = useRoute();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: QUEUES_PAGE_SIZE,
+  });
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [query, setQuery] = useState<FilterQuery>(() => createFilterQuery());
   const [confirm, setConfirm] = useState<ConfirmState>(null);
 
-  const conditions = useMemo(() =>
-    flattenFilterConditions(query), [query]);
+  const conditions = useMemo(() => flattenFilterConditions(query), [query]);
+
+  const vhostFilter = useMemo(() => {
+    const condition = conditions.find(
+      (entry) => entry.field === "vhost" && !entry.negated
+    );
+    const value = condition?.values[0];
+    return typeof value === "string" && value ? value : undefined;
+  }, [conditions]);
+
+  const listQuery = useMemo(
+    () => ({
+      pageIndex: pagination.pageIndex,
+      pageSize: pagination.pageSize,
+      search: debouncedSearch,
+      vhost: vhostFilter,
+      sorting,
+    }),
+    [pagination.pageIndex, pagination.pageSize, debouncedSearch, vhostFilter, sorting]
+  );
+
+  const {
+    queues,
+    totalCount,
+    filteredCount,
+    pageCount,
+    loading,
+    error,
+    retry,
+    purgeQueue,
+    deleteQueue,
+  } = useQueues(listQuery);
+
+  const resetPage = useCallback(() => {
+    setPagination((previous) =>
+      previous.pageIndex === 0 ? previous : { ...previous, pageIndex: 0 }
+    );
+  }, []);
 
   const clearFilters = () => {
-    setSearch("")
-    setQuery(createFilterQuery())
-  }
+    setSearch("");
+    setQuery(createFilterQuery());
+    resetPage();
+  };
 
-  const queues = useMemo(
-    () =>
-      data.queues.filter(
-        (queue) =>
-          matchesText(queue.name, search) &&
-          conditions.every((condition) => {
-            if (condition.field === "vhost") return matchesCondition(queue.vhost, condition);
-            if (condition.field === "type") return matchesCondition(queue.type, condition);
-            if (condition.field === "state") return matchesCondition(queue.state, condition);
-            return true;
-          })
-      ),
-    [data.queues, search, conditions]
+  const handleSearch = (value: string) => {
+    setSearch(value);
+    resetPage();
+  };
+
+  const handleQueryChange = useCallback(
+    (next: FilterQuery) => {
+      setQuery(next);
+      resetPage();
+    },
+    [resetPage]
+  );
+
+  const handleSortingChange = useCallback<OnChangeFn<SortingState>>(
+    (updater) => {
+      setSorting(updater);
+      resetPage();
+    },
+    [resetPage]
+  );
+
+  const handlePaginationChange = useCallback<OnChangeFn<PaginationState>>(
+    (updater) => {
+      setPagination((previous) => {
+        const next =
+          typeof updater === "function" ? updater(previous) : updater;
+        if (next.pageSize !== previous.pageSize) {
+          return { pageIndex: 0, pageSize: next.pageSize };
+        }
+        return next;
+      });
+    },
+    []
   );
 
   const filterFields = useMemo<FilterField[]>(
@@ -97,26 +145,6 @@ export function QueuesView() {
         type: "select",
         options: data.vhosts.map((entry) => ({ value: entry.name, label: entry.name })),
       },
-      {
-        id: "type",
-        label: "Type",
-        type: "select",
-        options: [
-          { value: "classic", label: "Classic" },
-          { value: "quorum", label: "Quorum" },
-          { value: "stream", label: "Stream" },
-        ],
-      },
-      {
-        id: "state",
-        label: "State",
-        type: "select",
-        options: [
-          { value: "running", label: "Running" },
-          { value: "degraded", label: "Degraded" },
-          { value: "idle", label: "Idle" },
-        ],
-      },
     ],
     [data.vhosts]
   );
@@ -125,24 +153,42 @@ export function QueuesView() {
     () => [
       {
         accessorKey: "name",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Queue" />,
+        header: ({ column }) => <DataGridColumnHeader column={column} title="Name" />,
         cell: ({ row }) => (
           <div className="flex min-w-0 flex-col gap-1">
             <span className="truncate font-medium">{row.original.name}</span>
             <div className="flex items-center gap-1.5">
-              <TypeBadge type={row.original.type} />
               <VhostBadge>{row.original.vhost}</VhostBadge>
             </div>
           </div>
         ),
         enableResizing: true,
-        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
+        meta: { fillWidth: true, skeleton: <Skeleton className="h-4 w-40" /> }
+      },
+      {
+        accessorKey: "type",
+        header: ({ column }) => <DataGridColumnHeader column={column} title="Type" />,
+        cell: ({ row }) => <TypeBadge type={row.original.type} />,
+        meta: { skeleton: <Skeleton className="h-5 w-16" /> }
+      },
+      {
+        id: "features",
+        header: ({ column }) => <DataGridColumnHeader column={column} title="Features" />,
+        cell: ({ row }) => <QueueFeatures queue={row.original} />,
+        enableSorting: false,
+        meta: { skeleton: <Skeleton className="h-5 w-24" /> }
+      },
+      {
+        accessorKey: "consumers",
+        header: ({ column }) => <DataGridColumnHeader column={column} title="Consumers" />,
+        cell: ({ row }) => <span className="data-cell">{fmtInt(row.original.consumers)}</span>,
+        meta: numericMeta,
       },
       {
         accessorKey: "state",
         header: ({ column }) => <DataGridColumnHeader column={column} title="State" />,
         cell: ({ row }) => <StateBadge state={row.original.state} />,
-        meta: { skeleton: <Skeleton className="h-4 w-12" /> }
+        meta: { skeleton: <Skeleton className="h-5 w-16" /> }
       },
       {
         accessorKey: "ready",
@@ -164,24 +210,6 @@ export function QueuesView() {
         meta: numericMeta,
       },
       {
-        accessorKey: "consumers",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Consumers" />,
-        cell: ({ row }) => <span className="data-cell">{row.original.consumers}</span>,
-        meta: numericMeta,
-      },
-      {
-        accessorKey: "publishRate",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Publish" />,
-        cell: ({ row }) => <span className="data-cell">{fmtRate(row.original.publishRate)}</span>,
-        meta: numericMeta,
-      },
-      {
-        accessorKey: "deliverRate",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Deliver" />,
-        cell: ({ row }) => <span className="data-cell">{fmtRate(row.original.deliverRate)}</span>,
-        meta: numericMeta,
-      },
-      {
         accessorKey: "memory",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Memory" />,
         cell: ({ row }) => <span className="data-cell">{fmtBytesMb(row.original.memory)}</span>,
@@ -199,30 +227,27 @@ export function QueuesView() {
 
   const confirmQueue = async () => {
     if (!confirm) return;
-    if (confirm.kind === "purge") {
-      try {
-        await actions.purgeQueue(confirm.queue.vhost, confirm.queue.name);
-        toast.success("Queue purged", {
-          description: `${fmtInt(confirm.queue.ready)} messages removed from ${confirm.queue.name}.`,
-        });
-      } catch (cause) {
-        toast.error("Queue was not purged", {
-          description:
-            cause instanceof Error ? cause.message : "The management API did not respond.",
-        });
-      }
-    } else {
-      try {
-        await actions.deleteQueue(confirm.queue.vhost, confirm.queue.name);
-        toast.success("Queue deleted", { description: `${confirm.queue.name} was removed.` });
-      } catch (cause) {
-        toast.error("Queue was not deleted", {
-          description:
-            cause instanceof Error ? cause.message : "The management API did not respond.",
-        });
-      }
-    }
+    const { kind, queue } = confirm;
     setConfirm(null);
+    try {
+      if (kind === "purge") {
+        await purgeQueue(queue.vhost, queue.name);
+        toast.success("Queue purged", {
+          description: `${fmtInt(queue.ready)} messages removed from ${queue.name}.`,
+        });
+      } else {
+        await deleteQueue(queue.vhost, queue.name);
+        toast.success("Queue deleted", { description: `${queue.name} was removed.` });
+      }
+    } catch (cause) {
+      toast.error(
+        kind === "purge" ? "Queue was not purged" : "Queue was not deleted",
+        {
+          description:
+            cause instanceof Error ? cause.message : "The management API did not respond.",
+        }
+      );
+    }
   };
 
   const table = useTable({
@@ -230,16 +255,24 @@ export function QueuesView() {
     defaultColumn: { size: 120, minSize: 80 },
     data: queues,
     columns,
-    initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
+    manualPagination: true,
+    manualSorting: true,
+    autoResetPageIndex: false,
+    pageCount,
+    rowCount: filteredCount,
+    state: { pagination, sorting },
+    onPaginationChange: handlePaginationChange,
+    onSortingChange: handleSortingChange,
   });
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader
         title="Queues"
-        description="Ready depth, consumers and throughput for every queue."
+        description="Consumers, delivery state and memory for every queue."
         actions={
           <>
+            <Badge variant="outline">{fmtInt(totalCount)} queues</Badge>
             <Button type="button" variant="outline" onClick={() => openDialog({ type: "publish" })}>
               <SendIcon data-icon="inline-start" aria-hidden="true" />
               Publish
@@ -254,8 +287,8 @@ export function QueuesView() {
 
       <DataGrid
         table={table}
-        recordCount={queues.length}
-        isLoading={status === "loading"}
+        recordCount={filteredCount}
+        isLoading={loading}
         onRowClick={(row: Queue) => navigate(routeHref("queue", row.name))}
         emptyMessage={
           <GridEmptyState
@@ -263,7 +296,7 @@ export function QueuesView() {
             title="No queues match"
             description="Adjust the search or clear the filters to see every declared queue."
             error={error}
-            retry={actions.retry}
+            retry={retry}
             action={
               <Button variant="outline" size="sm" onClick={() => clearFilters()}>
                 Clear filters
@@ -276,20 +309,20 @@ export function QueuesView() {
           headerBorder: true,
           width: "auto",
         }}
-        tableClassNames={{ base: "min-w-[900px]" }}
+        tableClassNames={{ base: "min-w-[1000px]" }}
       >
         <Frame spacing="sm" className="min-w-0">
           <FrameHeader>
             <FilterBar
               search={search}
-              onSearch={setSearch}
-              placeholder="Search queues…"
+              onSearch={handleSearch}
+              placeholder="Search queues by name"
               className="justify-end"
             >
               <Filters
                 fields={filterFields}
                 query={query}
-                onQueryChange={setQuery}
+                onQueryChange={handleQueryChange}
                 size="sm"
                 showClear
               />
@@ -322,3 +355,4 @@ export function QueuesView() {
     </div>
   );
 }
+

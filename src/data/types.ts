@@ -16,6 +16,7 @@ export interface Queue {
   durable: boolean
   autoDelete: boolean
   exclusive: boolean
+  internal: boolean
   state: QueueState
   ready: number
   unacked: number

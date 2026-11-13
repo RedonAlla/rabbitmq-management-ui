@@ -27,8 +27,9 @@ export function fmtRate(value: number): string {
 
 export function fmtBytesMb(value: number): string {
   if (value >= 1024) return `${(value / 1024).toFixed(1)} GB`
-  if (value < 0.1) return "0 MB"
-  return `${value.toFixed(1)} MB`
+  if (value >= 0.1) return `${value.toFixed(1)} MB`
+  if (value > 0) return `${Math.round(value * 1024)} KB`
+  return "0 MB"
 }
 
 export function fmtDuration(ms: number): string {

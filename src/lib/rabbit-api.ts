@@ -145,6 +145,7 @@ interface ApiQueue {
   durable: boolean
   auto_delete: boolean
   exclusive: boolean
+  internal?: boolean
   state?: string
   messages_ready?: number
   messages_unacknowledged?: number
@@ -504,6 +505,34 @@ export interface ChannelsQuery {
   sortReverse?: boolean
 }
 
+interface ApiQueuesResponse {
+  total_count: number
+  item_count: number
+  filtered_count: number
+  page: number
+  page_size: number
+  page_count: number
+  items: ApiQueue[]
+}
+
+export interface QueuesPage {
+  items: Queue[]
+  totalCount: number
+  filteredCount: number
+  page: number
+  pageSize: number
+  pageCount: number
+}
+
+export interface QueuesQuery {
+  page: number
+  pageSize: number
+  name?: string
+  vhost?: string
+  sort?: string
+  sortReverse?: boolean
+}
+
 export interface ConnectionsQuery {
   page: number
   pageSize: number
@@ -696,6 +725,7 @@ function mapQueues(queues: ApiQueue[]): Queue[] {
       durable: queue.durable,
       autoDelete: queue.auto_delete,
       exclusive: queue.exclusive,
+      internal: queue.internal ?? false,
       state: queueState(queue.state),
       ready: queue.messages_ready ?? 0,
       unacked: queue.messages_unacknowledged ?? 0,
@@ -1262,6 +1292,43 @@ export async function fetchChannels(
 
   return {
     items: mapChannels(page.items),
+    totalCount: page.total_count,
+    filteredCount: page.filtered_count,
+    page: page.page,
+    pageSize: page.page_size,
+    pageCount: page.page_count,
+  }
+}
+
+export async function fetchQueues(
+  token: string,
+  query: QueuesQuery,
+  signal?: AbortSignal
+): Promise<QueuesPage> {
+  const base = query.vhost
+    ? `/api/queues/${enc(query.vhost)}`
+    : "/api/queues"
+  const params = new URLSearchParams({
+    page: String(query.page),
+    page_size: String(query.pageSize),
+    name: query.name ?? "",
+    use_regex: "false",
+    pagination: "true",
+  })
+
+  if (query.sort) {
+    params.set("sort", query.sort)
+    params.set("sort_reverse", query.sortReverse ? "true" : "false")
+  }
+
+  const page = await apiGet<ApiQueuesResponse>(
+    `${base}?${params.toString()}`,
+    token,
+    signal
+  )
+
+  return {
+    items: mapQueues(page.items),
     totalCount: page.total_count,
     filteredCount: page.filtered_count,
     page: page.page,
