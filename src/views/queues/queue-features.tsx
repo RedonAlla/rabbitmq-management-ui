@@ -4,7 +4,7 @@ import type { Queue } from "@/data/types"
 
 const FEATURES = [
   { key: "autoDelete", short: "AD", label: "Auto Delete" },
-  { key: "durable", short: "Dur", label: "Durable" },
+  { key: "durable", short: "D", label: "Durable" },
   { key: "exclusive", short: "Excl", label: "Exclusive" },
   { key: "internal", short: "Int", label: "Internal" },
 ] as const
