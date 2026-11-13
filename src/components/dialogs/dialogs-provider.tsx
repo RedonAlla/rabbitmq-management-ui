@@ -2,11 +2,13 @@ import {
   createContext,
   useContext,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
+import { PlusIcon, XIcon } from "lucide-react";
 import {
   Dialog,
   DialogClose,
@@ -40,7 +42,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCluster } from "@/store/cluster";
 import { routeTargets } from "@/lib/topology";
 import { fmtInt } from "@/lib/format";
-import type { ExchangeType, QueueType } from "@/data/types";
+import type { ExchangeType } from "@/data/types";
+import type {
+  QueueArgumentValue,
+  QueueDeclarationType,
+} from "@/lib/rabbit-api";
 import { cn } from "@/lib/utils";
 import FormError from "../ui/form-error";
 import AddUserDialog from "@/views/user/add-user-dialog";
@@ -65,6 +71,38 @@ interface DialogsContextValue {
 const DialogsContext = createContext<DialogsContextValue | null>(null);
 
 const DEFAULT_EXCHANGE = "__default__";
+
+const QUEUE_TYPE_OPTIONS: { value: QueueDeclarationType; label: string }[] = [
+  { value: "default", label: "Default for virtual host" },
+  { value: "classic", label: "Classic" },
+  { value: "quorum", label: "Quorum" },
+  { value: "stream", label: "Stream" },
+];
+
+type ArgumentType = "string" | "number" | "boolean" | "list";
+
+type ArgumentRow = {
+  id: number;
+  key: string;
+  type: ArgumentType;
+  value: string;
+};
+
+const ARGUMENT_TYPE_OPTIONS: { value: ArgumentType; label: string }[] = [
+  { value: "string", label: "String" },
+  { value: "number", label: "Number" },
+  { value: "boolean", label: "Boolean" },
+  { value: "list", label: "List" },
+];
+
+const ARGUMENT_VALUE_PLACEHOLDER: Record<
+  Exclude<ArgumentType, "boolean">,
+  string
+> = {
+  string: "value",
+  number: "0",
+  list: "a, b, c",
+};
 
 function Field({
   label,
@@ -152,19 +190,67 @@ function AddQueueDrawer({
   const { data, actions } = useCluster();
   const [name, setName] = useState("");
   const [vhost, setVhost] = useState("/");
-  const [type, setType] = useState<QueueType>("classic");
+  const [type, setType] = useState<QueueDeclarationType>("default");
   const [durable, setDurable] = useState(true);
   const [autoDelete, setAutoDelete] = useState(false);
-  const [maxLength, setMaxLength] = useState("");
+  const [argumentRows, setArgumentRows] = useState<ArgumentRow[]>([]);
   const [error, setError] = useState("");
+  const nextArgumentId = useRef(0);
+
+  const showDurable = type === "default" || type === "classic";
+  const showAutoDelete = type === "classic";
+
+  const addArgumentRow = () => {
+    const id = (nextArgumentId.current += 1);
+    setArgumentRows((rows) => [
+      ...rows,
+      { id, key: "", type: "string", value: "" },
+    ]);
+    setError("");
+  };
+
+  const updateArgumentRow = (
+    id: number,
+    patch: Partial<Omit<ArgumentRow, "id">>
+  ) => {
+    setArgumentRows((rows) =>
+      rows.map((row) => {
+        if (row.id !== id) return row;
+        const next = { ...row, ...patch };
+        if (patch.type && patch.type !== row.type) {
+          if (
+            patch.type === "boolean" &&
+            next.value !== "true" &&
+            next.value !== "false"
+          ) {
+            next.value = "true";
+          }
+          if (
+            patch.type === "number" &&
+            next.value !== "" &&
+            !Number.isFinite(Number(next.value))
+          ) {
+            next.value = "";
+          }
+        }
+        return next;
+      })
+    );
+    setError("");
+  };
+
+  const removeArgumentRow = (id: number) => {
+    setArgumentRows((rows) => rows.filter((row) => row.id !== id));
+    setError("");
+  };
 
   const reset = () => {
     setName("");
     setVhost("/");
-    setType("classic");
+    setType("default");
     setDurable(true);
     setAutoDelete(false);
-    setMaxLength("");
+    setArgumentRows([]);
     setError("");
   };
 
@@ -175,9 +261,40 @@ function AddQueueDrawer({
     if (data.queues.some((queue) => queue.name === clean && queue.vhost === vhost)) {
       return setError(`A queue named ${clean} already exists on ${vhost}.`);
     }
-    const args: Record<string, string | number> = { "x-queue-type": type };
-    if (maxLength.trim() && Number.isFinite(Number(maxLength))) {
-      args["x-max-length"] = Number(maxLength);
+    const args: Record<string, QueueArgumentValue> = {};
+    for (const row of argumentRows) {
+      const key = row.key.trim();
+      if (!key) {
+        if (row.value.trim()) return setError("Add a key for every argument value.");
+        continue;
+      }
+      if (key === "x-queue-type") {
+        return setError("x-queue-type is set by the queue type selector.");
+      }
+      if (key in args) {
+        return setError(`Argument ${key} is defined more than once.`);
+      }
+      switch (row.type) {
+        case "number": {
+          const value = row.value.trim();
+          if (value === "" || !Number.isFinite(Number(value))) {
+            return setError(`Argument ${key} must be a number.`);
+          }
+          args[key] = Number(value);
+          break;
+        }
+        case "boolean":
+          args[key] = row.value === "true";
+          break;
+        case "list":
+          args[key] = row.value
+            .split(",")
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0);
+          break;
+        default:
+          args[key] = row.value;
+      }
     }
     try {
       await actions.addQueue({
@@ -201,12 +318,15 @@ function AddQueueDrawer({
 
   return (
     <Sheet open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
-      <SheetContent side="right" className="sm:max-w-md">
+      <SheetContent
+        side="right"
+        className="data-[side=right]:w-[92vw] sm:max-w-xl"
+      >
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
           <SheetHeader className="gap-2">
             <SheetTitle>Add queue</SheetTitle>
             <SheetDescription>
-              Declare a durable queue on an existing virtual host.
+              Declare a queue on an existing virtual host.
             </SheetDescription>
           </SheetHeader>
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
@@ -227,45 +347,134 @@ function AddQueueDrawer({
                 <VhostSelect value={vhost} onChange={setVhost} />
               </Field>
               <Field label="Queue type">
-                <Select value={type} onValueChange={(next) => setType(String(next) as QueueType)}>
+                <Select
+                  value={type}
+                  onValueChange={(next) => setType(String(next) as QueueDeclarationType)}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="classic">Classic</SelectItem>
-                    <SelectItem value="quorum">Quorum</SelectItem>
-                    <SelectItem value="stream">Stream</SelectItem>
+                    {QUEUE_TYPE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </Field>
             </div>
+            {showDurable || showAutoDelete ? (
+              <div className={cn("grid gap-2", showAutoDelete && "sm:grid-cols-2")}>
+                {showDurable ? (
+                  <ToggleField
+                    label="Durable"
+                    hint="Survives a broker restart"
+                    checked={durable}
+                    onCheckedChange={setDurable}
+                  />
+                ) : null}
+                {showAutoDelete ? (
+                  <ToggleField
+                    label="Auto-delete"
+                    hint="Removed with its last consumer"
+                    checked={autoDelete}
+                    onCheckedChange={setAutoDelete}
+                  />
+                ) : null}
+              </div>
+            ) : null}
             <Field
-              label="Max length (optional)"
-              htmlFor="queue-max-length"
-              hint="Omit to keep the queue unbounded."
+              label="Arguments"
+              hint={
+                type === "default"
+                  ? "Optional key/value pairs with a type. List values are comma-separated."
+                  : "Optional key/value pairs with a type. List values are comma-separated; x-queue-type is added from the queue type selector."
+              }
             >
-              <Input
-                id="queue-max-length"
-                value={maxLength}
-                onChange={(event) => setMaxLength(event.target.value)}
-                inputMode="numeric"
-                placeholder="50000"
-              />
+              <div className="flex flex-col gap-2">
+                {argumentRows.map((row) => (
+                  <div key={row.id} className="flex items-center gap-2">
+                    <Input
+                      aria-label="Argument key"
+                      placeholder="x-max-length"
+                      value={row.key}
+                      className="min-w-0 flex-1 font-mono"
+                      onChange={(event) =>
+                        updateArgumentRow(row.id, { key: event.target.value })
+                      }
+                    />
+                    <Select
+                      value={row.type}
+                      onValueChange={(next) =>
+                        updateArgumentRow(row.id, {
+                          type: String(next) as ArgumentType,
+                        })
+                      }
+                    >
+                      <SelectTrigger
+                        aria-label="Argument type"
+                        className="w-24 shrink-0"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ARGUMENT_TYPE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {row.type === "boolean" ? (
+                      <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                        <Switch
+                          aria-label="Argument value"
+                          className="shrink-0"
+                          checked={row.value === "true"}
+                          onCheckedChange={(checked) =>
+                            updateArgumentRow(row.id, {
+                              value: checked ? "true" : "false",
+                            })
+                          }
+                        />
+                      </div>
+                    ) : (
+                      <Input
+                        aria-label="Argument value"
+                        type={row.type === "number" ? "number" : "text"}
+                        step={row.type === "number" ? "any" : undefined}
+                        placeholder={ARGUMENT_VALUE_PLACEHOLDER[row.type]}
+                        value={row.value}
+                        className="min-w-0 flex-1 font-mono"
+                        onChange={(event) =>
+                          updateArgumentRow(row.id, { value: event.target.value })
+                        }
+                      />
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Remove argument"
+                      onClick={() => removeArgumentRow(row.id)}
+                    >
+                      <XIcon aria-hidden="true" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="self-start"
+                  onClick={addArgumentRow}
+                >
+                  <PlusIcon data-icon="inline-start" aria-hidden="true" />
+                  Add argument
+                </Button>
+              </div>
             </Field>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <ToggleField
-                label="Durable"
-                hint="Survives a broker restart"
-                checked={durable}
-                onCheckedChange={setDurable}
-              />
-              <ToggleField
-                label="Auto-delete"
-                hint="Removed with its last consumer"
-                checked={autoDelete}
-                onCheckedChange={setAutoDelete}
-              />
-            </div>
             <FormError>{error}</FormError>
           </div>
           <SheetFooter className="border-t sm:flex-row sm:justify-end">

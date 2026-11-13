@@ -563,13 +563,21 @@ export interface RabbitSnapshot {
   totals: ClusterTotals
 }
 
+export type QueueDeclarationType = QueueType | "default"
+
+export type QueueArgumentValue =
+  | string
+  | number
+  | boolean
+  | Array<string | number | boolean>
+
 export interface CreateQueueInput {
   name: string
   vhost: string
-  type: QueueType
+  type: QueueDeclarationType
   durable: boolean
   autoDelete: boolean
-  args?: Record<string, string | number>
+  args?: Record<string, QueueArgumentValue>
 }
 
 export interface CreateExchangeInput {
@@ -1454,13 +1462,22 @@ export async function createQueue(
   token: string,
   input: CreateQueueInput
 ): Promise<void> {
-  await apiPut(`/api/queues/${enc(input.vhost)}/${enc(input.name)}`, token, {
+  const args: Record<string, string | number> = { ...input.args }
+  if (input.type !== "default") {
+    args["x-queue-type"] = input.type
+  }
+
+  const body: Record<string, unknown> = {
     name: input.name,
     vhost: input.vhost,
-    durable: input.durable,
-    auto_delete: input.autoDelete,
-    arguments: { ...input.args, "x-queue-type": input.type },
-  })
+    durable: input.type === "classic" || input.type === "default" ? input.durable : true,
+    arguments: args,
+  }
+  if (input.type !== "default") {
+    body.auto_delete = input.type === "classic" ? input.autoDelete : false
+  }
+
+  await apiPut(`/api/queues/${enc(input.vhost)}/${enc(input.name)}`, token, body)
 }
 
 export async function deleteQueue(
