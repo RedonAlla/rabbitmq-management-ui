@@ -218,11 +218,6 @@ export default function PublishDrawer({
             <Field
               label="Routing key"
               htmlFor="publish-routing-key"
-              hint={
-                targets.length
-                  ? `Routes to ${targets.join(", ")}`
-                  : "No queue currently matches this key."
-              }
               info="The key the exchange matches against binding keys. For the default exchange it must be the destination queue name."
             >
               <Input
@@ -237,7 +232,6 @@ export default function PublishDrawer({
               <Field
                 label="Delivery mode"
                 htmlFor="publish-delivery-mode"
-                hint="1 = transient, 2 = persistent."
                 info="Persistent (2) messages are written to disk when routed to a durable queue. Transient (1) messages may be lost when the broker restarts."
               >
                 <Select
@@ -262,7 +256,6 @@ export default function PublishDrawer({
               <Field
                 label="Payload encoding"
                 htmlFor="publish-payload-encoding"
-                hint="String sends the body as UTF-8 text; Base64 is decoded by the broker."
                 info="The HTTP API accepts the body as plain text (string) or Base64. Use Base64 for binary payloads; the decoded bytes become the message body."
               >
                 <Select
@@ -286,11 +279,6 @@ export default function PublishDrawer({
             <Field
               label="Payload"
               htmlFor="publish-payload"
-              hint={
-                payloadEncoding === "base64"
-                  ? "Base64-encoded body; the broker decodes it before routing."
-                  : "JSON body attached to each message."
-              }
               info="The body is sent as-is with string encoding. With Base64 encoding the broker decodes it first; JSON is only a convention."
             >
               <Textarea
@@ -332,8 +320,6 @@ export default function PublishDrawer({
                   </div>
                 </div>
               }
-              hint={'JSON object, for example {"content_type": "application/json", "priority": 5}.'}
-              pairsHint="Add one key/value pair per row. true/false, numbers and [JSON arrays] are typed automatically."
               placeholder={'{\n  "content_type": "application/json"\n}'}
               keyPlaceholder="content_type"
               valuePlaceholder="application/json"
@@ -353,8 +339,6 @@ export default function PublishDrawer({
               label="Headers"
               id="publish-headers"
               info="Headers can have any name. Only long string headers can be set here."
-              hint={'JSON object, for example {"x-tenant": "acme"}. Values may be strings, numbers, or booleans.'}
-              pairsHint="Add one key/value pair per row. true/false and numbers are typed automatically; other values are sent as strings."
               placeholder={'{\n  "x-tenant": "acme"\n}'}
               keyPlaceholder="x-tenant"
               valuePlaceholder="acme"

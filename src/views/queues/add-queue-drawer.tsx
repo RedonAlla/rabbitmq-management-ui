@@ -314,7 +314,6 @@ export default function AddQueueDrawer({
                 {showDurable ? (
                   <ToggleField
                     label="Durable"
-                    hint="Survives a broker restart"
                     checked={durable}
                     onCheckedChange={setDurable}
                   />
@@ -322,7 +321,6 @@ export default function AddQueueDrawer({
                 {showAutoDelete ? (
                   <ToggleField
                     label="Auto-delete"
-                    hint="Removed with its last consumer"
                     checked={autoDelete}
                     onCheckedChange={setAutoDelete}
                   />

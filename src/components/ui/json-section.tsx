@@ -51,8 +51,6 @@ export default function JsonSection({
   label,
   id,
   info,
-  hint,
-  pairsHint,
   placeholder,
   keyPlaceholder,
   valuePlaceholder,
@@ -65,8 +63,6 @@ export default function JsonSection({
   label: string;
   id: string;
   info: ReactNode;
-  hint: string;
-  pairsHint: string;
   placeholder: string;
   keyPlaceholder: string;
   valuePlaceholder: string;
@@ -219,9 +215,6 @@ export default function JsonSection({
               className="min-h-20 font-mono text-xs"
             />
           </TabsContent>
-          <p className="text-xs text-muted-foreground">
-            {mode === "pairs" ? pairsHint : hint}
-          </p>
         </CollapsibleContent>
       </Tabs>
     </Collapsible>

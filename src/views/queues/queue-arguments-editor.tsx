@@ -84,7 +84,7 @@ export default function QueueArgumentsEditor({
   return (
     <Field
       label="Arguments"
-      hint={
+      info={
         mode === "pairs"
           ? "One key/value pair per row. true/false, numbers, and [JSON arrays] are typed automatically; quote a value to keep it a string."
           : mode === "json"

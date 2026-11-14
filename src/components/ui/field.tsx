@@ -5,14 +5,12 @@ import { cn } from "@/lib/utils";
 
 export default function Field({
   label,
-  hint,
   info,
   htmlFor,
   children,
   className,
 }: {
   label: string;
-  hint?: ReactNode;
   info?: string;
   htmlFor?: string;
   children: ReactNode;
@@ -29,7 +27,6 @@ export default function Field({
         ) : null}
       </div>
       {children}
-      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }

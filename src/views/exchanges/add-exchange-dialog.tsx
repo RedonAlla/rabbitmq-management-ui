@@ -115,20 +115,17 @@ export default function AddExchangeDialog({
             <div className="grid gap-2 sm:grid-cols-2">
               <ToggleField
                 label="Durable"
-                hint="Survives a broker restart"
                 checked={durable}
                 onCheckedChange={setDurable}
               />
               <ToggleField
                 label="Auto-delete"
-                hint="Removed when unused"
                 checked={autoDelete}
                 onCheckedChange={setAutoDelete}
               />
             </div>
             <ToggleField
               label="Internal"
-              hint="Only reachable from other exchanges"
               checked={internal}
               onCheckedChange={setInternal}
             />

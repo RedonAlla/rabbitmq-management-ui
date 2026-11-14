@@ -115,7 +115,7 @@ export default function AddPolicyDialog({
               </Field>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Pattern" htmlFor="policy-pattern" hint="Regular expression on entity names.">
+              <Field label="Pattern" htmlFor="policy-pattern">
                 <Input
                   id="policy-pattern"
                   value={pattern}
@@ -151,7 +151,7 @@ export default function AddPolicyDialog({
               <Field
                 label="Definition"
                 htmlFor="policy-definition"
-                hint="One key=value per line, e.g. message-ttl=86400000."
+                info="One key=value per line, for example message-ttl=86400000. Values that parse as numbers are sent as numbers."
               >
                 <Textarea
                   id="policy-definition"

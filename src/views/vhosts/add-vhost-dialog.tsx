@@ -81,7 +81,6 @@ export default function AddVhostDialog({
             </Field>
             <ToggleField
               label="Tracing"
-              hint="Copy published messages to the trace exchange"
               checked={tracing}
               onCheckedChange={setTracing}
             />
