@@ -608,6 +608,7 @@ export type PublishHeaderValue = string | number | boolean
 export interface PublishProperties {
   deliveryMode?: 1 | 2
   headers?: Record<string, PublishHeaderValue>
+  extra?: Record<string, unknown>
 }
 
 export interface PublishInput {
@@ -1528,7 +1529,7 @@ export async function publishMessage(
   token: string,
   input: PublishInput
 ): Promise<boolean> {
-  const properties: Record<string, unknown> = {}
+  const properties: Record<string, unknown> = { ...input.properties?.extra }
   if (input.properties?.deliveryMode) {
     properties.delivery_mode = input.properties.deliveryMode
   }

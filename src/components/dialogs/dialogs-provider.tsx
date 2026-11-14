@@ -734,6 +734,23 @@ function parsePublishHeaders(text: string): {
   return { headers, error: null };
 }
 
+function parsePublishProperties(text: string): {
+  properties: Record<string, unknown>;
+  error: string | null;
+} {
+  if (!text.trim()) return { properties: {}, error: null };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return { properties: {}, error: "Properties must be valid JSON." };
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return { properties: {}, error: "Properties must be a JSON object." };
+  }
+  return { properties: parsed as Record<string, unknown>, error: null };
+}
+
 function InfoTooltip({
   label,
   children,
@@ -761,6 +778,66 @@ function InfoTooltip({
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
+  );
+}
+
+function JsonSection({
+  label,
+  id,
+  info,
+  hint,
+  placeholder,
+  value,
+  onChange,
+  open,
+  onOpenChange,
+}: {
+  label: string;
+  id: string;
+  info: ReactNode;
+  hint: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Collapsible open={open} onOpenChange={onOpenChange}>
+      <div className="flex items-center gap-1">
+        <CollapsibleTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="justify-start"
+            />
+          }
+        >
+          <ChevronRightIcon
+            aria-hidden="true"
+            className={cn(
+              "transition-transform duration-200",
+              open && "rotate-90"
+            )}
+          />
+          {label}
+        </CollapsibleTrigger>
+        <InfoTooltip label={`About ${label.toLowerCase()}`}>{info}</InfoTooltip>
+      </div>
+      <CollapsibleContent className="flex flex-col gap-1.5 pt-1">
+        <Textarea
+          id={id}
+          aria-label={`${label} JSON`}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          className="min-h-20 font-mono text-xs"
+        />
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -1725,12 +1802,17 @@ function PublishDrawer({
   const [routingKey, setRoutingKey] = useState("");
   const [deliveryMode, setDeliveryMode] = useState<"1" | "2">("1");
   const [payload, setPayload] = useState('{\n  "orderId": "ord_1042",\n  "status": "created"\n}');
+  const [properties, setProperties] = useState("");
+  const [propertiesOpen, setPropertiesOpen] = useState(false);
   const [headers, setHeaders] = useState("");
   const [headersOpen, setHeadersOpen] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (open) setHeadersOpen(false);
+    if (open) {
+      setPropertiesOpen(false);
+      setHeadersOpen(false);
+    }
   }, [open]);
 
   const isDefaultExchange = exchange === DEFAULT_EXCHANGE;
@@ -1745,10 +1827,15 @@ function PublishDrawer({
     : exchangeRecord
       ? routeTargets(exchangeRecord, routingKey, data.bindings, data.queues)
       : [];
+  const parsedProperties = parsePublishProperties(properties);
   const parsedHeaders = parsePublishHeaders(headers);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (parsedProperties.error) {
+      setPropertiesOpen(true);
+      return setError(parsedProperties.error);
+    }
     if (parsedHeaders.error) {
       setHeadersOpen(true);
       return setError(parsedHeaders.error);
@@ -1762,6 +1849,7 @@ function PublishDrawer({
         properties: {
           deliveryMode: deliveryMode === "2" ? 2 : 1,
           headers: parsedHeaders.headers,
+          extra: parsedProperties.properties,
         },
       });
       toast.success("Message published", {
@@ -1791,7 +1879,7 @@ function PublishDrawer({
             <SheetTitle>Publish message</SheetTitle>
             <SheetDescription>Send a message through the selected exchange.</SheetDescription>
           </SheetHeader>
-          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-4 pb-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field
                 label="Virtual host"
@@ -1888,55 +1976,68 @@ function PublishDrawer({
                 className="min-h-28 font-mono text-xs"
               />
             </Field>
-            <Collapsible
+            <JsonSection
+              label="Properties"
+              id="publish-properties"
+              info={
+                <div className="flex flex-col gap-2">
+                  <p>
+                    You can set other message properties here (delivery mode
+                    and headers are pulled out as the most common cases).
+                  </p>
+                  <div className="flex flex-col gap-1">
+                    <p>Invalid properties will be ignored. Valid properties are:</p>
+                    <ul className="flex list-disc flex-col gap-0.5 pl-4">
+                      {[
+                        "content_type",
+                        "content_encoding",
+                        "priority",
+                        "correlation_id",
+                        "reply_to",
+                        "expiration",
+                        "message_id",
+                        "timestamp",
+                        "type",
+                        "user_id",
+                        "app_id",
+                        "cluster_id",
+                      ].map((name) => (
+                        <li key={name}>{name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              }
+              hint={'JSON object, for example {"content_type": "application/json", "priority": 5}.'}
+              placeholder={'{\n  "content_type": "application/json"\n}'}
+              value={properties}
+              onChange={(next) => {
+                setProperties(next);
+                setError("");
+              }}
+              open={propertiesOpen}
+              onOpenChange={(next) => {
+                setPropertiesOpen(next);
+                setError("");
+              }}
+            />
+            <JsonSection
+              label="Headers"
+              id="publish-headers"
+              info="Headers can have any name. Only long string headers can be set here."
+              hint={'JSON object, for example {"x-tenant": "acme"}. Values may be strings, numbers, or booleans.'}
+              placeholder={'{\n  "x-tenant": "acme"\n}'}
+              value={headers}
+              onChange={(next) => {
+                setHeaders(next);
+                setError("");
+              }}
               open={headersOpen}
               onOpenChange={(next) => {
                 setHeadersOpen(next);
                 setError("");
               }}
-            >
-              <div className="flex items-center gap-1">
-                <CollapsibleTrigger
-                  render={
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="justify-start"
-                    />
-                  }
-                >
-                  <ChevronRightIcon
-                    aria-hidden="true"
-                    className={cn(
-                      "transition-transform duration-200",
-                      headersOpen && "rotate-90"
-                    )}
-                  />
-                  Headers
-                </CollapsibleTrigger>
-                <InfoTooltip label="About headers">
-                  Headers can have any name. Only long string headers can be
-                  set here.
-                </InfoTooltip>
-              </div>
-              <CollapsibleContent className="flex flex-col gap-1.5 pt-1">
-                <Textarea
-                  id="publish-headers"
-                  aria-label="Headers JSON"
-                  value={headers}
-                  onChange={(event) => {
-                    setHeaders(event.target.value);
-                    setError("");
-                  }}
-                  placeholder={'{\n  "x-tenant": "acme"\n}'}
-                  className="min-h-20 font-mono text-xs"
-                />
-                <p className="text-xs text-muted-foreground">
-                  {'JSON object, for example {"x-tenant": "acme"}. Values may be strings, numbers, or booleans.'}
-                </p>
-              </CollapsibleContent>
-            </Collapsible>
+            />
             <FormError>{error}</FormError>
           </div>
           <SheetFooter className="border-t sm:flex-row sm:justify-end">
