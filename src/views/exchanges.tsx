@@ -19,7 +19,7 @@ import type { Exchange, ExchangeType } from "@/data/types";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
 import { Skeleton } from "@/components/ui/skeleton";
-import { numericMeta } from "@/components/table-meta-numeric";
+import { fitMeta, numericMeta } from "@/components/table-meta-numeric";
 import GridActions from "./exchanges/grid-actions";
 import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
@@ -95,7 +95,7 @@ export function ExchangesView() {
             </div>
           </div>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
+        meta: fitMeta
       },
       {
         id: "bindings",
@@ -108,13 +108,13 @@ export function ExchangesView() {
         accessorKey: "vhost",
         header: ({ column }) => <DataGridColumnHeader title="Virtual host" column={column} />,
         cell: ({ row }) => <span className="text-muted-foreground">{row.original.vhost}</span>,
-        meta: { skeleton: <Skeleton className="h-4 w-16" /> },
+        meta: fitMeta
       },
       {
         accessorKey: "type",
         header: ({ column }) => <DataGridColumnHeader title="Type" column={column} />,
         cell: ({ row }) => <Badge variant="outline">{row.original.type}</Badge>,
-        meta: { skeleton: <Skeleton className="h-5 w-14" /> },
+        meta: fitMeta
       },
       {
         accessorKey: "publishRate",
@@ -136,7 +136,7 @@ export function ExchangesView() {
             {row.original.autoDelete ? "Yes" : "No"}
           </span>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-16" /> },
+        meta: fitMeta
       },
       {
         id: "actions",

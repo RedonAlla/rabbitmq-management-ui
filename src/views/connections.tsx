@@ -21,7 +21,7 @@ import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-colu
 import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
 import { Skeleton } from "@/components/ui/skeleton";
 import GridActions from "./connections/grid-actions";
-import { numericMeta } from "@/components/table-meta-numeric";
+import { fitMeta, numericMeta } from "@/components/table-meta-numeric";
 import { DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
 import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
@@ -126,25 +126,25 @@ export function ConnectionsView() {
             </div>
           );
         },
-        meta: { fillWidth: true, skeleton: <Skeleton className="h-4 w-48" /> },
+        meta: fitMeta,
       },
       {
         accessorKey: "user",
         header: ({ column }) => <DataGridColumnHeader column={column} title="User" />,
         cell: ({ row }) => <span className="text-sm">{row.original.user}</span>,
-        meta: { skeleton: <Skeleton className="h-4 w-20" /> },
+        meta: fitMeta,
       },
       {
         accessorKey: "vhost",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Virtual Host" />,
         cell: ({ row }) => <VhostBadge>{row.original.vhost}</VhostBadge>,
-        meta: { skeleton: <Skeleton className="h-4 w-16" /> },
+        meta: fitMeta,
       },
       {
         accessorKey: "state",
         header: ({ column }) => <DataGridColumnHeader column={column} title="State" />,
         cell: ({ row }) => <ConnectionStateBadge state={row.original.state} />,
-        meta: { skeleton: <Skeleton className="h-5 w-16" /> },
+        meta: fitMeta,
       },
       {
         accessorKey: "node",
@@ -152,7 +152,7 @@ export function ConnectionsView() {
         cell: ({ row }) => (
           <span className="data-cell text-xs">{row.original.node}</span>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-20" /> },
+        meta: fitMeta,
       },
       {
         accessorKey: "protocol",
@@ -165,7 +165,7 @@ export function ConnectionsView() {
             </div>
           </div>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-24" /> },
+        meta: fitMeta
       },
       {
         accessorKey: "channels",
@@ -208,7 +208,7 @@ export function ConnectionsView() {
             ) : null}
           </div>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-24" /> },
+        meta: fitMeta
       },
     ];
 
@@ -218,7 +218,7 @@ export function ConnectionsView() {
       cell: ({ row }) => (
         <GridActions row={row.original} setPendingClose={setPendingClose} />
       ),
-      meta: { skeleton: <Skeleton className="h-4 w-10" /> },
+      meta: fitMeta
     });
 
     return list;

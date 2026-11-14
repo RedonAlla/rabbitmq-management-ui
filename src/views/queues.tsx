@@ -188,7 +188,7 @@ export function QueuesView() {
         accessorKey: "state",
         header: ({ column }) => <DataGridColumnHeader column={column} title="State" />,
         cell: ({ row }) => <StateBadge state={row.original.state} />,
-        meta: { ...fitMeta, skeleton: <Skeleton className="h-5 w-16" /> }
+        meta: fitMeta
       },
       {
         accessorKey: "ready",
@@ -219,7 +219,7 @@ export function QueuesView() {
         id: "actions",
         header: () => <span className="sr-only">Actions</span>,
         cell: ({ row }) => (<GridActions rowData={row.original} openDialog={openDialog} setConfirm={setConfirm} />),
-        meta: { ...fitMeta, skeleton: <Skeleton className="h-4 w-12" /> }
+        meta: fitMeta
       },
     ],
     [openDialog]
