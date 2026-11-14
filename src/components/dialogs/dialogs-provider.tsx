@@ -1,6 +1,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -733,22 +734,61 @@ function parsePublishHeaders(text: string): {
   return { headers, error: null };
 }
 
+function InfoTooltip({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label={label}
+            />
+          }
+        >
+          <InfoIcon aria-hidden="true" />
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-pretty">
+          {children}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 function Field({
   label,
   hint,
+  info,
   htmlFor,
   children,
   className,
 }: {
   label: string;
   hint?: ReactNode;
+  info?: string;
   htmlFor?: string;
   children: ReactNode;
   className?: string;
 }) {
   return (
     <div className={cn("flex min-w-0 flex-col gap-1.5", className)}>
-      <Label htmlFor={htmlFor}>{label}</Label>
+      <div className="flex items-center gap-1">
+        <Label htmlFor={htmlFor}>{label}</Label>
+        {info ? (
+          <InfoTooltip label={`About ${label.toLowerCase()}`}>
+            {info}
+          </InfoTooltip>
+        ) : null}
+      </div>
       {children}
       {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </div>
@@ -1023,7 +1063,7 @@ function AddQueueDrawer({
     <Sheet open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
       <SheetContent
         side="right"
-        className="data-[side=right]:w-[92vw] sm:max-w-xl"
+        className="data-[side=right]:w-[40vw] sm:max-w-xl"
       >
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
           <SheetHeader className="gap-2">
@@ -1689,6 +1729,10 @@ function PublishDrawer({
   const [headersOpen, setHeadersOpen] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (open) setHeadersOpen(false);
+  }, [open]);
+
   const isDefaultExchange = exchange === DEFAULT_EXCHANGE;
   const resolvedName = isDefaultExchange ? "" : exchange;
   const exchangeRecord = data.exchanges.find(
@@ -1702,9 +1746,6 @@ function PublishDrawer({
       ? routeTargets(exchangeRecord, routingKey, data.bindings, data.queues)
       : [];
   const parsedHeaders = parsePublishHeaders(headers);
-  const headerCount = parsedHeaders.error
-    ? 0
-    : Object.keys(parsedHeaders.headers).length;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -1743,7 +1784,7 @@ function PublishDrawer({
     <Sheet open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
       <SheetContent
         side="right"
-        className="data-[side=right]:w-[92vw] data-[side=right]:sm:max-w-[42rem]!"
+        className="data-[side=right]:w-[40vw] data-[side=right]:sm:max-w-[42rem]!"
       >
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
           <SheetHeader className="gap-2">
@@ -1752,7 +1793,10 @@ function PublishDrawer({
           </SheetHeader>
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Virtual host">
+              <Field
+                label="Virtual host"
+                info="Virtual hosts isolate exchanges, queues and permissions. A message is published into one virtual host."
+              >
                 <VhostSelect
                   value={vhost}
                   onChange={(next) => {
@@ -1761,7 +1805,10 @@ function PublishDrawer({
                   }}
                 />
               </Field>
-              <Field label="Exchange">
+              <Field
+                label="Exchange"
+                info="The exchange routes the message to queues using the routing key. The default exchange routes to the queue whose name equals the routing key."
+              >
                 <Select value={exchange} onValueChange={(next) => setExchange(String(next))}>
                   <SelectTrigger className="w-full">
                     <SelectValue>
@@ -1793,6 +1840,7 @@ function PublishDrawer({
                   ? `Routes to ${targets.join(", ")}`
                   : "No queue currently matches this key."
               }
+              info="The key the exchange matches against binding keys. For the default exchange it must be the destination queue name."
             >
               <Input
                 id="publish-routing-key"
@@ -1806,6 +1854,7 @@ function PublishDrawer({
               label="Delivery mode"
               htmlFor="publish-delivery-mode"
               hint="1 = transient, 2 = persistent."
+              info="Persistent (2) messages are written to disk when routed to a durable queue. Transient (1) messages may be lost when the broker restarts."
             >
               <Select
                 value={deliveryMode}
@@ -1826,7 +1875,12 @@ function PublishDrawer({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Payload" htmlFor="publish-payload" hint="JSON body attached to each message.">
+            <Field
+              label="Payload"
+              htmlFor="publish-payload"
+              hint="JSON body attached to each message."
+              info="The message body is sent as-is using string payload encoding; JSON is only a convention."
+            >
               <Textarea
                 id="publish-payload"
                 value={payload}
@@ -1848,7 +1902,7 @@ function PublishDrawer({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="flex-1 justify-start"
+                      className="justify-start"
                     />
                   }
                 >
@@ -1860,32 +1914,11 @@ function PublishDrawer({
                     )}
                   />
                   Headers
-                  <span className="ml-auto text-xs font-normal text-muted-foreground">
-                    {headerCount > 0
-                      ? `${headerCount} ${headerCount === 1 ? "header" : "headers"}`
-                      : "Optional"}
-                  </span>
                 </CollapsibleTrigger>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-xs"
-                          aria-label="About headers"
-                        />
-                      }
-                    >
-                      <InfoIcon aria-hidden="true" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="text-pretty">
-                      Headers can have any name. Only long string headers can be
-                      set here.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <InfoTooltip label="About headers">
+                  Headers can have any name. Only long string headers can be
+                  set here.
+                </InfoTooltip>
               </div>
               <CollapsibleContent className="flex flex-col gap-1.5 pt-1">
                 <Textarea
