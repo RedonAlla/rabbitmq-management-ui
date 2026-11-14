@@ -8,8 +8,20 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
-import { ArrowUpRightIcon, ListPlusIcon, PlusIcon, XIcon } from "lucide-react";
+import {
+  ArrowUpRightIcon,
+  ChevronRightIcon,
+  InfoIcon,
+  ListPlusIcon,
+  PlusIcon,
+  XIcon,
+} from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogClose,
@@ -49,6 +61,12 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useCluster } from "@/store/cluster";
 import { routeTargets } from "@/lib/topology";
 import type { ExchangeType } from "@/data/types";
@@ -1668,6 +1686,7 @@ function PublishDrawer({
   const [deliveryMode, setDeliveryMode] = useState<"1" | "2">("1");
   const [payload, setPayload] = useState('{\n  "orderId": "ord_1042",\n  "status": "created"\n}');
   const [headers, setHeaders] = useState("");
+  const [headersOpen, setHeadersOpen] = useState(false);
   const [error, setError] = useState("");
 
   const isDefaultExchange = exchange === DEFAULT_EXCHANGE;
@@ -1682,11 +1701,17 @@ function PublishDrawer({
     : exchangeRecord
       ? routeTargets(exchangeRecord, routingKey, data.bindings, data.queues)
       : [];
+  const parsedHeaders = parsePublishHeaders(headers);
+  const headerCount = parsedHeaders.error
+    ? 0
+    : Object.keys(parsedHeaders.headers).length;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const parsedHeaders = parsePublishHeaders(headers);
-    if (parsedHeaders.error) return setError(parsedHeaders.error);
+    if (parsedHeaders.error) {
+      setHeadersOpen(true);
+      return setError(parsedHeaders.error);
+    }
     try {
       const routed = await actions.publish({
         exchange: resolvedName,
@@ -1809,22 +1834,76 @@ function PublishDrawer({
                 className="min-h-28 font-mono text-xs"
               />
             </Field>
-            <Field
-              label="Headers"
-              htmlFor="publish-headers"
-              hint={'Optional JSON object, for example {"x-tenant": "acme"}. Values may be strings, numbers, or booleans.'}
+            <Collapsible
+              open={headersOpen}
+              onOpenChange={(next) => {
+                setHeadersOpen(next);
+                setError("");
+              }}
             >
-              <Textarea
-                id="publish-headers"
-                value={headers}
-                onChange={(event) => {
-                  setHeaders(event.target.value);
-                  setError("");
-                }}
-                placeholder={'{\n  "x-tenant": "acme"\n}'}
-                className="min-h-20 font-mono text-xs"
-              />
-            </Field>
+              <div className="flex items-center gap-1">
+                <CollapsibleTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1 justify-start"
+                    />
+                  }
+                >
+                  <ChevronRightIcon
+                    aria-hidden="true"
+                    className={cn(
+                      "transition-transform duration-200",
+                      headersOpen && "rotate-90"
+                    )}
+                  />
+                  Headers
+                  <span className="ml-auto text-xs font-normal text-muted-foreground">
+                    {headerCount > 0
+                      ? `${headerCount} ${headerCount === 1 ? "header" : "headers"}`
+                      : "Optional"}
+                  </span>
+                </CollapsibleTrigger>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label="About headers"
+                        />
+                      }
+                    >
+                      <InfoIcon aria-hidden="true" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-pretty">
+                      Headers can have any name. Only long string headers can be
+                      set here.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <CollapsibleContent className="flex flex-col gap-1.5 pt-1">
+                <Textarea
+                  id="publish-headers"
+                  aria-label="Headers JSON"
+                  value={headers}
+                  onChange={(event) => {
+                    setHeaders(event.target.value);
+                    setError("");
+                  }}
+                  placeholder={'{\n  "x-tenant": "acme"\n}'}
+                  className="min-h-20 font-mono text-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {'JSON object, for example {"x-tenant": "acme"}. Values may be strings, numbers, or booleans.'}
+                </p>
+              </CollapsibleContent>
+            </Collapsible>
             <FormError>{error}</FormError>
           </div>
           <SheetFooter className="border-t sm:flex-row sm:justify-end">
