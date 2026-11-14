@@ -8,6 +8,7 @@ import {
   type QueuesPage,
 } from "@/lib/rabbit-api"
 import { useAuth } from "@/store/auth"
+import { useCluster } from "@/store/cluster"
 
 const SORT_FIELDS: Record<string, string> = {
   name: "name",
@@ -50,6 +51,7 @@ interface QueuesQueryResult {
 
 export function useQueues(options: QueuesQueryOptions): QueuesQueryResult {
   const { user } = useAuth()
+  const { revision } = useCluster()
   const [result, setResult] = useState<{
     key: string
     page: QueuesPage
@@ -73,6 +75,7 @@ export function useQueues(options: QueuesQueryOptions): QueuesQueryResult {
     sortField ?? "",
     sortReverse,
     refreshId,
+    revision,
   ].join("|")
 
   useEffect(() => {
@@ -109,7 +112,6 @@ export function useQueues(options: QueuesQueryOptions): QueuesQueryResult {
 
     return () => controller.abort()
   }, [token, pageIndex, pageSize, search, vhost, sortField, sortReverse, requestKey])
-
   const retry = useCallback(() => {
     setRefreshId((current) => current + 1)
   }, [])

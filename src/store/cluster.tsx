@@ -199,6 +199,7 @@ export interface ClusterActions {
 interface ClusterContextValue extends ClusterState {
   history: Record<RangeKey, HistoryPoint[]>
   actions: ClusterActions
+  revision: number
 }
 
 const ClusterContext = createContext<ClusterContextValue | null>(null)
@@ -320,8 +321,8 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
   )
 
   const value = useMemo(
-    () => ({ ...state, history, actions }),
-    [state, history, actions]
+    () => ({ ...state, history, actions, revision: refreshNonce }),
+    [state, history, actions, refreshNonce]
   )
 
   return (
