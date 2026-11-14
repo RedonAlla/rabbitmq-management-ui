@@ -177,7 +177,7 @@ export interface ClusterActions {
   purgeQueue: (vhost: string, name: string) => Promise<void>
   deleteQueue: (vhost: string, name: string) => Promise<void>
   addQueue: (input: rabbit.CreateQueueInput) => Promise<void>
-  publish: (input: rabbit.PublishInput) => Promise<void>
+  publish: (input: rabbit.PublishInput) => Promise<boolean>
   addExchange: (input: rabbit.CreateExchangeInput) => Promise<void>
   deleteExchange: (vhost: string, name: string) => Promise<void>
   closeChannel: (name: string) => Promise<void>
@@ -258,10 +258,11 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
   )
 
   const run = useCallback(
-    async (request: (token: string) => Promise<void>) => {
+    async <T,>(request: (token: string) => Promise<T>): Promise<T> => {
       if (!token) throw new Error("Your session has expired. Sign in again.")
-      await request(token)
+      const result = await request(token)
       setRefreshNonce((value) => value + 1)
+      return result
     },
     [token]
   )

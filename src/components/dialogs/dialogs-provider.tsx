@@ -51,9 +51,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useCluster } from "@/store/cluster";
 import { routeTargets } from "@/lib/topology";
-import { fmtInt } from "@/lib/format";
 import type { ExchangeType } from "@/data/types";
 import type {
+  PublishHeaderValue,
   QueueArgumentValue,
   QueueDeclarationType,
 } from "@/lib/rabbit-api";
@@ -681,6 +681,38 @@ function parseArgumentsJson(text: string): {
     };
   }
   return { args, error: null };
+}
+
+function parsePublishHeaders(text: string): {
+  headers: Record<string, PublishHeaderValue>;
+  error: string | null;
+} {
+  if (!text.trim()) return { headers: {}, error: null };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return { headers: {}, error: "Headers must be valid JSON." };
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return { headers: {}, error: "Headers must be a JSON object." };
+  }
+  const headers: Record<string, PublishHeaderValue> = {};
+  for (const [key, value] of Object.entries(parsed)) {
+    if (
+      typeof value === "string" ||
+      typeof value === "boolean" ||
+      (typeof value === "number" && Number.isFinite(value))
+    ) {
+      headers[key] = value;
+      continue;
+    }
+    return {
+      headers,
+      error: `Header ${key} must be a string, number, or boolean.`,
+    };
+  }
+  return { headers, error: null };
 }
 
 function Field({
@@ -1618,7 +1650,7 @@ function PolicyDialog({
   );
 }
 
-function PublishDialog({
+function PublishDrawer({
   open,
   onClose,
   initialExchange,
@@ -1633,35 +1665,45 @@ function PublishDialog({
   const [vhost, setVhost] = useState(initialVhost ?? "/");
   const [exchange, setExchange] = useState(initialExchange ?? DEFAULT_EXCHANGE);
   const [routingKey, setRoutingKey] = useState("");
-  const [count, setCount] = useState("1");
+  const [deliveryMode, setDeliveryMode] = useState<"1" | "2">("1");
   const [payload, setPayload] = useState('{\n  "orderId": "ord_1042",\n  "status": "created"\n}');
+  const [headers, setHeaders] = useState("");
   const [error, setError] = useState("");
 
-  const resolvedName = exchange === DEFAULT_EXCHANGE ? "" : exchange;
+  const isDefaultExchange = exchange === DEFAULT_EXCHANGE;
+  const resolvedName = isDefaultExchange ? "" : exchange;
   const exchangeRecord = data.exchanges.find(
     (entry) => entry.name === resolvedName && entry.vhost === vhost
   );
-  const targets = exchangeRecord
-    ? routeTargets(exchangeRecord, routingKey, data.bindings, data.queues)
-    : [];
+  const targets = isDefaultExchange
+    ? data.queues
+        .filter((queue) => queue.vhost === vhost && queue.name === routingKey.trim())
+        .map((queue) => queue.name)
+    : exchangeRecord
+      ? routeTargets(exchangeRecord, routingKey, data.bindings, data.queues)
+      : [];
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const amount = Number(count);
-    if (!Number.isFinite(amount) || amount < 1) return setError("Publish at least one message.");
+    const parsedHeaders = parsePublishHeaders(headers);
+    if (parsedHeaders.error) return setError(parsedHeaders.error);
     try {
-      await actions.publish({
+      const routed = await actions.publish({
         exchange: resolvedName,
         vhost,
         routingKey: routingKey.trim(),
         payload,
-        count: Math.floor(amount),
+        properties: {
+          deliveryMode: deliveryMode === "2" ? 2 : 1,
+          headers: parsedHeaders.headers,
+        },
       });
       toast.success("Message published", {
-        description:
-          targets.length > 0
-            ? `${fmtInt(amount)} to ${targets.join(", ")}`
-            : "No bindings matched, the message was dropped.",
+        description: routed
+          ? targets.length > 0
+            ? `Routed to ${targets.join(", ")}`
+            : "Routed to a matching destination."
+          : "No queue matched the routing key, the message was dropped.",
       });
       setError("");
       onClose();
@@ -1673,14 +1715,17 @@ function PublishDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
-      <DialogContent className="sm:max-w-lg">
-        <form onSubmit={submit} className="flex min-w-0 flex-col gap-4">
-          <DialogHeader>
-            <DialogTitle>Publish message</DialogTitle>
-            <DialogDescription>Send a simulated message through the selected exchange.</DialogDescription>
-          </DialogHeader>
-          <DialogBody>
+    <Sheet open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
+      <SheetContent
+        side="right"
+        className="data-[side=right]:w-[92vw] data-[side=right]:sm:max-w-[42rem]!"
+      >
+        <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
+          <SheetHeader className="gap-2">
+            <SheetTitle>Publish message</SheetTitle>
+            <SheetDescription>Send a message through the selected exchange.</SheetDescription>
+          </SheetHeader>
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Virtual host">
                 <VhostSelect
@@ -1694,7 +1739,13 @@ function PublishDialog({
               <Field label="Exchange">
                 <Select value={exchange} onValueChange={(next) => setExchange(String(next))}>
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>
+                      {(value) =>
+                        value === DEFAULT_EXCHANGE
+                          ? "(default exchange)"
+                          : String(value)
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={DEFAULT_EXCHANGE}>(default exchange)</SelectItem>
@@ -1709,34 +1760,47 @@ function PublishDialog({
                 </Select>
               </Field>
             </div>
-            <div className="grid gap-4 sm:grid-cols-[1fr_7rem]">
-              <Field
-                label="Routing key"
-                htmlFor="publish-routing-key"
-                hint={
-                  targets.length
-                    ? `Routes to ${targets.join(", ")}`
-                    : "No queue currently matches this key."
+            <Field
+              label="Routing key"
+              htmlFor="publish-routing-key"
+              hint={
+                targets.length
+                  ? `Routes to ${targets.join(", ")}`
+                  : "No queue currently matches this key."
+              }
+            >
+              <Input
+                id="publish-routing-key"
+                value={routingKey}
+                onChange={(event) => setRoutingKey(event.target.value)}
+                placeholder="orders.created"
+                className="font-mono"
+              />
+            </Field>
+            <Field
+              label="Delivery mode"
+              htmlFor="publish-delivery-mode"
+              hint="1 = transient, 2 = persistent."
+            >
+              <Select
+                value={deliveryMode}
+                onValueChange={(next) =>
+                  setDeliveryMode(String(next) as "1" | "2")
                 }
               >
-                <Input
-                  id="publish-routing-key"
-                  value={routingKey}
-                  onChange={(event) => setRoutingKey(event.target.value)}
-                  placeholder="orders.created"
-                  className="font-mono"
-                  autoFocus
-                />
-              </Field>
-              <Field label="Count" htmlFor="publish-count">
-                <Input
-                  id="publish-count"
-                  value={count}
-                  onChange={(event) => setCount(event.target.value)}
-                  inputMode="numeric"
-                />
-              </Field>
-            </div>
+                <SelectTrigger id="publish-delivery-mode" className="w-full">
+                  <SelectValue>
+                    {(value) =>
+                      value === "2" ? "Persistent (2)" : "Transient (1)"
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Transient (1)</SelectItem>
+                  <SelectItem value="2">Persistent (2)</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
             <Field label="Payload" htmlFor="publish-payload" hint="JSON body attached to each message.">
               <Textarea
                 id="publish-payload"
@@ -1745,15 +1809,31 @@ function PublishDialog({
                 className="min-h-28 font-mono text-xs"
               />
             </Field>
+            <Field
+              label="Headers"
+              htmlFor="publish-headers"
+              hint={'Optional JSON object, for example {"x-tenant": "acme"}. Values may be strings, numbers, or booleans.'}
+            >
+              <Textarea
+                id="publish-headers"
+                value={headers}
+                onChange={(event) => {
+                  setHeaders(event.target.value);
+                  setError("");
+                }}
+                placeholder={'{\n  "x-tenant": "acme"\n}'}
+                className="min-h-20 font-mono text-xs"
+              />
+            </Field>
             <FormError>{error}</FormError>
-          </DialogBody>
-          <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+          </div>
+          <SheetFooter className="border-t sm:flex-row sm:justify-end">
+            <SheetClose render={<Button type="button" variant="outline" />}>Cancel</SheetClose>
             <Button type="submit">Publish</Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1923,7 +2003,7 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
         onClose={closeDialog}
         operator
       />
-      <PublishDialog
+      <PublishDrawer
         open={dialog?.type === "publish"}
         onClose={closeDialog}
         initialExchange={dialog?.type === "publish" ? dialog.exchange : undefined}

@@ -805,8 +805,13 @@ const server = createServer(async (req, res) => {
       }
       if (rest.length === 3 && name !== undefined && rest[2] === "publish" && method === "POST") {
         const body = await readJson(req)
-        if (!exchange) return sendError(res, 404, "not_found", `exchange '${name}' in vhost '${vhost}' not found`)
-        const routed = routeMessage(name, vhost, body.routing_key ?? "")
+        const exchangeName = name === "amq.default" ? "" : name
+        const target =
+          exchangeName === name
+            ? exchange
+            : state.exchanges.find((entry) => entry.vhost === vhost && entry.name === "")
+        if (!target) return sendError(res, 404, "not_found", `exchange '${name}' in vhost '${vhost}' not found`)
+        const routed = routeMessage(exchangeName, vhost, body.routing_key ?? "")
         sendJson(res, 200, { routed: Boolean(routed) })
         return
       }

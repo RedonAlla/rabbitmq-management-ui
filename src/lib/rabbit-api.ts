@@ -603,12 +603,19 @@ export interface CreateVhostInput {
   tracing: boolean
 }
 
+export type PublishHeaderValue = string | number | boolean
+
+export interface PublishProperties {
+  deliveryMode?: 1 | 2
+  headers?: Record<string, PublishHeaderValue>
+}
+
 export interface PublishInput {
   vhost: string
   exchange: string
   routingKey: string
   payload: string
-  count: number
+  properties?: PublishProperties
 }
 
 const PROTOCOL_LABELS: Record<string, string> = {
@@ -1520,20 +1527,26 @@ export async function deleteExchange(
 export async function publishMessage(
   token: string,
   input: PublishInput
-): Promise<void> {
-  const count = Math.max(1, Math.floor(input.count))
-  for (let index = 0; index < count; index += 1) {
-    await apiPost(
-      `/api/exchanges/${enc(input.vhost)}/${enc(input.exchange)}/publish`,
-      token,
-      {
-        properties: {},
-        routing_key: input.routingKey,
-        payload: input.payload,
-        payload_encoding: "string",
-      }
-    )
+): Promise<boolean> {
+  const properties: Record<string, unknown> = {}
+  if (input.properties?.deliveryMode) {
+    properties.delivery_mode = input.properties.deliveryMode
   }
+  if (input.properties?.headers && Object.keys(input.properties.headers).length > 0) {
+    properties.headers = input.properties.headers
+  }
+
+  const response = await apiPost<{ routed?: boolean }>(
+    `/api/exchanges/${enc(input.vhost)}/${enc(input.exchange || "amq.default")}/publish`,
+    token,
+    {
+      properties,
+      routing_key: input.routingKey,
+      payload: input.payload,
+      payload_encoding: "string",
+    }
+  )
+  return Boolean(response?.routed)
 }
 
 export async function createUser(
