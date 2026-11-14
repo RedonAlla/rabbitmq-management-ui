@@ -135,9 +135,6 @@ const ARGUMENT_VALUE_PLACEHOLDER: Record<
 
 type ArgumentMode = "inputs" | "pairs" | "json";
 
-const ARGUMENT_PAIRS_PLACEHOLDER =
-  "x-max-length=50000\nx-dead-letter-exchange=dlx";
-
 const ARGUMENT_JSON_PLACEHOLDER = '{\n  "x-max-length": 50000\n}';
 
 type ArgumentPreset = {
@@ -489,58 +486,6 @@ function parsePairValue(raw: string): QueueArgumentValue {
   return text;
 }
 
-function parseArgumentPairs(text: string): {
-  args: Record<string, QueueArgumentValue>;
-  error: string | null;
-} {
-  const args: Record<string, QueueArgumentValue> = {};
-  const lines = text.split("\n");
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index].trim();
-    if (!line) continue;
-    const separator = line.search(/[=:]/);
-    const label = `Line ${index + 1}`;
-    if (separator === -1) {
-      return { args, error: `${label}: use key=value.` };
-    }
-    const key = line.slice(0, separator).trim();
-    if (!key) {
-      return { args, error: `${label}: add a key before the separator.` };
-    }
-    if (key === "x-queue-type") {
-      return { args, error: "x-queue-type is set by the queue type selector." };
-    }
-    if (key in args) {
-      return { args, error: `Argument ${key} is defined more than once.` };
-    }
-    args[key] = parsePairValue(line.slice(separator + 1));
-  }
-  return { args, error: null };
-}
-
-function rowValueToText(row: ArgumentRow): string {
-  switch (row.type) {
-    case "boolean":
-      return row.value === "true" ? "true" : "false";
-    case "list": {
-      const items = row.value
-        .split(",")
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0);
-      return JSON.stringify(items);
-    }
-    default:
-      return row.value.trim();
-  }
-}
-
-function rowsToArgumentText(rows: ArgumentRow[]): string {
-  return rows
-    .filter((row) => row.key.trim())
-    .map((row) => `${row.key.trim()}=${rowValueToText(row)}`)
-    .join("\n");
-}
-
 function pairTextToRow(raw: string): Pick<ArgumentRow, "type" | "value"> {
   const value = parsePairValue(raw);
   if (typeof value === "boolean") {
@@ -553,6 +498,13 @@ function pairTextToRow(raw: string): Pick<ArgumentRow, "type" | "value"> {
     return { type: "list", value: value.map((item) => String(item)).join(", ") };
   }
   return { type: "string", value };
+}
+
+function inferArgumentFields(
+  raw: string
+): Pick<ArgumentRow, "type" | "value"> {
+  const inferred = pairTextToRow(raw);
+  return inferred.type === "list" ? inferred : { type: inferred.type, value: raw };
 }
 
 function rowsToArgumentObject(
@@ -613,27 +565,6 @@ function jsonValueToRow(
     return { type: "list", value: value.map((item) => String(item)).join(", ") };
   }
   return null;
-}
-
-function parsePairsToRows(
-  text: string,
-  nextId: () => number
-): ArgumentRow[] {
-  const rows: ArgumentRow[] = [];
-  for (const line of text.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    const separator = trimmed.search(/[=:]/);
-    if (separator === -1) continue;
-    const key = trimmed.slice(0, separator).trim();
-    if (!key || key === "x-queue-type") continue;
-    rows.push({
-      id: nextId(),
-      key,
-      ...pairTextToRow(trimmed.slice(separator + 1)),
-    });
-  }
-  return rows;
 }
 
 function parseJsonToRows(text: string, nextId: () => number): ArgumentRow[] {
@@ -751,6 +682,39 @@ function parsePublishProperties(text: string): {
   return { properties: parsed as Record<string, unknown>, error: null };
 }
 
+type KeyValueRow = { id: number; key: string; value: string };
+
+function jsonTextToKeyValueRows(
+  text: string
+): Array<Omit<KeyValueRow, "id">> {
+  if (!text.trim()) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return [];
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return [];
+  }
+  return Object.entries(parsed).map(([key, value]) => ({
+    key,
+    value: typeof value === "string" ? value : JSON.stringify(value),
+  }));
+}
+
+function keyValueRowsToJsonText(rows: KeyValueRow[]): string {
+  const object: Record<string, QueueArgumentValue> = {};
+  for (const row of rows) {
+    const key = row.key.trim();
+    if (!key) continue;
+    object[key] = parsePairValue(row.value);
+  }
+  return Object.keys(object).length > 0
+    ? JSON.stringify(object, null, 2)
+    : "";
+}
+
 function InfoTooltip({
   label,
   children,
@@ -786,7 +750,11 @@ function JsonSection({
   id,
   info,
   hint,
+  pairsHint,
   placeholder,
+  keyPlaceholder,
+  valuePlaceholder,
+  itemName,
   value,
   onChange,
   open,
@@ -796,47 +764,164 @@ function JsonSection({
   id: string;
   info: ReactNode;
   hint: string;
+  pairsHint: string;
   placeholder: string;
+  keyPlaceholder: string;
+  valuePlaceholder: string;
+  itemName: string;
   value: string;
   onChange: (value: string) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const [mode, setMode] = useState<"pairs" | "json">("pairs");
+  const [rows, setRows] = useState<KeyValueRow[]>(() =>
+    jsonTextToKeyValueRows(value).map((row, index) => ({
+      ...row,
+      id: index + 1,
+    }))
+  );
+  const nextRowId = useRef(rows.length + 1);
+
+  const updateRows = (next: KeyValueRow[]) => {
+    setRows(next);
+    onChange(keyValueRowsToJsonText(next));
+  };
+
+  const changeMode = (next: string) => {
+    if (next === mode) return;
+    if (next === "json") {
+      if (rows.length > 0 || !value.trim()) {
+        onChange(keyValueRowsToJsonText(rows));
+      }
+    } else {
+      setRows(
+        jsonTextToKeyValueRows(value).map((row) => ({
+          ...row,
+          id: nextRowId.current++,
+        }))
+      );
+    }
+    setMode(next as "pairs" | "json");
+    if (!open) onOpenChange(true);
+  };
+
   return (
     <Collapsible open={open} onOpenChange={onOpenChange}>
-      <div className="flex items-center gap-1">
-        <CollapsibleTrigger
-          render={
+      <Tabs value={mode} onValueChange={changeMode}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1">
+            <CollapsibleTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start"
+                />
+              }
+            >
+              <ChevronRightIcon
+                aria-hidden="true"
+                className={cn(
+                  "transition-transform duration-200",
+                  open && "rotate-90"
+                )}
+              />
+              {label}
+            </CollapsibleTrigger>
+            <InfoTooltip label={`About ${label.toLowerCase()}`}>
+              {info}
+            </InfoTooltip>
+          </div>
+          <TabsList className="ms-auto">
+            <TabsTrigger value="pairs" className="px-1 text-xs sm:px-1.5 sm:text-sm">
+              Key / value
+            </TabsTrigger>
+            <TabsTrigger value="json" className="px-1 text-xs sm:px-1.5 sm:text-sm">
+              JSON
+            </TabsTrigger>
+          </TabsList>
+        </div>
+        <CollapsibleContent className="flex flex-col gap-2 pt-1">
+          <TabsContent value="pairs" className="flex flex-col gap-2">
+            {rows.map((row) => (
+              <div
+                key={row.id}
+                className="flex flex-col gap-2 sm:flex-row sm:items-center"
+              >
+                <Input
+                  aria-label={`${label} key`}
+                  placeholder={keyPlaceholder}
+                  value={row.key}
+                  className="min-w-0 flex-1 font-mono"
+                  onChange={(event) => {
+                    const key = event.target.value;
+                    updateRows(
+                      rows.map((entry) =>
+                        entry.id === row.id ? { ...entry, key } : entry
+                      )
+                    );
+                  }}
+                />
+                <Input
+                  aria-label={`${label} value`}
+                  placeholder={valuePlaceholder}
+                  value={row.value}
+                  className="min-w-0 flex-1 font-mono"
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    updateRows(
+                      rows.map((entry) =>
+                        entry.id === row.id ? { ...entry, value: next } : entry
+                      )
+                    );
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`Remove ${itemName}`}
+                  onClick={() =>
+                    updateRows(rows.filter((entry) => entry.id !== row.id))
+                  }
+                >
+                  <XIcon aria-hidden="true" />
+                </Button>
+              </div>
+            ))}
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="justify-start"
+              className="self-start"
+              onClick={() =>
+                updateRows([
+                  ...rows,
+                  { id: nextRowId.current++, key: "", value: "" },
+                ])
+              }
+            >
+              <PlusIcon data-icon="inline-start" aria-hidden="true" />
+              Add {itemName}
+            </Button>
+          </TabsContent>
+          <TabsContent value="json">
+            <Textarea
+              id={id}
+              aria-label={`${label} JSON`}
+              value={value}
+              onChange={(event) => onChange(event.target.value)}
+              placeholder={placeholder}
+              className="min-h-20 font-mono text-xs"
             />
-          }
-        >
-          <ChevronRightIcon
-            aria-hidden="true"
-            className={cn(
-              "transition-transform duration-200",
-              open && "rotate-90"
-            )}
-          />
-          {label}
-        </CollapsibleTrigger>
-        <InfoTooltip label={`About ${label.toLowerCase()}`}>{info}</InfoTooltip>
-      </div>
-      <CollapsibleContent className="flex flex-col gap-1.5 pt-1">
-        <Textarea
-          id={id}
-          aria-label={`${label} JSON`}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          className="min-h-20 font-mono text-xs"
-        />
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      </CollapsibleContent>
+          </TabsContent>
+          <p className="text-xs text-muted-foreground">
+            {mode === "pairs" ? pairsHint : hint}
+          </p>
+        </CollapsibleContent>
+      </Tabs>
     </Collapsible>
   );
 }
@@ -941,7 +1026,6 @@ function AddQueueDrawer({
   const [autoDelete, setAutoDelete] = useState(false);
   const [argumentRows, setArgumentRows] = useState<ArgumentRow[]>([]);
   const [argumentMode, setArgumentMode] = useState<ArgumentMode>("inputs");
-  const [argumentText, setArgumentText] = useState("");
   const [argumentJson, setArgumentJson] = useState("");
   const [presetOpen, setPresetOpen] = useState(false);
   const [presetSelection, setPresetSelection] = useState<string[]>([]);
@@ -990,6 +1074,14 @@ function AddQueueDrawer({
     setError("");
   };
 
+  const updateArgumentValue = (id: number, value: string) => {
+    const inferred = inferArgumentFields(value);
+    setArgumentRows((rows) =>
+      rows.map((row) => (row.id === id ? { ...row, ...inferred } : row))
+    );
+    setError("");
+  };
+
   const removeArgumentRow = (id: number) => {
     setArgumentRows((rows) => rows.filter((row) => row.id !== id));
     setError("");
@@ -998,16 +1090,12 @@ function AddQueueDrawer({
   const changeArgumentMode = (mode: ArgumentMode) => {
     if (mode === argumentMode) return;
     setError("");
-    const nextId = () => (nextArgumentId.current += 1);
-    const rows =
-      argumentMode === "pairs"
-        ? parsePairsToRows(argumentText, nextId)
-        : argumentMode === "json"
-          ? parseJsonToRows(argumentJson, nextId)
-          : argumentRows;
-    setArgumentRows(rows);
-    if (mode === "pairs") setArgumentText(rowsToArgumentText(rows));
-    if (mode === "json") setArgumentJson(rowsToJsonText(rows));
+    if (mode === "json") {
+      setArgumentJson(rowsToJsonText(argumentRows));
+    } else if (argumentMode === "json") {
+      const nextId = () => (nextArgumentId.current += 1);
+      setArgumentRows(parseJsonToRows(argumentJson, nextId));
+    }
     setArgumentMode(mode);
   };
 
@@ -1024,11 +1112,9 @@ function AddQueueDrawer({
     if (presets.length === 0) return;
     const nextId = () => (nextArgumentId.current += 1);
     const base =
-      argumentMode === "pairs"
-        ? parsePairsToRows(argumentText, nextId)
-        : argumentMode === "json"
-          ? parseJsonToRows(argumentJson, nextId)
-          : argumentRows;
+      argumentMode === "json"
+        ? parseJsonToRows(argumentJson, nextId)
+        : argumentRows;
     const seen = new Set(
       base.map((row) => row.key.trim()).filter((key) => key.length > 0)
     );
@@ -1042,7 +1128,6 @@ function AddQueueDrawer({
     }
     const rows = [...base, ...added];
     setArgumentRows(rows);
-    if (argumentMode === "pairs") setArgumentText(rowsToArgumentText(rows));
     if (argumentMode === "json") setArgumentJson(rowsToJsonText(rows));
     setPresetSelection([]);
     setPresetOpen(false);
@@ -1057,7 +1142,6 @@ function AddQueueDrawer({
     setAutoDelete(false);
     setArgumentRows([]);
     setArgumentMode("inputs");
-    setArgumentText("");
     setArgumentJson("");
     setPresetOpen(false);
     setPresetSelection([]);
@@ -1072,11 +1156,7 @@ function AddQueueDrawer({
       return setError(`A queue named ${clean} already exists on ${vhost}.`);
     }
     const args: Record<string, QueueArgumentValue> = {};
-    if (argumentMode === "pairs") {
-      const parsed = parseArgumentPairs(argumentText);
-      if (parsed.error) return setError(parsed.error);
-      Object.assign(args, parsed.args);
-    } else if (argumentMode === "json") {
+    if (argumentMode === "json") {
       const parsed = parseArgumentsJson(argumentJson);
       if (parsed.error) return setError(parsed.error);
       Object.assign(args, parsed.args);
@@ -1149,7 +1229,7 @@ function AddQueueDrawer({
               Declare a queue on an existing virtual host.
             </SheetDescription>
           </SheetHeader>
-          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-4 pb-4">
             <Field label="Queue name" htmlFor="queue-name">
               <Input
                 id="queue-name"
@@ -1211,7 +1291,7 @@ function AddQueueDrawer({
               label="Arguments"
               hint={
                 argumentMode === "pairs"
-                  ? "One key=value pair per line. true/false, numbers, and [JSON arrays] are typed automatically; quote a value to keep it a string."
+                  ? "One key/value pair per row. true/false, numbers, and [JSON arrays] are typed automatically; quote a value to keep it a string."
                   : argumentMode === "json"
                     ? "A JSON object of arguments. Values may be strings, numbers, booleans, or arrays; x-queue-type is added from the queue type selector."
                     : type === "default"
@@ -1327,7 +1407,10 @@ function AddQueueDrawer({
                 </div>
                 <TabsContent value="inputs" className="flex flex-col gap-2">
                   {argumentRows.map((row) => (
-                    <div key={row.id} className="flex items-center gap-2">
+                    <div
+                      key={row.id}
+                      className="flex flex-col gap-2 sm:flex-row sm:items-center"
+                    >
                       <Input
                         aria-label="Argument key"
                         placeholder="x-max-length"
@@ -1409,18 +1492,51 @@ function AddQueueDrawer({
                     Add argument
                   </Button>
                 </TabsContent>
-                <TabsContent value="pairs">
-                  <Textarea
-                    aria-label="Arguments as key value pairs"
-                    placeholder={ARGUMENT_PAIRS_PLACEHOLDER}
-                    value={argumentText}
-                    className="font-mono"
-                    rows={4}
-                    onChange={(event) => {
-                      setArgumentText(event.target.value);
-                      setError("");
-                    }}
-                  />
+                <TabsContent value="pairs" className="flex flex-col gap-2">
+                  {argumentRows.map((row) => (
+                    <div
+                      key={row.id}
+                      className="flex flex-col gap-2 sm:flex-row sm:items-center"
+                    >
+                      <Input
+                        aria-label="Argument key"
+                        placeholder="x-max-length"
+                        value={row.key}
+                        className="min-w-0 flex-1 font-mono"
+                        onChange={(event) =>
+                          updateArgumentRow(row.id, { key: event.target.value })
+                        }
+                      />
+                      <Input
+                        aria-label="Argument value"
+                        placeholder="value"
+                        value={row.value}
+                        className="min-w-0 flex-1 font-mono"
+                        onChange={(event) =>
+                          updateArgumentValue(row.id, event.target.value)
+                        }
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Remove argument"
+                        onClick={() => removeArgumentRow(row.id)}
+                      >
+                        <XIcon aria-hidden="true" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="self-start"
+                    onClick={addArgumentRow}
+                  >
+                    <PlusIcon data-icon="inline-start" aria-hidden="true" />
+                    Add argument
+                  </Button>
                 </TabsContent>
                 <TabsContent value="json">
                   <Textarea
@@ -2009,7 +2125,11 @@ function PublishDrawer({
                 </div>
               }
               hint={'JSON object, for example {"content_type": "application/json", "priority": 5}.'}
+              pairsHint="Add one key/value pair per row. true/false, numbers and [JSON arrays] are typed automatically."
               placeholder={'{\n  "content_type": "application/json"\n}'}
+              keyPlaceholder="content_type"
+              valuePlaceholder="application/json"
+              itemName="property"
               value={properties}
               onChange={(next) => {
                 setProperties(next);
@@ -2026,7 +2146,11 @@ function PublishDrawer({
               id="publish-headers"
               info="Headers can have any name. Only long string headers can be set here."
               hint={'JSON object, for example {"x-tenant": "acme"}. Values may be strings, numbers, or booleans.'}
+              pairsHint="Add one key/value pair per row. true/false and numbers are typed automatically; other values are sent as strings."
               placeholder={'{\n  "x-tenant": "acme"\n}'}
+              keyPlaceholder="x-tenant"
+              valuePlaceholder="acme"
+              itemName="header"
               value={headers}
               onChange={(next) => {
                 setHeaders(next);
