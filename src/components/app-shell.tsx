@@ -322,9 +322,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                   />
                 }
               >
-                <IconTile variant="solid" aria-hidden="true">
-                  <span className="text-mono text-sm font-semibold">RQ</span>
-                </IconTile>
+                <img
+                  src="/favicon.svg"
+                  alt=""
+                  aria-hidden="true"
+                  className="size-10 shrink-0 rounded-lg bg-[#181714] p-1"
+                />
                 <div className="grid min-w-0 flex-1 text-left leading-tight">
                   <span className="truncate text-sm font-semibold">
                     RabbitMQ
