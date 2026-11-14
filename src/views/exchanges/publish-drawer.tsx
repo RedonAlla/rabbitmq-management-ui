@@ -95,6 +95,7 @@ export default function PublishDrawer({
   const [routingKey, setRoutingKey] = useState("");
   const [deliveryMode, setDeliveryMode] = useState<"1" | "2">("1");
   const [payload, setPayload] = useState('{\n  "orderId": "ord_1042",\n  "status": "created"\n}');
+  const [payloadEncoding, setPayloadEncoding] = useState<"string" | "base64">("string");
   const [properties, setProperties] = useState("");
   const [propertiesOpen, setPropertiesOpen] = useState(false);
   const [headers, setHeaders] = useState("");
@@ -139,6 +140,7 @@ export default function PublishDrawer({
         vhost,
         routingKey: routingKey.trim(),
         payload,
+        payloadEncoding,
         properties: {
           deliveryMode: deliveryMode === "2" ? 2 : 1,
           headers: parsedHeaders.headers,
@@ -231,36 +233,65 @@ export default function PublishDrawer({
                 className="font-mono"
               />
             </Field>
-            <Field
-              label="Delivery mode"
-              htmlFor="publish-delivery-mode"
-              hint="1 = transient, 2 = persistent."
-              info="Persistent (2) messages are written to disk when routed to a durable queue. Transient (1) messages may be lost when the broker restarts."
-            >
-              <Select
-                value={deliveryMode}
-                onValueChange={(next) =>
-                  setDeliveryMode(String(next) as "1" | "2")
-                }
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label="Delivery mode"
+                htmlFor="publish-delivery-mode"
+                hint="1 = transient, 2 = persistent."
+                info="Persistent (2) messages are written to disk when routed to a durable queue. Transient (1) messages may be lost when the broker restarts."
               >
-                <SelectTrigger id="publish-delivery-mode" className="w-full">
-                  <SelectValue>
-                    {(value) =>
-                      value === "2" ? "Persistent (2)" : "Transient (1)"
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Transient (1)</SelectItem>
-                  <SelectItem value="2">Persistent (2)</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
+                <Select
+                  value={deliveryMode}
+                  onValueChange={(next) =>
+                    setDeliveryMode(String(next) as "1" | "2")
+                  }
+                >
+                  <SelectTrigger id="publish-delivery-mode" className="w-full">
+                    <SelectValue>
+                      {(value) =>
+                        value === "2" ? "Persistent (2)" : "Transient (1)"
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Transient (1)</SelectItem>
+                    <SelectItem value="2">Persistent (2)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field
+                label="Payload encoding"
+                htmlFor="publish-payload-encoding"
+                hint="String sends the body as UTF-8 text; Base64 is decoded by the broker."
+                info="The HTTP API accepts the body as plain text (string) or Base64. Use Base64 for binary payloads; the decoded bytes become the message body."
+              >
+                <Select
+                  value={payloadEncoding}
+                  onValueChange={(next) =>
+                    setPayloadEncoding(String(next) as "string" | "base64")
+                  }
+                >
+                  <SelectTrigger id="publish-payload-encoding" className="w-full">
+                    <SelectValue>
+                      {(value) => (value === "base64" ? "Base64" : "String")}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="string">String</SelectItem>
+                    <SelectItem value="base64">Base64</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
             <Field
               label="Payload"
               htmlFor="publish-payload"
-              hint="JSON body attached to each message."
-              info="The message body is sent as-is using string payload encoding; JSON is only a convention."
+              hint={
+                payloadEncoding === "base64"
+                  ? "Base64-encoded body; the broker decodes it before routing."
+                  : "JSON body attached to each message."
+              }
+              info="The body is sent as-is with string encoding. With Base64 encoding the broker decodes it first; JSON is only a convention."
             >
               <Textarea
                 id="publish-payload"

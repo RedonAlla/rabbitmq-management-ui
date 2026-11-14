@@ -616,6 +616,7 @@ export interface PublishInput {
   exchange: string
   routingKey: string
   payload: string
+  payloadEncoding?: "string" | "base64"
   properties?: PublishProperties
 }
 
@@ -1544,7 +1545,7 @@ export async function publishMessage(
       properties,
       routing_key: input.routingKey,
       payload: input.payload,
-      payload_encoding: "string",
+      payload_encoding: input.payloadEncoding ?? "string",
     }
   )
   return Boolean(response?.routed)
