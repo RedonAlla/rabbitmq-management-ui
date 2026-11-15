@@ -54,6 +54,7 @@ export interface Binding {
   destination: string
   destType: "queue" | "exchange"
   routingKey: string
+  propertiesKey: string
   args: Record<string, BindingArgumentValue>
 }
 

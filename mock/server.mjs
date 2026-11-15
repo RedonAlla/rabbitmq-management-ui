@@ -853,10 +853,38 @@ const server = createServer(async (req, res) => {
           destination,
           destination_type: "queue",
           routing_key: routingKey,
+          properties_key: routingKey,
           arguments: body.arguments ?? {},
         })
       }
       sendEmpty(res, 201)
+      return
+    }
+
+    if (resource === "bindings" && method === "DELETE") {
+      const [vhost, sourceType, source, destinationType, destination, propertiesKey] = rest
+      if (
+        !vhost ||
+        sourceType !== "e" ||
+        (destinationType !== "q" && destinationType !== "e") ||
+        propertiesKey === undefined
+      ) {
+        return sendError(res, 404, "not_found", "unknown binding route")
+      }
+      const destType = destinationType === "q" ? "queue" : "exchange"
+      const index = state.bindings.findIndex(
+        (entry) =>
+          entry.vhost === vhost &&
+          entry.source === source &&
+          entry.destination === destination &&
+          entry.destination_type === destType &&
+          (entry.properties_key ?? entry.routing_key) === propertiesKey
+      )
+      if (index === -1) {
+        return sendError(res, 404, "not_found", "binding not found")
+      }
+      state.bindings.splice(index, 1)
+      sendEmpty(res, 204)
       return
     }
 

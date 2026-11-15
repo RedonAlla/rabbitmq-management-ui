@@ -181,6 +181,7 @@ export interface ClusterActions {
   addExchange: (input: rabbit.CreateExchangeInput) => Promise<void>
   deleteExchange: (vhost: string, name: string) => Promise<void>
   addBinding: (input: rabbit.CreateBindingInput) => Promise<void>
+  deleteBinding: (input: rabbit.DeleteBindingInput) => Promise<void>
   closeChannel: (name: string) => Promise<void>
   addUser: (input: rabbit.CreateUserInput) => Promise<void>
   deleteUser: (username: string) => Promise<void>
@@ -294,6 +295,8 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
         run((current) => rabbit.deleteExchange(current, vhost, name)),
       addBinding: (input) =>
         run((current) => rabbit.createBinding(current, input)),
+      deleteBinding: (input) =>
+        run((current) => rabbit.deleteBinding(current, input)),
       closeChannel: (name) =>
         run((current) => rabbit.closeChannel(current, name)),
       addUser: (input) => run((current) => rabbit.createUser(current, input)),

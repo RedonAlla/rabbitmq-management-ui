@@ -234,6 +234,7 @@ interface ApiBinding {
   destination: string
   destination_type: "queue" | "exchange"
   routing_key: string
+  properties_key?: string
   arguments?: Record<string, unknown>
 }
 
@@ -727,6 +728,14 @@ export interface CreateBindingInput {
   args?: Record<string, QueueArgumentValue>
 }
 
+export interface DeleteBindingInput {
+  vhost: string
+  source: string
+  destination: string
+  destType: "queue" | "exchange"
+  propertiesKey: string
+}
+
 export interface CreateUserInput {
   username: string
   password: string
@@ -944,6 +953,7 @@ function mapBindings(bindings: ApiBinding[]): Binding[] {
     destination: binding.destination,
     destType: binding.destination_type === "exchange" ? "exchange" : "queue",
     routingKey: binding.routing_key,
+    propertiesKey: binding.properties_key ?? binding.routing_key,
     args: bindingArguments(binding.arguments),
   }))
 }
@@ -1819,6 +1829,17 @@ export async function createBinding(
       routing_key: input.routingKey,
       arguments: input.args ?? {},
     }
+  )
+}
+
+export async function deleteBinding(
+  token: string,
+  input: DeleteBindingInput
+): Promise<void> {
+  const destination = input.destType === "exchange" ? "e" : "q"
+  await apiDelete(
+    `/api/bindings/${enc(input.vhost)}/e/${enc(input.source)}/${destination}/${enc(input.destination)}/${enc(input.propertiesKey)}`,
+    token
   )
 }
 

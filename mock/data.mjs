@@ -790,6 +790,7 @@ function binding(source, destination, routingKey, vhost = "/", destinationType =
     destination,
     destination_type: destinationType,
     routing_key: routingKey,
+    properties_key: routingKey,
     arguments: {},
   }
 }
