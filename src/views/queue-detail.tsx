@@ -165,7 +165,6 @@ export function QueueDetailView() {
 
       {detail ? <QueueKpis detail={detail} /> : <QueueKpisSkeleton />}
 
-
       <QueueConsumersTable
         consumers={detail?.consumerDetails ?? []}
         loading={loading}

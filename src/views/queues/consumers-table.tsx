@@ -123,22 +123,18 @@ export default function QueueConsumersTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Consumer tag</TableHead>
               <TableHead>Channel</TableHead>
               <TableHead>Connection</TableHead>
               <TableHead>Ack required</TableHead>
-              <TableHead>Active</TableHead>
-              <TableHead>Prefetch</TableHead>
-              <TableHead>Timeout</TableHead>
-              <TableHead>Arguments</TableHead>
+              <TableHead className="text-right">Active</TableHead>
+              <TableHead className="text-right">Prefetch</TableHead>
+              <TableHead className="text-right">Timeout</TableHead>
+              <TableHead className="text-right">Arguments</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {consumers.map((consumer) => (
               <TableRow key={consumer.tag}>
-                <TableCell>
-                  <span className="data-cell text-xs">{consumer.tag}</span>
-                </TableCell>
                 <TableCell>
                   <a
                     href={routeHref("channel", consumer.channel)}
@@ -148,16 +144,21 @@ export default function QueueConsumersTable({
                   </a>
                 </TableCell>
                 <TableCell>
-                  <a
-                    href={routeHref("connection", consumer.connection)}
-                    className="data-cell text-xs transition-colors hover:text-primary"
-                  >
-                    {consumer.connection}
-                  </a>
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <a
+                      href={routeHref("connection", consumer.connection)}
+                      className="data-cell text-xs transition-colors hover:text-primary"
+                    >
+                      {consumer.connection}
+                    </a>
+                    <span className="data-cell text-xs text-muted-foreground">
+                      {consumer.tag}
+                    </span>
+                  </div>
                 </TableCell>
                 <TableCell>{consumer.ackRequired ? "Yes" : "No"}</TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-end gap-1.5">
                     <Badge variant={consumer.active ? "success-light" : "outline"}>
                       {consumer.active ? "Active" : "Inactive"}
                     </Badge>
@@ -166,17 +167,17 @@ export default function QueueConsumersTable({
                     ) : null}
                   </div>
                 </TableCell>
-                <TableCell className="data-cell">
+                <TableCell className="data-cell text-right">
                   {consumer.prefetchCount === 0
                     ? "Unlimited"
                     : fmtInt(consumer.prefetchCount)}
                 </TableCell>
-                <TableCell className="data-cell">
+                <TableCell className="data-cell text-right">
                   {consumer.consumerTimeout
                     ? fmtDuration(consumer.consumerTimeout)
                     : "—"}
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-right">
                   <ArgumentsCell consumer={consumer} />
                 </TableCell>
               </TableRow>
