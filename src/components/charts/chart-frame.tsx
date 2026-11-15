@@ -7,6 +7,7 @@ import {
   RegionError,
 } from "@/components/region-states";
 import { Button } from "@/components/ui/button";
+import { ConditionalRender } from "../conditional-render";
 
 interface ChartFrameProps {
   title: string;
@@ -35,14 +36,17 @@ export function ChartFrame({
 }: ChartFrameProps) {
   return (
     <SectionFrame title={title} description={description} actions={actions}>
-      {error ? (
-        <RegionError message={error} onRetry={onRetry} />
-      ) : loading ? (
+      <ConditionalRender condition={!(error === null)}>
+        <RegionError message={error!} onRetry={onRetry} />
+      </ConditionalRender>
+
+      <ConditionalRender condition={loading}>
         <ChartSkeleton />
-      ) : hasData ? (
-        children
-      ) : (
-        <RegionEmpty
+      </ConditionalRender>
+
+      <ConditionalRender
+        condition={hasData}
+        default={<RegionEmpty
           title={emptyTitle}
           description={emptyDescription}
           action={
@@ -51,8 +55,10 @@ export function ChartFrame({
               Retry
             </Button>
           }
-        />
-      )}
+        />}
+      >
+        {children}
+      </ConditionalRender>
     </SectionFrame>
   );
 }

@@ -32,6 +32,7 @@ import {
   QueuePolicyFrame,
 } from "@/views/queues/properties";
 import { NotFoundView } from "@/views/not-found";
+import { ConditionalRender } from "@/components/conditional-render";
 
 export function QueueDetailView() {
   const { route, navigate } = useRoute();
@@ -153,6 +154,8 @@ export function QueueDetailView() {
     setConfirm(null);
   };
 
+  const hasDetails = (detail !== null);
+
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <QueueDetailHeader
@@ -163,7 +166,12 @@ export function QueueDetailView() {
         onAddBinding={() => setBindingOpen(true)}
       />
 
-      {detail ? <QueueKpis detail={detail} /> : <KpiSkeleton />}
+      <ConditionalRender
+        condition={hasDetails}
+        default={<KpiSkeleton />}
+      >
+        <QueueKpis detail={detail!} />
+      </ConditionalRender>
 
       <QueueConsumersTable
         consumers={detail?.consumerDetails ?? []}
@@ -219,29 +227,29 @@ export function QueueDetailView() {
           <>
             <QueueDetailsPanel detail={detail} />
 
-            {detail ? (
+            <ConditionalRender condition={hasDetails} >
               <QueueArgumentsFrame
-                args={detail.arguments}
+                args={detail?.arguments!}
                 loading={loading}
                 error={error}
                 onRetry={retryDetail}
               />
-            ) : null}
+            </ConditionalRender>
 
             <QueueLifecyclePanel detail={detail} />
             <QueueCountersPanel detail={detail} />
             <QueueStoragePanel detail={detail} />
 
-            {detail ? (
+            <ConditionalRender condition={hasDetails} >
               <QueuePolicyFrame
-                policy={detail.policy}
-                operatorPolicy={detail.operatorPolicy}
-                definition={detail.effectivePolicyDefinition}
+                policy={detail?.policy!}
+                operatorPolicy={detail?.operatorPolicy!}
+                definition={detail?.effectivePolicyDefinition!}
                 loading={loading}
                 error={error}
                 onRetry={retryDetail}
               />
-            ) : null}
+            </ConditionalRender>
           </>
         }
       />
