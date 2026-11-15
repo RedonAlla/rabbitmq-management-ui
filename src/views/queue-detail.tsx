@@ -17,10 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Frame, FramePanel } from "@/components/reui/frame";
-import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/page-header";
-import { KpiGrid } from "@/components/kpi";
 import {
   DetailLayout,
   FactPanel,
@@ -44,15 +41,6 @@ import {
   RateChart,
   buildRateChartDataFromSamples,
 } from "@/views/connections/rate-chart";
-import {
-  LengthChart,
-  QUEUE_RATE_WINDOW,
-  QueueChartFrame,
-  QueueRangeTabs,
-  averageSeries,
-  buildLengthChartDataFromSamples,
-} from "@/views/queues/charts";
-import QueueKpis from "@/views/queues/kpis";
 import QueueConsumersTable from "@/views/queues/consumers-table";
 import QueueBindingsFrame from "@/views/queues/bindings-frame";
 import AddBindingDialog from "@/views/queues/add-binding-dialog";
@@ -62,6 +50,10 @@ import {
   QueuePolicyFrame,
 } from "@/views/queues/properties";
 import { NotFoundView } from "@/views/not-found";
+import { KpiSkeleton } from "./kpi-skeleton";
+import { GetRatesChart } from "@/components/features/queues/details/get-rates-chart";
+import { averageSeries, buildLengthChartDataFromSamples, LengthChart, QUEUE_RATE_WINDOW, QueueChartFrame, QueueRangeTabs } from "@/components/features/queues/shared/charts";
+import QueueKpis from "@/components/features/queues/details/kpis";
 
 const timeFmt = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -82,21 +74,6 @@ function fmtTimestamp(value: string | null): string {
 
 function orDash(value: string | null | undefined): string {
   return value && value.length > 0 ? value : "—";
-}
-
-function KpiSkeleton() {
-  return (
-    <KpiGrid>
-      {Array.from({ length: 4 }, (_, index) => (
-        <Frame key={index} spacing="sm" className="min-w-0">
-          <FramePanel className="flex flex-col gap-3">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="h-7 w-28" />
-          </FramePanel>
-        </Frame>
-      ))}
-    </KpiGrid>
-  );
 }
 
 export function QueueDetailView() {
@@ -192,7 +169,7 @@ export function QueueDetailView() {
             description="Loading queue details."
             actions={backAction}
           />
-          <KpiSkeleton />
+          <KpiSkeleton length={4} />
           <DetailLayout
             main={
               <>
@@ -378,7 +355,7 @@ export function QueueDetailView() {
         }
       />
 
-      {detail ? <QueueKpis detail={detail} /> : <KpiSkeleton />}
+      {detail ? <QueueKpis detail={detail} /> : <KpiSkeleton length={4} />}
 
       <DetailLayout
         main={
@@ -470,6 +447,15 @@ export function QueueDetailView() {
                 ]}
               />
             </QueueChartFrame>
+
+            <GetRatesChart
+              loading={loading}
+              error={error}
+              range={range}
+              data={getRateData}
+              onRetry={retryDetail}
+              setRange={setRange}
+            />
 
             <QueueChartFrame
               title="Get rates"
