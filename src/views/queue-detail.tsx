@@ -6,13 +6,15 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { RegionEmpty, RegionError } from "@/components/region-states";
 import {
   AddBindingDialog,
+  MessageRatesChart,
   QueueBackButton,
-  QueueChartsSection,
+  QueueDepthChart,
   QueueDetailHeader,
   QueueDetailSkeleton,
   QueueKpis,
   QueueKpisSkeleton,
   QueueSidePanels,
+  ReductionsChart,
 } from "@/components/features/queues/details";
 import { useCluster } from "@/store/cluster";
 import { useRoute, routeHref } from "@/lib/router";
@@ -156,10 +158,18 @@ export function QueueDetailView() {
 
       {detail ? <QueueKpis detail={detail} /> : <QueueKpisSkeleton />}
 
+
+      <QueueConsumersTable
+        consumers={detail?.consumerDetails ?? []}
+        loading={loading}
+        error={error}
+        onRetry={retryDetail}
+      />
+
       <DetailLayout
         main={
           <>
-            <QueueChartsSection
+            <QueueDepthChart
               detail={detail}
               range={range}
               setRange={setRange}
@@ -168,8 +178,10 @@ export function QueueDetailView() {
               onRetry={retryDetail}
             />
 
-            <QueueConsumersTable
-              consumers={detail?.consumerDetails ?? []}
+            <MessageRatesChart
+              detail={detail}
+              range={range}
+              setRange={setRange}
               loading={loading}
               error={error}
               onRetry={retryDetail}
@@ -178,6 +190,15 @@ export function QueueDetailView() {
             <QueueBindingsFrame
               bindings={bindings}
               onAddBinding={() => setBindingOpen(true)}
+            />
+
+            <ReductionsChart
+              detail={detail}
+              range={range}
+              setRange={setRange}
+              loading={loading}
+              error={error}
+              onRetry={retryDetail}
             />
 
             <QueueGarbageCollectionFrame

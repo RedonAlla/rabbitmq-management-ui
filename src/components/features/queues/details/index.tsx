@@ -1,7 +1,9 @@
 export { QueueKpis } from "./kpis";
 export { AddBindingDialog } from "./add-binding-dialog";
-export { GetRatesChart } from "./get-rates-chart";
 export { QueueBackButton, QueueDetailHeader } from "./header";
-export { QueueChartsSection } from "./charts";
+export { QueueDepthChart } from "./queue-depth-chart";
+export { MessageRatesChart } from "./message-rates-chart";
+export { GetRatesChart } from "./get-rates-chart";
+export { ReductionsChart } from "./reductions-chart";
 export { QueueSidePanels } from "./side-panels";
 export { QueueDetailSkeleton, QueueKpisSkeleton } from "./skeletons";

@@ -99,6 +99,13 @@ export function QueueSidePanels({ detail, loading, error, onRetry }: Props) {
         ]}
       />
 
+      <QueueArgumentsFrame
+        args={detail.arguments}
+        loading={loading}
+        error={error}
+        onRetry={onRetry}
+      />
+
       <FactPanel
         title="Lifecycle"
         facts={[
@@ -209,13 +216,6 @@ export function QueueSidePanels({ detail, loading, error, onRetry }: Props) {
         policy={detail.policy}
         operatorPolicy={detail.operatorPolicy}
         definition={detail.effectivePolicyDefinition}
-        loading={loading}
-        error={error}
-        onRetry={onRetry}
-      />
-
-      <QueueArgumentsFrame
-        args={detail.arguments}
         loading={loading}
         error={error}
         onRetry={onRetry}

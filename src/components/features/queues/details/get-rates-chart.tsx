@@ -1,30 +1,44 @@
-import { RateChart, type RateChartPoint } from "@/views/connections/rate-chart";
+import { useMemo } from "react";
+import {
+  RateChart,
+  buildRateChartDataFromSamples,
+} from "@/views/connections/rate-chart";
+import type { QueueDetail, QueueRateRange } from "@/lib/rabbit-api";
+import { fmtRate } from "@/lib/format";
 import {
   averageSeries,
   QUEUE_RATE_WINDOW,
   QueueChartFrame,
   QueueRangeTabs,
 } from "../shared/charts";
-import type { QueueRateRange } from "@/lib/rabbit-api";
-import { fmtRate } from "@/lib/format";
 
 type Props = {
+  detail: QueueDetail | null;
+  range: QueueRateRange;
+  setRange: (range: QueueRateRange) => void;
   loading: boolean;
   error: string | null;
-  range: QueueRateRange;
-  data: RateChartPoint[];
   onRetry: () => void;
-  setRange: (range: QueueRateRange) => void;
 };
 
 export function GetRatesChart({
+  detail,
+  range,
+  setRange,
   loading,
   error,
-  range,
-  data,
-  setRange,
   onRetry,
 }: Props) {
+  const data = useMemo(() => {
+    if (!detail) return [];
+    return buildRateChartDataFromSamples([
+      { key: "deliverGet", samples: detail.rates.deliverGet.samples },
+      { key: "get", samples: detail.rates.get.samples },
+      { key: "getEmpty", samples: detail.rates.getEmpty.samples },
+      { key: "getNoAck", samples: detail.rates.getNoAck.samples },
+    ]);
+  }, [detail]);
+
   return (
     <QueueChartFrame
       title="Get rates"
