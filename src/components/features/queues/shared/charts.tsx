@@ -272,7 +272,7 @@ export function LengthChart({
         ))}
         {legendItems.length ? (
           <ChartLegend
-            content={
+            content={() => (
               <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pt-3 text-xs text-muted-foreground">
                 {legendItems.map((item) => (
                   <span key={item.key} className="inline-flex items-center gap-1.5">
@@ -285,7 +285,7 @@ export function LengthChart({
                   </span>
                 ))}
               </div>
-            }
+            )}
           />
         ) : null}
       </AreaChart>

@@ -42,13 +42,19 @@ export interface Exchange {
   args: Record<string, string | number>
 }
 
+export type BindingArgumentValue =
+  | string
+  | number
+  | boolean
+  | Array<string | number | boolean>
+
 export interface Binding {
   source: string
   vhost: string
   destination: string
   destType: "queue" | "exchange"
   routingKey: string
-  args: Record<string, string | number>
+  args: Record<string, BindingArgumentValue>
 }
 
 export interface Consumer {

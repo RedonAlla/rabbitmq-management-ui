@@ -1,5 +1,6 @@
 import type {
   Binding,
+  BindingArgumentValue,
   Channel,
   ClusterInfo,
   Connection,
@@ -868,6 +869,34 @@ function plainArguments(
   return mapped
 }
 
+function bindingArguments(
+  args: Record<string, unknown> | undefined
+): Record<string, BindingArgumentValue> {
+  const mapped: Record<string, BindingArgumentValue> = {}
+  for (const [key, value] of Object.entries(args ?? {})) {
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean"
+    ) {
+      mapped[key] = value
+      continue
+    }
+    if (
+      Array.isArray(value) &&
+      value.every(
+        (item) =>
+          typeof item === "string" ||
+          typeof item === "number" ||
+          typeof item === "boolean"
+      )
+    ) {
+      mapped[key] = value as Array<string | number | boolean>
+    }
+  }
+  return mapped
+}
+
 function mapQueues(queues: ApiQueue[]): Queue[] {
   return queues.map((queue) => {
     const stats = queue.message_stats ?? {}
@@ -915,7 +944,7 @@ function mapBindings(bindings: ApiBinding[]): Binding[] {
     destination: binding.destination,
     destType: binding.destination_type === "exchange" ? "exchange" : "queue",
     routingKey: binding.routing_key,
-    args: plainArguments(binding.arguments),
+    args: bindingArguments(binding.arguments),
   }))
 }
 

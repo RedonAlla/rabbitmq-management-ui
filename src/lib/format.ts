@@ -1,4 +1,9 @@
-import type { ClusterInfo, HistoryPoint, RangeKey } from "@/data/types"
+import type {
+  BindingArgumentValue,
+  ClusterInfo,
+  HistoryPoint,
+  RangeKey,
+} from "@/data/types"
 
 const intFmt = new Intl.NumberFormat("en-US")
 const compactFmt = new Intl.NumberFormat("en-US", {
@@ -96,6 +101,14 @@ export function definitionSummary(
 ): string {
   return Object.entries(definition)
     .map(([key, value]) => `${key}=${value}`)
+    .join(" · ")
+}
+
+export function bindingSummary(
+  args: Record<string, BindingArgumentValue>
+): string {
+  return Object.entries(args)
+    .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
     .join(" · ")
 }
 

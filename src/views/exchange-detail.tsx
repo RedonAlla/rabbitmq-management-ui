@@ -26,7 +26,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useDialogs } from "@/components/dialogs/dialogs-provider";
 import { useCluster } from "@/store/cluster";
 import { useRoute, routeHref } from "@/lib/router";
-import { definitionSummary, fmtInt, fmtRate } from "@/lib/format";
+import { bindingSummary, fmtInt, fmtRate } from "@/lib/format";
 import { routeTargets } from "@/lib/topology";
 import { NotFoundView } from "@/views/not-found";
 
@@ -210,7 +210,7 @@ export function ExchangeDetailView() {
                         <span className="text-xs text-muted-foreground">
                           {binding.destType} · {queue ? `${fmtInt(queue.ready)} ready` : "no queue data"}
                           {Object.keys(binding.args).length
-                            ? ` · ${definitionSummary(binding.args)}`
+                            ? ` · ${bindingSummary(binding.args)}`
                             : ""}
                         </span>
                       </li>

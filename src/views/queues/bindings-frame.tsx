@@ -2,7 +2,7 @@ import { ArrowRightIcon, GitBranchIcon, PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SectionFrame } from "@/components/detail";
 import { RegionEmpty } from "@/components/region-states";
-import { definitionSummary } from "@/lib/format";
+import { bindingSummary } from "@/lib/format";
 import { routeHref } from "@/lib/router";
 import type { Binding } from "@/data/types";
 
@@ -55,7 +55,7 @@ export default function QueueBindingsFrame({ bindings, onAddBinding }: Props) {
                 </span>
               </div>
               <span className="text-xs text-muted-foreground">
-                {definitionSummary(binding.args) || "No binding arguments"}
+                {bindingSummary(binding.args) || "No binding arguments"}
               </span>
             </li>
           ))}
