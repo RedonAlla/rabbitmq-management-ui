@@ -72,7 +72,7 @@ function parseArguments(text: string): {
   };
 }
 
-export default function AddBindingDialog({
+export function AddBindingDialog({
   open,
   onClose,
   vhost,

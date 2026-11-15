@@ -43,7 +43,6 @@ import {
 } from "@/views/connections/rate-chart";
 import QueueConsumersTable from "@/views/queues/consumers-table";
 import QueueBindingsFrame from "@/views/queues/bindings-frame";
-import AddBindingDialog from "@/views/queues/add-binding-dialog";
 import {
   QueueArgumentsFrame,
   QueueGarbageCollectionFrame,
@@ -53,7 +52,8 @@ import { NotFoundView } from "@/views/not-found";
 import { KpiSkeleton } from "./kpi-skeleton";
 import { GetRatesChart } from "@/components/features/queues/details/get-rates-chart";
 import { averageSeries, buildLengthChartDataFromSamples, LengthChart, QUEUE_RATE_WINDOW, QueueChartFrame, QueueRangeTabs } from "@/components/features/queues/shared/charts";
-import QueueKpis from "@/components/features/queues/details/kpis";
+import { QueueKpis } from "@/components/features/queues/details/kpis";
+import { AddBindingDialog } from "@/components/features/queues/details/add-binding-dialog";
 
 const timeFmt = new Intl.DateTimeFormat("en-US", {
   month: "short",
