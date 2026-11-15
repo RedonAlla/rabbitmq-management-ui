@@ -5,7 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import ShortcutsDialog from "@/components/dialogs/shortcuts-dialog";
+import ShortcutsDialog from "@/components/layout/shortcuts-dialog";
 import AddExchangeDialog from "@/views/exchanges/add-exchange-dialog";
 import PublishDrawer from "@/views/exchanges/publish-drawer";
 import EditLimitsDialog from "@/views/limits/edit-limits-dialog";

@@ -29,13 +29,12 @@ const SHORTCUTS = [
   ["Esc", "Close the current layer"],
 ];
 
-export default function ShortcutsDialog({
-  open,
-  onClose,
-}: {
+type Props = {
   open: boolean;
   onClose: () => void;
-}) {
+}
+
+export default function ShortcutsDialog({open, onClose}: Props) {
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
       <DialogContent className="sm:max-w-md">
