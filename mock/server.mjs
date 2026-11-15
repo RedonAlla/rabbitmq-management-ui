@@ -823,6 +823,43 @@ const server = createServer(async (req, res) => {
       return
     }
 
+    if (resource === "bindings" && method === "POST") {
+      const [vhost, sourceType, source, destinationType, destination] = rest
+      if (!vhost || sourceType !== "e" || destinationType !== "q") {
+        return sendError(res, 404, "not_found", "unknown binding route")
+      }
+      const body = await readJson(req)
+      const exchange = state.exchanges.find(
+        (entry) => entry.vhost === vhost && entry.name === source
+      )
+      if (!exchange) return sendError(res, 404, "not_found", `exchange '${source}' in vhost '${vhost}' not found`)
+      const queue = state.queues.find(
+        (entry) => entry.vhost === vhost && entry.name === destination
+      )
+      if (!queue) return sendError(res, 404, "not_found", `queue '${destination}' in vhost '${vhost}' not found`)
+      const routingKey = body.routing_key ?? ""
+      const exists = state.bindings.some(
+        (entry) =>
+          entry.vhost === vhost &&
+          entry.source === source &&
+          entry.destination === destination &&
+          entry.destination_type === "queue" &&
+          entry.routing_key === routingKey
+      )
+      if (!exists) {
+        state.bindings.push({
+          source,
+          vhost,
+          destination,
+          destination_type: "queue",
+          routing_key: routingKey,
+          arguments: body.arguments ?? {},
+        })
+      }
+      sendEmpty(res, 201)
+      return
+    }
+
     if (resource === "consumers" && method === "GET") {
       const vhost = rest[0] ?? url.searchParams.get("vhost")
       sendJson(res, 200, vhost ? state.consumers.filter((entry) => entry.queue.vhost === vhost) : state.consumers)

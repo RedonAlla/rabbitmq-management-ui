@@ -8,16 +8,85 @@ import {
 } from "@/components/ui/collapsible";
 import InfoTooltip from "@/components/ui/info-tooltip";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import type { QueueArgumentValue } from "@/lib/rabbit-api";
 import { parsePairValue } from "@/lib/parse-value";
 import { cn } from "@/lib/utils";
 
-type KeyValueRow = { id: number; key: string; value: string };
+type KeyValueRow = {
+  id: number;
+  key: string;
+  value: string;
+  type: PairValueType;
+};
+
+export type PairValueType = "string" | "number" | "boolean" | "list";
+
+const PAIR_TYPE_LABELS: Record<PairValueType, string> = {
+  string: "String",
+  number: "Number",
+  boolean: "Boolean",
+  list: "List",
+};
+
+function inferType(value: unknown): PairValueType {
+  if (typeof value === "number") return "number";
+  if (typeof value === "boolean") return "boolean";
+  if (Array.isArray(value)) return "list";
+  return "string";
+}
+
+function valueToText(value: unknown): string {
+  return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+function isScalar(value: unknown): value is string | number | boolean {
+  return (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  );
+}
+
+function typedRowValue(row: KeyValueRow): QueueArgumentValue {
+  switch (row.type) {
+    case "number": {
+      const number = Number(row.value);
+      return row.value.trim() !== "" && Number.isFinite(number)
+        ? number
+        : row.value;
+    }
+    case "boolean": {
+      const text = row.value.trim().toLowerCase();
+      return text === "true" ? true : text === "false" ? false : row.value;
+    }
+    case "list": {
+      try {
+        const parsed: unknown = JSON.parse(row.value);
+        if (Array.isArray(parsed) && parsed.every(isScalar)) {
+          return parsed as Array<string | number | boolean>;
+        }
+      } catch {
+        // Keep the raw text when it is not a JSON list.
+      }
+      return row.value;
+    }
+    default:
+      return row.value;
+  }
+}
 
 function jsonTextToKeyValueRows(
-  text: string
+  text: string,
+  typed: boolean
 ): Array<Omit<KeyValueRow, "id">> {
   if (!text.trim()) return [];
   let parsed: unknown;
@@ -31,16 +100,17 @@ function jsonTextToKeyValueRows(
   }
   return Object.entries(parsed).map(([key, value]) => ({
     key,
-    value: typeof value === "string" ? value : JSON.stringify(value),
+    value: valueToText(value),
+    type: typed ? inferType(value) : "string",
   }));
 }
 
-function keyValueRowsToJsonText(rows: KeyValueRow[]): string {
+function keyValueRowsToJsonText(rows: KeyValueRow[], typed: boolean): string {
   const object: Record<string, QueueArgumentValue> = {};
   for (const row of rows) {
     const key = row.key.trim();
     if (!key) continue;
-    object[key] = parsePairValue(row.value);
+    object[key] = typed ? typedRowValue(row) : parsePairValue(row.value);
   }
   return Object.keys(object).length > 0
     ? JSON.stringify(object, null, 2)
@@ -55,6 +125,7 @@ export default function JsonSection({
   keyPlaceholder,
   valuePlaceholder,
   itemName,
+  valueTypes = false,
   value,
   onChange,
   open,
@@ -67,6 +138,7 @@ export default function JsonSection({
   keyPlaceholder: string;
   valuePlaceholder: string;
   itemName: string;
+  valueTypes?: boolean;
   value: string;
   onChange: (value: string) => void;
   open: boolean;
@@ -74,7 +146,7 @@ export default function JsonSection({
 }) {
   const [mode, setMode] = useState<"pairs" | "json">("pairs");
   const [rows, setRows] = useState<KeyValueRow[]>(() =>
-    jsonTextToKeyValueRows(value).map((row, index) => ({
+    jsonTextToKeyValueRows(value, valueTypes).map((row, index) => ({
       ...row,
       id: index + 1,
     }))
@@ -83,18 +155,18 @@ export default function JsonSection({
 
   const updateRows = (next: KeyValueRow[]) => {
     setRows(next);
-    onChange(keyValueRowsToJsonText(next));
+    onChange(keyValueRowsToJsonText(next, valueTypes));
   };
 
   const changeMode = (next: string) => {
     if (next === mode) return;
     if (next === "json") {
       if (rows.length > 0 || !value.trim()) {
-        onChange(keyValueRowsToJsonText(rows));
+        onChange(keyValueRowsToJsonText(rows, valueTypes));
       }
     } else {
       setRows(
-        jsonTextToKeyValueRows(value).map((row) => ({
+        jsonTextToKeyValueRows(value, valueTypes).map((row) => ({
           ...row,
           id: nextRowId.current++,
         }))
@@ -162,9 +234,54 @@ export default function JsonSection({
                     );
                   }}
                 />
+                {valueTypes ? (
+                  <Select
+                    value={row.type}
+                    onValueChange={(next) => {
+                      const type = String(next) as PairValueType;
+                      updateRows(
+                        rows.map((entry) =>
+                          entry.id === row.id ? { ...entry, type } : entry
+                        )
+                      );
+                    }}
+                  >
+                    <SelectTrigger
+                      size="sm"
+                      aria-label={`${label} type`}
+                      className="w-28 shrink-0"
+                    >
+                      <SelectValue>
+                        {(current) =>
+                          PAIR_TYPE_LABELS[String(current) as PairValueType] ??
+                          String(current)
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(
+                        Object.keys(PAIR_TYPE_LABELS) as PairValueType[]
+                      ).map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {PAIR_TYPE_LABELS[type]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : null}
                 <Input
                   aria-label={`${label} value`}
-                  placeholder={valuePlaceholder}
+                  placeholder={
+                    valueTypes
+                      ? row.type === "list"
+                        ? '["a", "b"]'
+                        : row.type === "boolean"
+                          ? "true"
+                          : row.type === "number"
+                            ? "123"
+                            : valuePlaceholder
+                      : valuePlaceholder
+                  }
                   value={row.value}
                   className="min-w-0 flex-1 font-mono"
                   onChange={(event) => {
@@ -197,7 +314,12 @@ export default function JsonSection({
               onClick={() =>
                 updateRows([
                   ...rows,
-                  { id: nextRowId.current++, key: "", value: "" },
+                  {
+                    id: nextRowId.current++,
+                    key: "",
+                    value: "",
+                    type: "string",
+                  },
                 ])
               }
             >

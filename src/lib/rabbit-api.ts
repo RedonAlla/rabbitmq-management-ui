@@ -138,6 +138,18 @@ interface ApiNode {
   running: boolean
 }
 
+interface ApiQueueMessageStats {
+  publish_details?: ApiRateDetails
+  deliver_details?: ApiRateDetails
+  ack_details?: ApiRateDetails
+  deliver_get_details?: ApiRateDetails
+  get_details?: ApiRateDetails
+  get_empty_details?: ApiRateDetails
+  get_no_ack_details?: ApiRateDetails
+  redeliver_details?: ApiRateDetails
+  redeliver?: number
+}
+
 interface ApiQueue {
   name: string
   vhost: string
@@ -153,12 +165,52 @@ interface ApiQueue {
   memory?: number
   policy?: string | null
   arguments?: Record<string, unknown>
-  message_stats?: {
-    publish_details?: { rate: number }
-    deliver_details?: { rate: number }
-    ack_details?: { rate: number }
-    redeliver?: number
-  }
+  message_stats?: ApiQueueMessageStats
+}
+
+interface ApiQueueConsumer {
+  consumer_tag: string
+  queue: { name: string; vhost: string }
+  channel_details: { name: string; connection_name: string }
+  ack_required: boolean
+  active?: boolean
+  activity_status?: string
+  exclusive?: boolean
+  prefetch_count: number
+  consumer_timeout?: number
+  arguments?: Record<string, unknown>
+}
+
+interface ApiQueueDetail extends ApiQueue {
+  node: string
+  state?: string
+  internal_owner?: boolean
+  storage_version?: number
+  operator_policy?: string | null
+  effective_policy_definition?: Record<string, unknown>
+  exclusive_consumer_tag?: string | null
+  single_active_consumer_tag?: string | null
+  idle_since?: string | null
+  head_message_timestamp?: string | null
+  consumer_capacity?: number | null
+  consumer_utilisation?: number | null
+  messages?: number
+  messages_persistent?: number
+  messages_ram?: number
+  messages_ready_ram?: number
+  messages_unacknowledged_ram?: number
+  message_bytes?: number
+  message_bytes_persistent?: number
+  message_bytes_ram?: number
+  message_bytes_ready?: number
+  message_bytes_unacknowledged?: number
+  reductions?: number
+  reductions_details?: ApiRateDetails
+  messages_details?: ApiRateDetails
+  messages_ready_details?: ApiRateDetails
+  messages_unacknowledged_details?: ApiRateDetails
+  consumer_details?: ApiQueueConsumer[]
+  garbage_collection?: ApiGarbageCollection
 }
 
 interface ApiExchange {
@@ -459,6 +511,82 @@ export interface ChannelDetail {
   consumers: ChannelConsumer[]
 }
 
+export type QueueRateRange = 60 | 600 | 3600
+
+export type QueueRateKey =
+  | "publish"
+  | "deliver"
+  | "ack"
+  | "deliverGet"
+  | "get"
+  | "getEmpty"
+  | "getNoAck"
+  | "redeliver"
+  | "reductions"
+
+export type QueueLengthKey = "messages" | "ready" | "unacked"
+
+export type QueueRate = ConnectionRate
+export type QueueGarbageCollection = ChannelGarbageCollection
+
+export interface QueueConsumer {
+  tag: string
+  queue: string
+  vhost: string
+  channel: string
+  connection: string
+  ackRequired: boolean
+  active: boolean
+  activityStatus: string
+  exclusive: boolean
+  prefetchCount: number
+  consumerTimeout: number | null
+  arguments: Record<string, unknown>
+}
+
+export interface QueueDetail {
+  name: string
+  vhost: string
+  node: string
+  type: QueueType
+  state: string
+  durable: boolean
+  autoDelete: boolean
+  exclusive: boolean
+  internal: boolean
+  internalOwner: boolean
+  storageVersion: number | null
+  policy: string | null
+  operatorPolicy: string | null
+  effectivePolicyDefinition: Record<string, unknown>
+  arguments: Record<string, unknown>
+  exclusiveConsumerTag: string | null
+  singleActiveConsumerTag: string | null
+  idleSince: string | null
+  headMessageTimestamp: string | null
+  consumers: number
+  consumerCapacity: number | null
+  consumerUtilisation: number | null
+  memory: number
+  messages: number
+  messagesPersistent: number
+  messagesRam: number
+  messagesReady: number
+  messagesReadyRam: number
+  messagesUnacknowledged: number
+  messagesUnacknowledgedRam: number
+  messageBytes: number
+  messageBytesPersistent: number
+  messageBytesRam: number
+  messageBytesReady: number
+  messageBytesUnacknowledged: number
+  reductions: number
+  lengths: Record<QueueLengthKey, QueueRate>
+  rates: Record<QueueRateKey, QueueRate>
+  consumerDetails: QueueConsumer[]
+  garbageCollection: QueueGarbageCollection | null
+}
+
 interface ApiConnectionsResponse {
   total_count: number
   item_count: number
@@ -588,6 +716,14 @@ export interface CreateExchangeInput {
   autoDelete: boolean
   internal: boolean
   args?: Record<string, string | number>
+}
+
+export interface CreateBindingInput {
+  vhost: string
+  source: string
+  destination: string
+  routingKey: string
+  args?: Record<string, QueueArgumentValue>
 }
 
 export interface CreateUserInput {
@@ -1039,6 +1175,89 @@ function mapChannelDetail(detail: ApiChannel): ChannelDetail {
   }
 }
 
+function mapQueueDetail(detail: ApiQueueDetail): QueueDetail {
+  const stats = detail.message_stats ?? {}
+  const gc = detail.garbage_collection
+  return {
+    name: detail.name,
+    vhost: detail.vhost,
+    node: detail.node,
+    type: queueType(detail),
+    state: detail.state ?? "idle",
+    durable: detail.durable,
+    autoDelete: detail.auto_delete,
+    exclusive: detail.exclusive,
+    internal: detail.internal ?? false,
+    internalOwner: detail.internal_owner ?? false,
+    storageVersion: detail.storage_version ?? null,
+    policy: detail.policy ?? null,
+    operatorPolicy: detail.operator_policy ?? null,
+    effectivePolicyDefinition: detail.effective_policy_definition ?? {},
+    arguments: detail.arguments ?? {},
+    exclusiveConsumerTag: detail.exclusive_consumer_tag ?? null,
+    singleActiveConsumerTag: detail.single_active_consumer_tag ?? null,
+    idleSince: detail.idle_since ?? null,
+    headMessageTimestamp: detail.head_message_timestamp ?? null,
+    consumers: detail.consumers ?? 0,
+    consumerCapacity: detail.consumer_capacity ?? null,
+    consumerUtilisation: detail.consumer_utilisation ?? null,
+    memory: detail.memory ?? 0,
+    messages: detail.messages ?? 0,
+    messagesPersistent: detail.messages_persistent ?? 0,
+    messagesRam: detail.messages_ram ?? 0,
+    messagesReady: detail.messages_ready ?? 0,
+    messagesReadyRam: detail.messages_ready_ram ?? 0,
+    messagesUnacknowledged: detail.messages_unacknowledged ?? 0,
+    messagesUnacknowledgedRam: detail.messages_unacknowledged_ram ?? 0,
+    messageBytes: detail.message_bytes ?? 0,
+    messageBytesPersistent: detail.message_bytes_persistent ?? 0,
+    messageBytesRam: detail.message_bytes_ram ?? 0,
+    messageBytesReady: detail.message_bytes_ready ?? 0,
+    messageBytesUnacknowledged: detail.message_bytes_unacknowledged ?? 0,
+    reductions: detail.reductions ?? 0,
+    lengths: {
+      messages: mapRate(detail.messages_details),
+      ready: mapRate(detail.messages_ready_details),
+      unacked: mapRate(detail.messages_unacknowledged_details),
+    },
+    rates: {
+      publish: mapRate(stats.publish_details),
+      deliver: mapRate(stats.deliver_details),
+      ack: mapRate(stats.ack_details),
+      deliverGet: mapRate(stats.deliver_get_details),
+      get: mapRate(stats.get_details),
+      getEmpty: mapRate(stats.get_empty_details),
+      getNoAck: mapRate(stats.get_no_ack_details),
+      redeliver: mapRate(stats.redeliver_details),
+      reductions: mapRate(detail.reductions_details),
+    },
+    consumerDetails: (detail.consumer_details ?? []).map((consumer) => ({
+      tag: consumer.consumer_tag,
+      queue: consumer.queue.name,
+      vhost: consumer.queue.vhost,
+      channel: consumer.channel_details.name,
+      connection: consumer.channel_details.connection_name,
+      ackRequired: consumer.ack_required,
+      active: consumer.active ?? true,
+      activityStatus:
+        consumer.activity_status ?? (consumer.active === false ? "down" : "up"),
+      exclusive: Boolean(consumer.exclusive),
+      prefetchCount: consumer.prefetch_count,
+      consumerTimeout: consumer.consumer_timeout ?? null,
+      arguments: consumer.arguments ?? {},
+    })),
+    garbageCollection: gc
+      ? {
+          fullsweepAfter: gc.fullsweep_after ?? null,
+          maxHeapSize: gc.max_heap_size ?? null,
+          minBinVheapSize: gc.min_bin_vheap_size ?? null,
+          minHeapSize: gc.min_heap_size ?? null,
+          minorGcs: gc.minor_gcs ?? null,
+        }
+      : null,
+  }
+}
+
 function mapConnectionDetail(detail: ApiConnectionDetail): ConnectionDetail {
   const properties = detail.client_properties ?? {}
   const client = [properties.product, properties.platform].filter(
@@ -1400,6 +1619,36 @@ export async function fetchChannelDetail(
   return mapChannelDetail(detail)
 }
 
+const QUEUE_RATE_INCR: Record<QueueRateRange, number> = {
+  60: 5,
+  600: 5,
+  3600: 60,
+}
+
+export async function fetchQueueDetail(
+  token: string,
+  vhost: string,
+  name: string,
+  range: QueueRateRange = 600,
+  signal?: AbortSignal
+): Promise<QueueDetail> {
+  const incr = String(QUEUE_RATE_INCR[range])
+  const params = new URLSearchParams({
+    lengths_age: String(range),
+    lengths_incr: incr,
+    msg_rates_age: String(range),
+    msg_rates_incr: incr,
+    data_rates_age: String(range),
+    data_rates_incr: incr,
+  })
+  const detail = await apiGet<ApiQueueDetail>(
+    `/api/queues/${enc(vhost)}/${enc(name)}?${params.toString()}`,
+    token,
+    signal
+  )
+  return mapQueueDetail(detail)
+}
+
 interface ApiConnectionChannel {
   name: string
   number: number
@@ -1524,6 +1773,24 @@ export async function deleteExchange(
   name: string
 ): Promise<void> {
   await apiDelete(`/api/exchanges/${enc(vhost)}/${enc(name)}`, token)
+}
+
+export async function createBinding(
+  token: string,
+  input: CreateBindingInput
+): Promise<void> {
+  await apiPost(
+    `/api/bindings/${enc(input.vhost)}/e/${enc(input.source)}/q/${enc(input.destination)}`,
+    token,
+    {
+      vhost: input.vhost,
+      source: input.source,
+      destination: input.destination,
+      destination_type: "q",
+      routing_key: input.routingKey,
+      arguments: input.args ?? {},
+    }
+  )
 }
 
 export async function publishMessage(

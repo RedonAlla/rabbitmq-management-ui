@@ -32,6 +32,13 @@ export function fmtBytesMb(value: number): string {
   return "0 MB"
 }
 
+export function fmtBytes(value: number): string {
+  if (value >= 1024 ** 3) return `${(value / 1024 ** 3).toFixed(1)} GB`
+  if (value >= 1024 ** 2) return `${(value / 1024 ** 2).toFixed(1)} MB`
+  if (value >= 1024) return `${(value / 1024).toFixed(1)} KB`
+  return `${Math.round(value)} B`
+}
+
 export function fmtDuration(ms: number): string {
   const minutes = Math.max(0, Math.floor(ms / 60000))
   const days = Math.floor(minutes / 1440)
