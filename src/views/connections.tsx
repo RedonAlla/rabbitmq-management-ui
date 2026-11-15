@@ -19,7 +19,6 @@ import { useConnections } from "@/hooks/use-connections";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
-import { Skeleton } from "@/components/ui/skeleton";
 import GridActions from "./connections/grid-actions";
 import { fitMeta, numericMeta } from "@/components/table-meta-numeric";
 import { DEFAULT_PAGES_OPTIONS } from "@/lib/constants";

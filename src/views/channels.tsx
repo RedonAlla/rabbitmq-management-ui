@@ -19,8 +19,7 @@ import { useChannels } from "@/hooks/use-channels";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
-import { Skeleton } from "@/components/ui/skeleton";
-import { numericMeta } from "@/components/table-meta-numeric";
+import { fitMeta, numericMeta } from "@/components/table-meta-numeric";
 import GridActions from "./channels/grid-actions";
 import { DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
 import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
@@ -117,19 +116,19 @@ export function ChannelsView() {
             </span>
           </div>
         ),
-        meta: { fillWidth: true, skeleton: <Skeleton className="h-4 w-48" /> },
+        meta: fitMeta,
       },
       {
         accessorKey: "vhost",
         header: ({ column }) => <DataGridColumnHeader column={column} title="Virtual Host" />,
         cell: ({ row }) => <VhostBadge>{row.original.vhost}</VhostBadge>,
-        meta: { skeleton: <Skeleton className="h-5 w-16" /> },
+        meta: fitMeta,
       },
       {
         accessorKey: "user",
         header: ({ column }) => <DataGridColumnHeader column={column} title="User" />,
         cell: ({ row }) => <span className="text-sm">{row.original.user}</span>,
-        meta: { skeleton: <Skeleton className="h-4 w-20" /> },
+        meta: fitMeta,
       },
       {
         accessorKey: "node",
@@ -137,13 +136,13 @@ export function ChannelsView() {
         cell: ({ row }) => (
           <span className="data-cell text-xs">{row.original.node}</span>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-24" /> },
+        meta: fitMeta,
       },
       {
         accessorKey: "state",
         header: ({ column }) => <DataGridColumnHeader column={column} title="State" />,
         cell: ({ row }) => <StateBadge state={row.original.state} />,
-        meta: { skeleton: <Skeleton className="h-5 w-16" /> },
+        meta: fitMeta,
       },
       {
         accessorKey: "consumers",
@@ -197,7 +196,7 @@ export function ChannelsView() {
         cell: ({ row }) => (
           <GridActions row={row.original} setPendingClose={setPendingClose} />
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-10" /> },
+        meta: fitMeta,
       },
     ],
     []

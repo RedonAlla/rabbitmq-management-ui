@@ -27,7 +27,6 @@ type BindingsItemProps = {
 }
 
 function BindingsItem({ binding, setTarget }: BindingsItemProps): React.ReactNode {
-  debugger
   return (
     <li
       key={
