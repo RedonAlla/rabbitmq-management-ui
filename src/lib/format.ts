@@ -15,6 +15,15 @@ const dateFmt = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   year: "numeric",
 })
+const timestampFmt = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+})
 
 export function fmtInt(value: number): string {
   return intFmt.format(Math.round(value))
@@ -80,6 +89,18 @@ export function fmtSince(timestamp: number, now: number): string {
 
 export function fmtDate(timestamp: number): string {
   return dateFmt.format(timestamp)
+}
+
+export function fmtTimestamp(value: number | string | null | undefined): string {
+  if (value === null || value === undefined || value === "") return "—"
+  const timestamp = typeof value === "number" ? value : Date.parse(value)
+  if (Number.isNaN(timestamp)) return String(value)
+  return timestampFmt.format(timestamp)
+}
+
+export function orDash(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === "") return "—"
+  return typeof value === "number" ? fmtInt(value) : value
 }
 
 export function pct(value: number, max: number): number {

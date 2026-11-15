@@ -74,7 +74,6 @@ function emptyData(): ClusterSnapshot {
     queues: [],
     exchanges: [],
     bindings: [],
-    consumers: [],
     connections: [],
     channels: [],
     users: [],

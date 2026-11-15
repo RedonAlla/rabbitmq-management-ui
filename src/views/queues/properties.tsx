@@ -1,5 +1,6 @@
 import { RefreshCwIcon, ShieldIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PropertyList } from "@/components/property-list";
 import { SectionFrame } from "@/components/detail";
 import {
   RegionEmpty,
@@ -8,38 +9,6 @@ import {
 } from "@/components/region-states";
 import { fmtInt } from "@/lib/format";
 import type { QueueGarbageCollection } from "@/lib/rabbit-api";
-
-function propertyText(value: unknown): string {
-  if (value === null || value === undefined || value === "") return "—";
-  if (typeof value === "boolean") return value ? "true" : "false";
-  if (typeof value === "number") return fmtInt(value);
-  if (typeof value === "string") return value;
-  return JSON.stringify(value);
-}
-
-export function PropertyList({
-  entries,
-}: {
-  entries: [string, unknown][];
-}) {
-  return (
-    <dl className="flex flex-col divide-y divide-border">
-      {entries.map(([key, value]) => (
-        <div
-          key={key}
-          className="flex items-start justify-between gap-4 py-2 first:pt-0 last:pb-0"
-        >
-          <dt className="data-cell text-xs text-muted-foreground [overflow-wrap:anywhere]">
-            {key}
-          </dt>
-          <dd className="data-cell max-w-[65%] text-right text-sm [overflow-wrap:anywhere]">
-            {propertyText(value)}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
 
 interface RegionProps {
   loading: boolean;

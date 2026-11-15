@@ -1,31 +1,26 @@
-import { useMemo, useState, type ReactNode } from "react";
-import { RefreshCwIcon } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/reui/badge";
-import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
-import { DetailLayout, FactPanel, SectionFrame } from "@/components/detail";
+import { DetailLayout, FactPanel } from "@/components/detail";
 import { StateBadge, VhostBadge } from "@/components/badges";
-import {
-  ChartSkeleton,
-  RegionEmpty,
-  RegionError,
-} from "@/components/region-states";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCluster } from "@/store/cluster";
 import { useChannelDetail } from "@/hooks/use-channel-detail";
 import { useRoute } from "@/lib/router";
 import { fmtInt, fmtRate } from "@/lib/format";
+import {
+  averageSeries,
+  buildRateChartDataFromSamples,
+  RATE_RANGES,
+  RATE_WINDOWS,
+  type ChartPoint,
+} from "@/lib/chart-data";
 import type { ChannelRateKey, ChannelRateRange } from "@/lib/rabbit-api";
 import { NotFoundView } from "@/views/not-found";
 import GarbageCollectionFrame from "@/views/channels/garbage-collection-frame";
 import ConsumersTable from "@/views/channels/consumers-table";
 import ChannelKpis from "@/views/channels/kpis";
-import {
-  RateChart,
-  buildRateChartDataFromSamples,
-  type RateChartPoint,
-} from "@/views/connections/rate-chart";
-import PrefetchHint from "./channels/prefetch-hint";
+import { ChartFrame, ChartRangeTabs, RateChart } from "@/components/charts";
+import { PrefetchHint } from "@/components/prefetch-hint";
 
 const RATE_SERIES: { key: ChannelRateKey; label: string; color: string }[] = [
   { key: "ack", label: "Ack", color: "var(--chart-1)" },
@@ -44,80 +39,6 @@ const REDUCTIONS_SERIES: {
   color: string;
 } = { key: "reductions", label: "Reductions", color: "var(--chart-3)" };
 
-const RATE_RANGES: {
-  value: ChannelRateRange;
-  label: string;
-  ariaLabel: string;
-}[] = [
-  { value: 60, label: "1m", ariaLabel: "Last minute" },
-  { value: 600, label: "10m", ariaLabel: "Last ten minutes" },
-  { value: 3600, label: "1h", ariaLabel: "Last hour" },
-];
-
-const RATE_WINDOW: Record<ChannelRateRange, string> = {
-  60: "last minute",
-  600: "last ten minutes",
-  3600: "last hour",
-};
-
-function averageSeries(data: RateChartPoint[], key: string): number {
-  let sum = 0;
-  let count = 0;
-  for (const point of data) {
-    const value = point[key];
-    if (typeof value === "number") {
-      sum += value;
-      count += 1;
-    }
-  }
-  return count ? sum / count : 0;
-}
-
-interface RateChartFrameProps {
-  title: string;
-  description: string;
-  actions: ReactNode;
-  data: RateChartPoint[];
-  series: { key: string; label: string; color: string; legend?: string }[];
-  loading: boolean;
-  error: string | null;
-  onRetry: () => void;
-}
-
-function RateChartFrame({
-  title,
-  description,
-  actions,
-  data,
-  series,
-  loading,
-  error,
-  onRetry,
-}: RateChartFrameProps) {
-  return (
-    <SectionFrame title={title} description={description} actions={actions}>
-      {error ? (
-        <RegionError message={error} onRetry={onRetry} />
-      ) : loading ? (
-        <ChartSkeleton />
-      ) : data.length > 1 ? (
-        <RateChart title={title} data={data} series={series} />
-      ) : (
-        <RegionEmpty
-          title="No rate samples yet"
-          description="The broker has not recorded samples for this range. Retry in a moment."
-          action={
-            <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-              <RefreshCwIcon data-icon="inline-start" aria-hidden="true" />
-              Retry
-            </Button>
-          }
-        />
-      )}
-    </SectionFrame>
-  );
-}
-
 export function ChannelDetailView() {
   const { route } = useRoute();
   const { data } = useCluster();
@@ -132,7 +53,7 @@ export function ChannelDetailView() {
   const channel = data.channels.find((entry) => entry.id === route.id);
   const connection = data.connections.find((entry) => entry.id === channel?.connection);
   const consumers = detail?.consumers ?? [];
-  const chartData = useMemo<RateChartPoint[]>(() => {
+  const chartData = useMemo<ChartPoint[]>(() => {
     if (!detail) return [];
     return buildRateChartDataFromSamples([
       ...RATE_SERIES.map((series) => ({
@@ -155,23 +76,12 @@ export function ChannelDetailView() {
   const garbageCollection = detail?.garbageCollection ?? null;
 
   const rangeControl = (
-    <Tabs
-      value={String(range)}
-      onValueChange={(value) => setRange(Number(value) as ChannelRateRange)}
-    >
-      <TabsList aria-label="Chart range">
-        {RATE_RANGES.map((item) => (
-          <TabsTrigger
-            key={item.value}
-            value={String(item.value)}
-            aria-label={item.ariaLabel}
-            className="px-2 text-xs"
-          >
-            {item.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+    <ChartRangeTabs
+      value={range}
+      onChange={setRange}
+      options={RATE_RANGES}
+      ariaLabel="Chart range"
+    />
   );
 
   if (!channel) {
@@ -207,34 +117,48 @@ export function ChannelDetailView() {
       <DetailLayout
         main={
           <>
-            <RateChartFrame
+            <ChartFrame
               title="Message rates"
-              description={`Delivery, get and acknowledgement rates per second over the ${RATE_WINDOW[range]}.`}
+              description={`Delivery, get and acknowledgement rates per second over the ${RATE_WINDOWS[range]}.`}
               actions={rangeControl}
-              data={chartData}
-              series={RATE_SERIES.map((series) => ({
-                ...series,
-                legend: `${series.label} avg ${fmtRate(rateAverages[series.key])}`,
-              }))}
+              hasData={chartData.length > 1}
               loading={detailLoading}
               error={detailError}
               onRetry={retryDetail}
-            />
-            <RateChartFrame
+              emptyTitle="No rate samples yet"
+              emptyDescription="The broker has not recorded samples for this range. Retry in a moment."
+            >
+              <RateChart
+                title="Message rates"
+                data={chartData}
+                series={RATE_SERIES.map((series) => ({
+                  ...series,
+                  legend: `${series.label} avg ${fmtRate(rateAverages[series.key])}`,
+                }))}
+              />
+            </ChartFrame>
+            <ChartFrame
               title="Reductions"
-              description={`Reductions per second over the ${RATE_WINDOW[range]}.`}
+              description={`Reductions per second over the ${RATE_WINDOWS[range]}.`}
               actions={rangeControl}
-              data={chartData}
-              series={[
-                {
-                  ...REDUCTIONS_SERIES,
-                  legend: `Reductions avg ${fmtRate(rateAverages.reductions)}`,
-                },
-              ]}
+              hasData={chartData.length > 1}
               loading={detailLoading}
               error={detailError}
               onRetry={retryDetail}
-            />
+              emptyTitle="No rate samples yet"
+              emptyDescription="The broker has not recorded samples for this range. Retry in a moment."
+            >
+              <RateChart
+                title="Reductions"
+                data={chartData}
+                series={[
+                  {
+                    ...REDUCTIONS_SERIES,
+                    legend: `Reductions avg ${fmtRate(rateAverages.reductions)}`,
+                  },
+                ]}
+              />
+            </ChartFrame>
             <ConsumersTable
               consumers={consumers}
               loading={detailLoading}

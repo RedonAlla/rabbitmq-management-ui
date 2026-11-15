@@ -1,25 +1,12 @@
 import { PageHeader } from "@/components/page-header";
 import { DetailLayout, SectionFrame } from "@/components/detail";
-import { ChartSkeleton, RegionSkeleton } from "@/components/region-states";
-import { KpiGrid } from "@/components/kpi";
-import { Frame, FramePanel } from "@/components/reui/frame";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ChartSkeleton } from "@/components/region-states";
+import { KpiSkeleton } from "@/components/kpi-skeleton";
 import { QueueBackButton } from "./header";
-
-export function QueueKpisSkeleton() {
-  return (
-    <KpiGrid>
-      {Array.from({ length: 4 }, (_, index) => (
-        <Frame key={index} spacing="sm" className="min-w-0">
-          <FramePanel className="flex flex-col gap-3">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="h-7 w-28" />
-          </FramePanel>
-        </Frame>
-      ))}
-    </KpiGrid>
-  );
-}
+import { QueueCountersPanel } from "./counters-panel";
+import { QueueDetailsPanel } from "./details-panel";
+import { QueueLifecyclePanel } from "./lifecycle-panel";
+import { QueueStoragePanel } from "./storage-panel";
 
 export function QueueDetailSkeleton({ title }: { title: string }) {
   return (
@@ -29,7 +16,7 @@ export function QueueDetailSkeleton({ title }: { title: string }) {
         description="Loading queue details."
         actions={<QueueBackButton />}
       />
-      <QueueKpisSkeleton />
+      <KpiSkeleton />
       <DetailLayout
         main={
           <>
@@ -39,16 +26,17 @@ export function QueueDetailSkeleton({ title }: { title: string }) {
             <SectionFrame title="Message rates">
               <ChartSkeleton />
             </SectionFrame>
+            <SectionFrame title="Reductions">
+              <ChartSkeleton />
+            </SectionFrame>
           </>
         }
         side={
           <>
-            <SectionFrame title="Details">
-              <RegionSkeleton rows={6} />
-            </SectionFrame>
-            <SectionFrame title="Counters">
-              <RegionSkeleton rows={5} />
-            </SectionFrame>
+            <QueueDetailsPanel detail={null} />
+            <QueueLifecyclePanel detail={null} />
+            <QueueCountersPanel detail={null} />
+            <QueueStoragePanel detail={null} />
           </>
         }
       />

@@ -4,7 +4,6 @@ import type {
   Channel,
   ClusterInfo,
   Connection,
-  Consumer,
   DeprecatedFeature,
   DeprecationPhase,
   Exchange,
@@ -236,16 +235,6 @@ interface ApiBinding {
   routing_key: string
   properties_key?: string
   arguments?: Record<string, unknown>
-}
-
-interface ApiConsumer {
-  consumer_tag: string
-  queue: { name: string; vhost: string }
-  channel_details: { name: string; connection_name: string }
-  ack_required: boolean
-  exclusive: boolean
-  prefetch_count: number
-  connected_at?: number
 }
 
 interface ApiChannel {
@@ -680,7 +669,6 @@ export interface RabbitSnapshot {
   queues: Queue[]
   exchanges: Exchange[]
   bindings: Binding[]
-  consumers: Consumer[]
   connections: Connection[]
   channels: Channel[]
   users: User[]
@@ -1020,30 +1008,6 @@ function mapChannels(channels: ApiChannel[]): Channel[] {
   }))
 }
 
-function mapConsumers(
-  consumers: ApiConsumer[],
-  connections: Connection[]
-): Consumer[] {
-  const connectedAt = new Map(
-    connections.map((connection) => [connection.id, connection.connectedAt])
-  )
-  const now = new Date().getTime()
-
-  return consumers.map((consumer) => ({
-    tag: consumer.consumer_tag,
-    queue: consumer.queue.name,
-    channel: consumer.channel_details.name,
-    connection: consumer.channel_details.connection_name,
-    ackRequired: consumer.ack_required,
-    exclusive: consumer.exclusive,
-    prefetch: consumer.prefetch_count,
-    since:
-      consumer.connected_at ??
-      connectedAt.get(consumer.channel_details.connection_name) ??
-      now,
-  }))
-}
-
 function mapUsers(users: ApiUser[], permissions: ApiPermission[]): User[] {
   const vhostsByUser = new Map<string, string[]>()
   for (const permission of permissions) {
@@ -1175,31 +1139,58 @@ function mapRate(details: ApiRateDetails | undefined): ConnectionRate {
   }
 }
 
+function mapGarbageCollection(
+  gc: ApiGarbageCollection | undefined
+): ChannelGarbageCollection | null {
+  if (!gc) return null
+  return {
+    fullsweepAfter: gc.fullsweep_after ?? null,
+    maxHeapSize: gc.max_heap_size ?? null,
+    minBinVheapSize: gc.min_bin_vheap_size ?? null,
+    minHeapSize: gc.min_heap_size ?? null,
+    minorGcs: gc.minor_gcs ?? null,
+  }
+}
+
+interface ApiConsumerFields {
+  consumer_tag: string
+  queue: { name: string; vhost: string }
+  ack_required: boolean
+  prefetch_count: number
+  consumer_timeout?: number
+  arguments?: Record<string, unknown>
+}
+
+function mapConsumerFields(
+  consumer: ApiConsumerFields,
+  active: boolean,
+  activityStatus: string
+) {
+  return {
+    tag: consumer.consumer_tag,
+    queue: consumer.queue.name,
+    vhost: consumer.queue.vhost,
+    ackRequired: consumer.ack_required,
+    active,
+    activityStatus,
+    prefetchCount: consumer.prefetch_count,
+    consumerTimeout: consumer.consumer_timeout ?? null,
+    arguments: consumer.arguments ?? {},
+  }
+}
+
 function mapChannelDetail(detail: ApiChannel): ChannelDetail {
   const stats = detail.message_stats ?? {}
-  const gc = detail.garbage_collection
   return {
     name: detail.name,
-    garbageCollection: gc
-      ? {
-          fullsweepAfter: gc.fullsweep_after ?? null,
-          maxHeapSize: gc.max_heap_size ?? null,
-          minBinVheapSize: gc.min_bin_vheap_size ?? null,
-          minHeapSize: gc.min_heap_size ?? null,
-          minorGcs: gc.minor_gcs ?? null,
-        }
-      : null,
-    consumers: (detail.consumer_details ?? []).map((consumer) => ({
-      tag: consumer.consumer_tag,
-      queue: consumer.queue.name,
-      vhost: consumer.queue.vhost,
-      ackRequired: consumer.ack_required,
-      active: consumer.active,
-      activityStatus: consumer.activity_status ?? (consumer.active ? "up" : "down"),
-      prefetchCount: consumer.prefetch_count,
-      consumerTimeout: consumer.consumer_timeout ?? null,
-      arguments: consumer.arguments ?? {},
-    })),
+    garbageCollection: mapGarbageCollection(detail.garbage_collection),
+    consumers: (detail.consumer_details ?? []).map((consumer) =>
+      mapConsumerFields(
+        consumer,
+        consumer.active,
+        consumer.activity_status ?? (consumer.active ? "up" : "down")
+      )
+    ),
     rates: {
       ack: mapRate(stats.ack_details),
       deliver: mapRate(stats.deliver_details),
@@ -1216,7 +1207,6 @@ function mapChannelDetail(detail: ApiChannel): ChannelDetail {
 
 function mapQueueDetail(detail: ApiQueueDetail): QueueDetail {
   const stats = detail.message_stats ?? {}
-  const gc = detail.garbage_collection
   return {
     name: detail.name,
     vhost: detail.vhost,
@@ -1270,30 +1260,21 @@ function mapQueueDetail(detail: ApiQueueDetail): QueueDetail {
       redeliver: mapRate(stats.redeliver_details),
       reductions: mapRate(detail.reductions_details),
     },
-    consumerDetails: (detail.consumer_details ?? []).map((consumer) => ({
-      tag: consumer.consumer_tag,
-      queue: consumer.queue.name,
-      vhost: consumer.queue.vhost,
-      channel: consumer.channel_details.name,
-      connection: consumer.channel_details.connection_name,
-      ackRequired: consumer.ack_required,
-      active: consumer.active ?? true,
-      activityStatus:
-        consumer.activity_status ?? (consumer.active === false ? "down" : "up"),
-      exclusive: Boolean(consumer.exclusive),
-      prefetchCount: consumer.prefetch_count,
-      consumerTimeout: consumer.consumer_timeout ?? null,
-      arguments: consumer.arguments ?? {},
-    })),
-    garbageCollection: gc
-      ? {
-          fullsweepAfter: gc.fullsweep_after ?? null,
-          maxHeapSize: gc.max_heap_size ?? null,
-          minBinVheapSize: gc.min_bin_vheap_size ?? null,
-          minHeapSize: gc.min_heap_size ?? null,
-          minorGcs: gc.minor_gcs ?? null,
-        }
-      : null,
+    consumerDetails: (detail.consumer_details ?? []).map((consumer) => {
+      const active = consumer.active ?? true
+      return {
+        ...mapConsumerFields(
+          consumer,
+          active,
+          consumer.activity_status ??
+            (consumer.active === false ? "down" : "up")
+        ),
+        channel: consumer.channel_details.name,
+        connection: consumer.channel_details.connection_name,
+        exclusive: Boolean(consumer.exclusive),
+      }
+    }),
+    garbageCollection: mapGarbageCollection(detail.garbage_collection),
   }
 }
 
@@ -1450,7 +1431,6 @@ export async function fetchRabbitSnapshot(
     apiQueues,
     apiExchanges,
     apiBindings,
-    apiConsumers,
     channels,
     connections,
     apiUsers,
@@ -1468,7 +1448,6 @@ export async function fetchRabbitSnapshot(
     apiGet<ApiQueue[]>("/api/queues", token, signal),
     apiGet<ApiExchange[]>("/api/exchanges", token, signal),
     apiGet<ApiBinding[]>("/api/bindings", token, signal),
-    apiGet<ApiConsumer[]>("/api/consumers", token, signal),
     fetchAllChannels(token, signal),
     fetchAllConnections(token, signal),
     apiGet<ApiUser[]>("/api/users", token, signal),
@@ -1494,7 +1473,6 @@ export async function fetchRabbitSnapshot(
     queues,
     exchanges: mapExchanges(apiExchanges),
     bindings: mapBindings(apiBindings),
-    consumers: mapConsumers(apiConsumers, connections),
     connections,
     channels,
     users: mapUsers(apiUsers, apiPermissions),

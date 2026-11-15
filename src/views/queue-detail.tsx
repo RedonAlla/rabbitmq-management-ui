@@ -14,11 +14,11 @@ import {
   QueueDetailSkeleton,
   QueueDetailsPanel,
   QueueKpis,
-  QueueKpisSkeleton,
   QueueLifecyclePanel,
   QueueStoragePanel,
   ReductionsChart,
 } from "@/components/features/queues/details";
+import { KpiSkeleton } from "@/components/kpi-skeleton";
 import { useCluster } from "@/store/cluster";
 import { useRoute, routeHref } from "@/lib/router";
 import { fmtInt } from "@/lib/format";
@@ -163,7 +163,7 @@ export function QueueDetailView() {
         onAddBinding={() => setBindingOpen(true)}
       />
 
-      {detail ? <QueueKpis detail={detail} /> : <QueueKpisSkeleton />}
+      {detail ? <QueueKpis detail={detail} /> : <KpiSkeleton />}
 
       <QueueConsumersTable
         consumers={detail?.consumerDetails ?? []}

@@ -29,37 +29,30 @@ import {
   RegionError,
   RegionSkeleton,
 } from "@/components/region-states";
-import { Frame, FramePanel } from "@/components/reui/frame";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useRoute, routeHref } from "@/lib/router";
-import { fmtInt, fmtRate, fmtSince } from "@/lib/format";
 import {
-  type ConnectionRateRange,
-  type ConnectionRateSample,
-} from "@/lib/rabbit-api";
+  fmtInt,
+  fmtRate,
+  fmtSince,
+  fmtTimestamp,
+  orDash,
+} from "@/lib/format";
+import type { ConnectionRateRange } from "@/lib/rabbit-api";
+import {
+  buildRateChartData,
+  chronological,
+  RATE_RANGES,
+  RATE_WINDOWS,
+} from "@/lib/chart-data";
+import { flattenProperties } from "@/lib/properties";
 import { useConnectionDetail } from "@/hooks/use-connection-detail";
 import { useConnectionChannels } from "@/hooks/use-connection-channels";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ChannelsTable from "@/views/connections/channels-table";
-import { RateChart, buildRateChartData } from "@/views/connections/rate-chart";
-
-const RATE_RANGES: {
-  value: ConnectionRateRange;
-  label: string;
-  ariaLabel: string;
-}[] = [
-  { value: 60, label: "1m", ariaLabel: "Last minute" },
-  { value: 600, label: "10m", ariaLabel: "Last ten minutes" },
-  { value: 3600, label: "1h", ariaLabel: "Last hour" },
-];
-
-const RATE_WINDOW: Record<ConnectionRateRange, string> = {
-  60: "last minute",
-  600: "last ten minutes",
-  3600: "last hour",
-};
+import { ChartRangeTabs, RateChart } from "@/components/charts";
+import { KpiSkeleton } from "@/components/kpi-skeleton";
+import { PropertyList } from "@/components/property-list";
 
 const GC_PROPERTY_LABELS: Record<string, string> = {
   min_bin_vheap_size: "Minimum binary virtual heap size in words (min_bin_vheap_size)",
@@ -68,78 +61,6 @@ const GC_PROPERTY_LABELS: Record<string, string> = {
   minor_gcs: "Number of minor GCs (minor_gcs)",
   max_heap_size: "Maximum amount of heap memory (max_heap_size)",
 };
-
-const dateTimeFmt = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-  hour12: false,
-});
-
-function orDash(value: string | number | null | undefined): string {
-  if (value === null || value === undefined || value === "") return "—";
-  return typeof value === "number" ? fmtInt(value) : value;
-}
-
-function chronological(samples: ConnectionRateSample[]): number[] {
-  return [...samples].reverse().map((sample) => sample.sample);
-}
-
-interface PropertyEntry {
-  label: string;
-  value: unknown;
-}
-
-function flattenProperties(
-  record: Record<string, unknown>,
-  prefix = ""
-): PropertyEntry[] {
-  return Object.entries(record).flatMap(([key, value]) => {
-    const label = prefix ? `${prefix}.${key}` : key;
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      return flattenProperties(value as Record<string, unknown>, label);
-    }
-    return [{ label, value }];
-  });
-}
-
-function propertyText(value: unknown): string {
-  if (value === null || value === undefined || value === "") return "—";
-  if (typeof value === "boolean") return value ? "true" : "false";
-  if (typeof value === "number") return fmtInt(value);
-  if (typeof value === "string") return value;
-  return JSON.stringify(value);
-}
-
-function PropertyList({ entries }: { entries: PropertyEntry[] }) {
-  if (!entries.length) {
-    return (
-      <p className="text-xs text-muted-foreground">
-        The broker did not report any properties.
-      </p>
-    );
-  }
-  return (
-    <dl className="flex flex-col divide-y divide-border">
-      {entries.map((entry) => (
-        <div
-          key={entry.label}
-          className="flex items-start justify-between gap-4 py-2 first:pt-0 last:pb-0"
-        >
-          <dt className="data-cell text-xs text-muted-foreground">
-            {entry.label}
-          </dt>
-          <dd className="data-cell max-w-[65%] text-right text-sm [overflow-wrap:anywhere]">
-            {propertyText(entry.value)}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
 
 function fmtByteRate(value: number): string {
   return `${fmtRate(value).replace("/s", "")} B/s`;
@@ -176,25 +97,12 @@ export function ConnectionDetailView() {
   const [closeReason, setCloseReason] = useState("");
 
   const rangeControl = (
-    <Tabs
-      value={String(range)}
-      onValueChange={(value) =>
-        setRange(Number(value) as ConnectionRateRange)
-      }
-    >
-      <TabsList aria-label="Rate sample range">
-        {RATE_RANGES.map((item) => (
-          <TabsTrigger
-            key={item.value}
-            value={String(item.value)}
-            aria-label={item.ariaLabel}
-            className="px-2 text-xs"
-          >
-            {item.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+    <ChartRangeTabs
+      value={range}
+      onChange={setRange}
+      options={RATE_RANGES}
+      ariaLabel="Rate sample range"
+    />
   );
 
   const backAction = (
@@ -245,16 +153,7 @@ export function ConnectionDetailView() {
           description="Loading connection details."
           actions={backAction}
         />
-        <KpiGrid>
-          {Array.from({ length: 4 }, (_, index) => (
-            <Frame key={index} spacing="sm" className="min-w-0">
-              <FramePanel className="flex flex-col gap-3">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-7 w-28" />
-              </FramePanel>
-            </Frame>
-          ))}
-        </KpiGrid>
+        <KpiSkeleton />
         <DetailLayout
           main={
             <>
@@ -284,10 +183,10 @@ export function ConnectionDetailView() {
   const chartData = buildRateChartData(connection);
   const clientProperties = flattenProperties(connection.clientProperties);
   const garbageCollection = connection.garbageCollection
-    ? flattenProperties(connection.garbageCollection).map((entry) => ({
-        ...entry,
-        label: GC_PROPERTY_LABELS[entry.label] ?? entry.label,
-      }))
+    ? flattenProperties(connection.garbageCollection).map(
+        ([label, value]) =>
+          [GC_PROPERTY_LABELS[label] ?? label, value] as [string, unknown]
+      )
     : null;
   const reductionsSamples = connection.reductionsRate
     ? chronological(connection.reductionsRate.samples)
@@ -376,7 +275,7 @@ export function ConnectionDetailView() {
               <>
                 <SectionFrame
                   title="Data rates"
-                  description={`Octets received and sent per second over the ${RATE_WINDOW[range]}.`}
+                  description={`Octets received and sent per second over the ${RATE_WINDOWS[range]}.`}
                   actions={rangeControl}
                 >
                   <RateChart
@@ -401,7 +300,7 @@ export function ConnectionDetailView() {
                 {connection.reductionsRate ? (
                   <SectionFrame
                     title="Reductions"
-                    description={`Reductions per second over the ${RATE_WINDOW[range]}.`}
+                    description={`Reductions per second over the ${RATE_WINDOWS[range]}.`}
                     actions={rangeControl}
                   >
                     <RateChart
@@ -534,7 +433,7 @@ export function ConnectionDetailView() {
             <FactPanel
               title="Activity"
               facts={[
-                { label: "Connected at", value: dateTimeFmt.format(connection.connectedAt) },
+                { label: "Connected at", value: fmtTimestamp(connection.connectedAt) },
                 {
                   label: "Age",
                   value: fmtSince(connection.connectedAt, new Date().getTime()),

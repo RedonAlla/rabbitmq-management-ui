@@ -58,17 +58,6 @@ export interface Binding {
   args: Record<string, BindingArgumentValue>
 }
 
-export interface Consumer {
-  tag: string
-  queue: string
-  channel: string
-  connection: string
-  ackRequired: boolean
-  exclusive: boolean
-  prefetch: number
-  since: number
-}
-
 export interface Connection {
   id: string
   name: string
@@ -217,7 +206,6 @@ export interface ClusterSnapshot {
   queues: Queue[]
   exchanges: Exchange[]
   bindings: Binding[]
-  consumers: Consumer[]
   connections: Connection[]
   channels: Channel[]
   users: User[]

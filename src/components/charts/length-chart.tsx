@@ -1,100 +1,22 @@
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { fmtCompact } from "@/lib/format";
-import type {
-  ConnectionDetail,
-  ConnectionRateSample,
-} from "@/lib/rabbit-api";
+import { fmtCompact, fmtInt } from "@/lib/format";
+import type { ChartPoint, ChartSeries } from "@/lib/chart-data";
 
-const timeFmt = new Intl.DateTimeFormat("en-US", {
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-  hour12: false,
-});
-
-export interface RateChartPoint {
-  label: string;
-  [series: string]: string | number | undefined;
-}
-
-function formatRateValue(value: number): string {
-  return value > 0 && value < 1 ? value.toFixed(2) : fmtCompact(value);
-}
-
-function samplesToRates(
-  samples: ConnectionRateSample[]
-): Map<number, number> {
-  const ordered = [...samples].sort((a, b) => a.timestamp - b.timestamp);
-  const rates = new Map<number, number>();
-  for (let index = 1; index < ordered.length; index += 1) {
-    const previous = ordered[index - 1];
-    const current = ordered[index];
-    const seconds = (current.timestamp - previous.timestamp) / 1000;
-    if (seconds <= 0) continue;
-    rates.set(
-      current.timestamp,
-      Math.max(0, (current.sample - previous.sample) / seconds)
-    );
-  }
-  return rates;
-}
-
-export function buildRateChartDataFromSamples(
-  series: { key: string; samples: ConnectionRateSample[] }[]
-): RateChartPoint[] {
-  const rateMaps = new Map<string, Map<number, number>>();
-  const timestamps = new Set<number>();
-  for (const item of series) {
-    const rates = samplesToRates(item.samples);
-    rateMaps.set(item.key, rates);
-    for (const timestamp of rates.keys()) timestamps.add(timestamp);
-  }
-
-  return [...timestamps]
-    .sort((a, b) => a - b)
-    .map((timestamp) => {
-      const point: RateChartPoint = { label: timeFmt.format(timestamp) };
-      for (const item of series) {
-        point[item.key] = rateMaps.get(item.key)?.get(timestamp);
-      }
-      return point;
-    });
-}
-
-export function buildRateChartData(
-  connection: ConnectionDetail
-): RateChartPoint[] {
-  return buildRateChartDataFromSamples([
-    { key: "recv", samples: connection.recv.samples },
-    { key: "send", samples: connection.send.samples },
-    ...(connection.reductionsRate
-      ? [{ key: "reductions", samples: connection.reductionsRate.samples }]
-      : []),
-  ]);
-}
-
-export function RateChart({
+export function LengthChart({
   title,
   data,
   series,
 }: {
   title: string;
-  data: RateChartPoint[];
-  series: { key: string; label: string; color: string; legend?: string }[];
+  data: ChartPoint[];
+  series: ChartSeries[];
 }) {
   const config: ChartConfig = {};
   for (const item of series) {
@@ -123,7 +45,7 @@ export function RateChart({
           tickLine={false}
           axisLine={false}
           tickMargin={4}
-          tickFormatter={(value: number) => formatRateValue(value)}
+          tickFormatter={(value: number) => fmtCompact(value)}
         />
         <ChartTooltip
           cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
@@ -139,7 +61,7 @@ export function RateChart({
                   />
                   <span className="flex-1 text-muted-foreground">{name}</span>
                   <span className="font-mono font-medium text-foreground tabular-nums">
-                    {formatRateValue(Number(value))}/s
+                    {fmtInt(Number(value))}
                   </span>
                 </div>
               )}
@@ -178,8 +100,6 @@ export function RateChart({
               </div>
             )}
           />
-        ) : series.length > 1 ? (
-          <ChartLegend content={<ChartLegendContent />} />
         ) : null}
       </AreaChart>
     </ChartContainer>

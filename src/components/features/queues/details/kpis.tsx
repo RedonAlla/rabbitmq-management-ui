@@ -7,7 +7,7 @@ import {
 import { KpiCard, KpiGrid } from "@/components/kpi";
 import { fmtBytes, fmtInt, fmtRate } from "@/lib/format";
 import type { QueueDetail } from "@/lib/rabbit-api";
-import { chronological, rateValues } from "@/components/features/queues/shared/charts";
+import { chronological, rateValues } from "@/lib/chart-data";
 
 export function QueueKpis({ detail }: { detail: QueueDetail }) {
   return (

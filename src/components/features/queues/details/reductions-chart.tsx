@@ -1,16 +1,17 @@
 import { useMemo } from "react";
-import {
-  RateChart,
-  buildRateChartDataFromSamples,
-} from "@/views/connections/rate-chart";
 import { fmtRate } from "@/lib/format";
-import type { QueueDetail, QueueRateRange } from "@/lib/rabbit-api";
 import {
   averageSeries,
-  QUEUE_RATE_WINDOW,
-  QueueChartFrame,
-  QueueRangeTabs,
-} from "../shared/charts";
+  buildRateChartDataFromSamples,
+  RATE_RANGES,
+  RATE_WINDOWS,
+} from "@/lib/chart-data";
+import type { QueueDetail, QueueRateRange } from "@/lib/rabbit-api";
+import {
+  ChartFrame,
+  ChartRangeTabs,
+  RateChart,
+} from "@/components/charts";
 
 type Props = {
   detail: QueueDetail | null;
@@ -37,10 +38,10 @@ export function ReductionsChart({
   }, [detail]);
 
   return (
-    <QueueChartFrame
+    <ChartFrame
       title="Reductions"
-      description={`Erlang reductions per second over the ${QUEUE_RATE_WINDOW[range]}.`}
-      actions={<QueueRangeTabs range={range} onRangeChange={setRange} />}
+      description={`Erlang reductions per second over the ${RATE_WINDOWS[range]}.`}
+      actions={<ChartRangeTabs value={range} onChange={setRange} options={RATE_RANGES} />}
       hasData={data.length > 1}
       loading={loading}
       error={error}
@@ -61,6 +62,6 @@ export function ReductionsChart({
           },
         ]}
       />
-    </QueueChartFrame>
+    </ChartFrame>
   );
 }

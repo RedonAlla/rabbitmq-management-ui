@@ -1,27 +1,7 @@
 import { FactPanel, SectionFrame } from "@/components/detail";
 import { RegionSkeleton } from "@/components/region-states";
+import { fmtTimestamp, orDash } from "@/lib/format";
 import type { QueueDetail } from "@/lib/rabbit-api";
-
-const timeFmt = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-  hour12: false,
-});
-
-function fmtTimestamp(value: string | null): string {
-  if (!value) return "—";
-  const timestamp = Date.parse(value);
-  if (Number.isNaN(timestamp)) return value;
-  return timeFmt.format(timestamp);
-}
-
-function orDash(value: string | null | undefined): string {
-  return value && value.length > 0 ? value : "—";
-}
 
 export function QueueLifecyclePanel({
   detail,

@@ -1,13 +1,16 @@
 import { useMemo } from "react";
 import { fmtInt } from "@/lib/format";
-import type { QueueDetail, QueueRateRange } from "@/lib/rabbit-api";
 import {
   buildLengthChartDataFromSamples,
+  RATE_RANGES,
+  RATE_WINDOWS,
+} from "@/lib/chart-data";
+import type { QueueDetail, QueueRateRange } from "@/lib/rabbit-api";
+import {
+  ChartFrame,
+  ChartRangeTabs,
   LengthChart,
-  QUEUE_RATE_WINDOW,
-  QueueChartFrame,
-  QueueRangeTabs,
-} from "../shared/charts";
+} from "@/components/charts";
 
 type Props = {
   detail: QueueDetail | null;
@@ -36,10 +39,10 @@ export function QueueDepthChart({
   }, [detail]);
 
   return (
-    <QueueChartFrame
+    <ChartFrame
       title="Queue depth"
-      description={`Messages held in the queue over the ${QUEUE_RATE_WINDOW[range]}.`}
-      actions={<QueueRangeTabs range={range} onRangeChange={setRange} />}
+      description={`Messages held in the queue over the ${RATE_WINDOWS[range]}.`}
+      actions={<ChartRangeTabs value={range} onChange={setRange} options={RATE_RANGES} />}
       hasData={data.length > 1}
       loading={loading}
       error={error}
@@ -70,6 +73,6 @@ export function QueueDepthChart({
           },
         ]}
       />
-    </QueueChartFrame>
+    </ChartFrame>
   );
 }

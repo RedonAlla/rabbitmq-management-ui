@@ -1,7 +1,8 @@
 import type { Channel } from "@/data/types";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { InfoIcon } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
+import { PrefetchHintContent } from "@/components/prefetch-hint";
 import type { Column } from "@tanstack/react-table";
 import type { DataGridFeatures } from "@/components/reui/data-grid/data-grid";
 
@@ -24,17 +25,7 @@ export default function PrefetchColumnHeader({ column }: Props) {
             </span>
           }
         />
-        <TooltipContent
-          side="top"
-          className="max-w-72 flex-col items-start gap-1"
-        >
-          <span className="font-medium">Channel prefetch count.</span>
-          <span>
-            Each channel can have a prefetch count. The prefetch is the
-            number of messages that will be held by the client. Setting a
-            value of 0 will result in an unlimited prefetch.
-          </span>
-        </TooltipContent>
+        <PrefetchHintContent />
       </Tooltip>
     </div>
   );
