@@ -110,6 +110,32 @@ function queueFeatures(queue: Queue): Feature[] {
     .map(({ short, name, description }) => ({ short, name, description }))
 }
 
+function FeatureItem({ feature }: { feature: Feature })
+{
+  return (
+    <Tooltip key={feature.short}>
+      <TooltipTrigger
+        render={
+          <Badge
+            variant="outline"
+            tabIndex={0}
+            aria-label={feature.name}
+          >
+            {feature.short}
+          </Badge>
+        }
+      />
+      <TooltipContent
+        side="top"
+        className="max-w-72 flex-col items-start gap-1"
+      >
+        <span className="font-medium">{feature.name}</span>
+        <span className="opacity-80">{feature.description}</span>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export default function QueueFeatures({ queue }: { queue: Queue }) {
   const features = queueFeatures(queue)
 
@@ -120,26 +146,7 @@ export default function QueueFeatures({ queue }: { queue: Queue }) {
   return (
     <div className="flex items-center gap-1">
       {features.map((feature) => (
-        <Tooltip key={feature.short}>
-          <TooltipTrigger
-            render={
-              <Badge
-                variant="outline"
-                tabIndex={0}
-                aria-label={feature.name}
-              >
-                {feature.short}
-              </Badge>
-            }
-          />
-          <TooltipContent
-            side="top"
-            className="max-w-72 flex-col items-start gap-1"
-          >
-            <span className="font-medium">{feature.name}</span>
-            <span className="opacity-80">{feature.description}</span>
-          </TooltipContent>
-        </Tooltip>
+        <FeatureItem key={feature.short} feature={feature} />
       ))}
     </div>
   )

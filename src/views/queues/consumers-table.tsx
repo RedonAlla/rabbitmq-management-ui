@@ -19,6 +19,7 @@ import {
 import { fmtDuration, fmtInt } from "@/lib/format";
 import type { QueueConsumer } from "@/lib/rabbit-api";
 import { routeHref } from "@/lib/router";
+import { ConditionalRender } from "@/components/conditional-render";
 
 type Props = {
   consumers: QueueConsumer[];
@@ -39,23 +40,30 @@ export default function QueueConsumersTable({
       description={`${consumers.length} ${consumers.length === 1 ? "consumer is" : "consumers are"} subscribed to this queue.`}
       bodyClassName={consumers.length === 0 ? undefined : "p-0"}
     >
-      {error ? (
-        <RegionError message={error} onRetry={onRetry} />
-      ) : loading ? (
+      <ConditionalRender condition={error !== null}>
+        <RegionError message={error!} onRetry={onRetry} />
+      </ConditionalRender>
+
+      <ConditionalRender condition={loading}>
         <RegionSkeleton rows={3} />
-      ) : consumers.length === 0 ? (
-        <RegionEmpty
-          title="No consumers"
-          description="Messages accumulate until a consumer subscribes."
-          icon={<UsersIcon />}
-          action={
-            <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-              <RefreshCwIcon data-icon="inline-start" aria-hidden="true" />
-              Retry
-            </Button>
-          }
-        />
-      ) : (
+      </ConditionalRender>
+
+      <ConditionalRender
+        condition={consumers.length > 0}
+        default={
+          <RegionEmpty
+            title="No consumers"
+            description="Messages accumulate until a consumer subscribes."
+            icon={<UsersIcon />}
+            action={
+              <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+                <RefreshCwIcon data-icon="inline-start" aria-hidden="true" />
+                Retry
+              </Button>
+            }
+          />
+        }
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -123,7 +131,7 @@ export default function QueueConsumersTable({
             ))}
           </TableBody>
         </Table>
-      )}
+      </ConditionalRender>
     </SectionFrame>
   );
 }

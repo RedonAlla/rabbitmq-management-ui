@@ -38,6 +38,7 @@ import {
   type ArgumentMode,
   type ArgumentRow,
 } from "@/views/queues/queue-arguments";
+import { ConditionalRender } from "@/components/conditional-render";
 
 const QUEUE_TYPE_OPTIONS: { value: QueueDeclarationType; label: string }[] = [
   { value: "default", label: "Default for virtual host" },
@@ -311,20 +312,21 @@ export default function AddQueueDrawer({
             </div>
             {showDurable || showAutoDelete ? (
               <div className={cn("grid gap-2", showAutoDelete && "sm:grid-cols-2")}>
-                {showDurable ? (
+                <ConditionalRender condition={showDurable}>
                   <ToggleField
                     label="Durable"
                     checked={durable}
                     onCheckedChange={setDurable}
                   />
-                ) : null}
-                {showAutoDelete ? (
+                </ConditionalRender>
+                
+                <ConditionalRender condition={showAutoDelete}>
                   <ToggleField
                     label="Auto-delete"
                     checked={autoDelete}
                     onCheckedChange={setAutoDelete}
                   />
-                ) : null}
+                </ConditionalRender>
               </div>
             ) : null}
             <QueueArgumentsEditor

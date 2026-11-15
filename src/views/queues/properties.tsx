@@ -9,6 +9,7 @@ import {
 } from "@/components/region-states";
 import { fmtInt } from "@/lib/format";
 import type { QueueGarbageCollection } from "@/lib/rabbit-api";
+import { ConditionalRender } from "@/components/conditional-render";
 
 interface RegionProps {
   loading: boolean;
@@ -72,11 +73,25 @@ export function QueuePolicyFrame({
       title="Effective policy"
       description="The policy this queue inherits and the definition it applies."
     >
-      {error ? (
-        <RegionError message={error} onRetry={onRetry} />
-      ) : loading ? (
+      <ConditionalRender condition={error !== null}>
+        <RegionError message={error!} onRetry={onRetry} />
+      </ConditionalRender>
+
+      <ConditionalRender condition={loading}>
         <RegionSkeleton rows={3} />
-      ) : policy || operatorPolicy || entries.length ? (
+      </ConditionalRender>
+
+      <ConditionalRender
+        condition={Boolean(policy || operatorPolicy || entries.length)}
+        default={
+          <RegionEmpty
+            title="No policy applied"
+            description="No policy or operator policy matches this queue."
+            icon={<ShieldIcon />}
+            action={<RetryAction onRetry={onRetry} />}
+          />
+        }
+      >
         <div className="flex flex-col gap-3">
           <PropertyList
             entries={[
@@ -84,23 +99,38 @@ export function QueuePolicyFrame({
               ["Operator policy", operatorPolicy ?? "—"],
             ]}
           />
-          {entries.length ? (
+          <ConditionalRender
+            condition={entries.length > 0}
+            default={
+              <p className="text-xs text-muted-foreground">
+                This policy does not add any definition entries.
+              </p>
+            }
+          >
             <PropertyList entries={entries} />
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              This policy does not add any definition entries.
-            </p>
-          )}
+          </ConditionalRender>
         </div>
-      ) : (
-        <RegionEmpty
-          title="No policy applied"
-          description="No policy or operator policy matches this queue."
-          icon={<ShieldIcon />}
-          action={<RetryAction onRetry={onRetry} />}
-        />
-      )}
+      </ConditionalRender>
     </SectionFrame>
+  );
+}
+
+type GarbageCollectionItemProps = {
+  fact: {
+    label: string;
+    value: number | null;
+  }
+}
+
+function GarbageCollectionItem({fact}: GarbageCollectionItemProps)
+{
+  return (
+    <div className="flex items-start justify-between gap-4 py-2 first:pt-0 last:pb-0">
+      <dt className="text-xs text-muted-foreground">{fact.label}</dt>
+      <dd className="data-cell text-right text-sm tabular-nums">
+        {fact.value === null ? "—" : fmtInt(fact.value)}
+      </dd>
+    </div>
   );
 }
 
@@ -139,31 +169,30 @@ export function QueueGarbageCollectionFrame({
       title="Garbage collection"
       description="Erlang garbage collection statistics reported for the queue process."
     >
-      {error ? (
-        <RegionError message={error} onRetry={onRetry} />
-      ) : loading ? (
+      <ConditionalRender condition={error !== null}>
+        <RegionError message={error!} onRetry={onRetry} />
+      </ConditionalRender>
+
+      <ConditionalRender condition={loading}>
         <RegionSkeleton rows={5} />
-      ) : collection ? (
+      </ConditionalRender>
+
+      <ConditionalRender
+        condition={collection !== null}
+        default={
+          <RegionEmpty
+            title="No garbage collection statistics"
+            description="The broker did not report garbage collection for this queue."
+            action={<RetryAction onRetry={onRetry} />}
+          />
+        }
+      >
         <dl className="flex flex-col divide-y divide-border">
           {facts.map((fact) => (
-            <div
-              key={fact.label}
-              className="flex items-start justify-between gap-4 py-2 first:pt-0 last:pb-0"
-            >
-              <dt className="text-xs text-muted-foreground">{fact.label}</dt>
-              <dd className="data-cell text-right text-sm tabular-nums">
-                {fact.value === null ? "—" : fmtInt(fact.value)}
-              </dd>
-            </div>
+            <GarbageCollectionItem key={fact.label} fact={fact} />
           ))}
         </dl>
-      ) : (
-        <RegionEmpty
-          title="No garbage collection statistics"
-          description="The broker did not report garbage collection for this queue."
-          action={<RetryAction onRetry={onRetry} />}
-        />
-      )}
+      </ConditionalRender>
     </SectionFrame>
   );
 }

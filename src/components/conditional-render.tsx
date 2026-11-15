@@ -1,6 +1,6 @@
 import * as React from "react";
 
-export type Props = {
+type Props = {
   condition: boolean;
   default?: React.ReactElement;
   children: React.ReactNode;

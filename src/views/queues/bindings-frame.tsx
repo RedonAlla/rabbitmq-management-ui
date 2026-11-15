@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import {
   ArrowRightIcon,
   GitBranchIcon,
@@ -14,11 +14,70 @@ import { bindingSummary } from "@/lib/format";
 import { routeHref } from "@/lib/router";
 import { useCluster } from "@/store/cluster";
 import type { Binding } from "@/data/types";
+import { ConditionalRender } from "@/components/conditional-render";
 
 type Props = {
   bindings: Binding[];
   onAddBinding: () => void;
 };
+
+type BindingsItemProps = {
+  binding: Binding;
+  setTarget: Dispatch<SetStateAction<Binding | null>>
+}
+
+function BindingsItem({ binding, setTarget }: BindingsItemProps): React.ReactNode {
+  debugger
+  return (
+    <li
+      key={
+        binding.propertiesKey ||
+        `${binding.source}-${binding.routingKey}`
+      }
+      className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0"
+    >
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm">
+          {binding.source ? (
+            <a
+              href={routeHref("exchange", binding.source)}
+              className="font-medium transition-colors hover:text-primary"
+            >
+              {binding.source}
+            </a>
+          ) : (
+            <span className="font-medium">(default exchange)</span>
+          )}
+          <ArrowRightIcon
+            aria-hidden="true"
+            className="size-3.5 text-muted-foreground"
+          />
+          <span className="data-cell">
+            {binding.routingKey || "(empty)"}
+          </span>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {bindingSummary(binding.args) || "No binding arguments"}
+        </span>
+      </div>
+      <ConditionalRender condition={binding.source !== ""}>
+        <Button
+          type="button"
+          variant="destructive"
+          size="icon-sm"
+          aria-label={`Remove binding from ${binding.source}${
+            binding.routingKey
+              ? ` with routing key ${binding.routingKey}`
+              : ""
+          }`}
+          onClick={() => setTarget(binding)}
+        >
+          <Trash2Icon aria-hidden="true" />
+        </Button>
+      </ConditionalRender>
+    </li>
+  );
+}
 
 export default function QueueBindingsFrame({ bindings, onAddBinding }: Props) {
   const { actions } = useCluster();
@@ -65,76 +124,40 @@ export default function QueueBindingsFrame({ bindings, onAddBinding }: Props) {
           </Button>
         }
       >
-        {bindings.length ? (
+        <ConditionalRender
+          condition={Boolean(bindings.length)}
+          default={
+            <RegionEmpty
+              title="No bindings"
+              description="Bind this queue to an exchange so its messages can reach it."
+              icon={<GitBranchIcon />}
+              action={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onAddBinding}
+                >
+                  <PlusIcon data-icon="inline-start" aria-hidden="true" />
+                  Add binding
+                </Button>
+              }
+            />
+          }
+        >
           <ul className="flex flex-col divide-y divide-border">
             {bindings.map((binding) => (
-              <li
+              <BindingsItem
+                binding={binding}
                 key={
                   binding.propertiesKey ||
                   `${binding.source}-${binding.routingKey}`
                 }
-                className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0"
-              >
-                <div className="flex min-w-0 flex-col gap-1">
-                  <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm">
-                    {binding.source ? (
-                      <a
-                        href={routeHref("exchange", binding.source)}
-                        className="font-medium transition-colors hover:text-primary"
-                      >
-                        {binding.source}
-                      </a>
-                    ) : (
-                      <span className="font-medium">(default exchange)</span>
-                    )}
-                    <ArrowRightIcon
-                      aria-hidden="true"
-                      className="size-3.5 text-muted-foreground"
-                    />
-                    <span className="data-cell">
-                      {binding.routingKey || "(empty)"}
-                    </span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {bindingSummary(binding.args) || "No binding arguments"}
-                  </span>
-                </div>
-                {binding.source ? (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon-sm"
-                    aria-label={`Remove binding from ${binding.source}${
-                      binding.routingKey
-                        ? ` with routing key ${binding.routingKey}`
-                        : ""
-                    }`}
-                    onClick={() => setTarget(binding)}
-                  >
-                    <Trash2Icon aria-hidden="true" />
-                  </Button>
-                ) : null}
-              </li>
+                setTarget={setTarget}
+              />
             ))}
           </ul>
-        ) : (
-          <RegionEmpty
-            title="No bindings"
-            description="Bind this queue to an exchange so its messages can reach it."
-            icon={<GitBranchIcon />}
-            action={
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onAddBinding}
-              >
-                <PlusIcon data-icon="inline-start" aria-hidden="true" />
-                Add binding
-              </Button>
-            }
-          />
-        )}
+        </ConditionalRender>
       </SectionFrame>
 
       <ConfirmDialog
