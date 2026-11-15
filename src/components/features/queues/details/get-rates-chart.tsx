@@ -1,6 +1,10 @@
-import type { Dispatch, SetStateAction } from "react";
 import { RateChart, type RateChartPoint } from "@/views/connections/rate-chart";
-import { averageSeries, QueueChartFrame, QueueRangeTabs } from "../shared/charts";
+import {
+  averageSeries,
+  QUEUE_RATE_WINDOW,
+  QueueChartFrame,
+  QueueRangeTabs,
+} from "../shared/charts";
 import type { QueueRateRange } from "@/lib/rabbit-api";
 import { fmtRate } from "@/lib/format";
 
@@ -8,10 +12,10 @@ type Props = {
   loading: boolean;
   error: string | null;
   range: QueueRateRange;
-  data: RateChartPoint[]
-  onRetry: () => void
-  setRange: Dispatch<SetStateAction<QueueRateRange>>
-}
+  data: RateChartPoint[];
+  onRetry: () => void;
+  setRange: (range: QueueRateRange) => void;
+};
 
 export function GetRatesChart({
   loading,
@@ -19,12 +23,12 @@ export function GetRatesChart({
   range,
   data,
   setRange,
-  onRetry
+  onRetry,
 }: Props) {
   return (
     <QueueChartFrame
       title="Get rates"
-      description={`Synchronous get and delivery rates per second over the ${window}.`}
+      description={`Synchronous get and delivery rates per second over the ${QUEUE_RATE_WINDOW[range]}.`}
       actions={<QueueRangeTabs range={range} onRangeChange={setRange} />}
       hasData={data.length > 1}
       loading={loading}
@@ -48,9 +52,7 @@ export function GetRatesChart({
             key: "get",
             label: "Get",
             color: "var(--chart-2)",
-            legend: `Get avg ${fmtRate(
-              averageSeries(data, "get")
-            )}`,
+            legend: `Get avg ${fmtRate(averageSeries(data, "get"))}`,
           },
           {
             key: "getEmpty",
