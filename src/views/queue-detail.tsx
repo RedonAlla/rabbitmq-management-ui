@@ -175,16 +175,16 @@ export function QueueDetailView() {
               onRetry={retryDetail}
             />
 
+            <QueueBindingsFrame
+              bindings={bindings}
+              onAddBinding={() => setBindingOpen(true)}
+            />
+
             <QueueGarbageCollectionFrame
               collection={detail?.garbageCollection ?? null}
               loading={loading}
               error={error}
               onRetry={retryDetail}
-            />
-
-            <QueueBindingsFrame
-              bindings={bindings}
-              onAddBinding={() => setBindingOpen(true)}
             />
           </>
         }

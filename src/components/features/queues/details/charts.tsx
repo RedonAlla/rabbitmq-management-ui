@@ -161,14 +161,14 @@ export function QueueChartsSection({
         />
       </QueueChartFrame>
 
-      <GetRatesChart
+      {/* <GetRatesChart
         loading={loading}
         error={error}
         range={range}
         data={getRateData}
         onRetry={onRetry}
         setRange={setRange}
-      />
+      /> */}
 
       <QueueChartFrame
         title="Reductions"

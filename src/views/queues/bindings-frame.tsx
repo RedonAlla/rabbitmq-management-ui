@@ -102,7 +102,7 @@ export default function QueueBindingsFrame({ bindings, onAddBinding }: Props) {
                 {binding.source ? (
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="destructive"
                     size="icon-sm"
                     aria-label={`Remove binding from ${binding.source}${
                       binding.routingKey
