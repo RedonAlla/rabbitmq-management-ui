@@ -8,12 +8,15 @@ import {
   AddBindingDialog,
   MessageRatesChart,
   QueueBackButton,
+  QueueCountersPanel,
   QueueDepthChart,
   QueueDetailHeader,
   QueueDetailSkeleton,
+  QueueDetailsPanel,
   QueueKpis,
   QueueKpisSkeleton,
-  QueueSidePanels,
+  QueueLifecyclePanel,
+  QueueStoragePanel,
   ReductionsChart,
 } from "@/components/features/queues/details";
 import { useCluster } from "@/store/cluster";
@@ -23,7 +26,11 @@ import type { QueueRateRange } from "@/lib/rabbit-api";
 import { useQueueDetail } from "@/hooks/use-queue-detail";
 import QueueConsumersTable from "@/views/queues/consumers-table";
 import QueueBindingsFrame from "@/views/queues/bindings-frame";
-import { QueueGarbageCollectionFrame } from "@/views/queues/properties";
+import {
+  QueueArgumentsFrame,
+  QueueGarbageCollectionFrame,
+  QueuePolicyFrame,
+} from "@/views/queues/properties";
 import { NotFoundView } from "@/views/not-found";
 
 export function QueueDetailView() {
@@ -210,12 +217,33 @@ export function QueueDetailView() {
           </>
         }
         side={
-          <QueueSidePanels
-            detail={detail}
-            loading={loading}
-            error={error}
-            onRetry={retryDetail}
-          />
+          <>
+            <QueueDetailsPanel detail={detail} />
+
+            {detail ? (
+              <QueueArgumentsFrame
+                args={detail.arguments}
+                loading={loading}
+                error={error}
+                onRetry={retryDetail}
+              />
+            ) : null}
+
+            <QueueLifecyclePanel detail={detail} />
+            <QueueCountersPanel detail={detail} />
+            <QueueStoragePanel detail={detail} />
+
+            {detail ? (
+              <QueuePolicyFrame
+                policy={detail.policy}
+                operatorPolicy={detail.operatorPolicy}
+                definition={detail.effectivePolicyDefinition}
+                loading={loading}
+                error={error}
+                onRetry={retryDetail}
+              />
+            ) : null}
+          </>
         }
       />
 
