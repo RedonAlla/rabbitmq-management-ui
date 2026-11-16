@@ -20,7 +20,7 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
 import GridActions from "./connections/grid-actions";
-import { fitMeta, numericMeta } from "@/components/table-meta-numeric";
+import { fitMeta, numericMeta } from "@/components/table";
 import { DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
 import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";

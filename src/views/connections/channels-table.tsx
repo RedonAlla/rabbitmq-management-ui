@@ -12,7 +12,7 @@ import {
   type DataGridFeatures,
 } from "@/components/reui/data-grid/data-grid"
 import { Skeleton } from "@/components/ui/skeleton"
-import { numericMeta } from "@/components/table-meta-numeric"
+import { numericMeta } from "@/components/table"
 import { fmtInt } from "@/lib/format"
 import type { ConnectionChannel } from "@/lib/rabbit-api"
 

@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from "react";
 import { ListOrdered, PlusIcon, SendIcon } from "lucide-react";
 import { toast } from "sonner";
 import {
-  useTable,
   type ColumnDef,
   type OnChangeFn,
   type PaginationState,
@@ -19,7 +18,6 @@ import {
 } from "@/components/reui/filters/filters-query";
 import type { FilterField, FilterQuery } from "@/components/reui/filters/filters-types";
 import { StateBadge, TypeBadge, VhostBadge } from "@/components/badges";
-import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useDialogs } from "@/components/dialogs/dialogs-provider";
 import { useCluster } from "@/store/cluster";
 import { useRoute, routeHref } from "@/lib/router";
@@ -28,20 +26,14 @@ import type { Queue } from "@/data/types";
 import { useQueues } from "@/hooks/use-queues";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
-import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
-import type { ConfirmState } from "./queues/grid-actions";
+import { type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
 import GridActions from "./queues/grid-actions";
 import QueueFeatures from "./queues/queue-features";
-import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
-import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
-import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
-import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
-import { DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
-import { fitMeta, numericMeta } from "@/components/table-meta-numeric";
-import { Skeleton } from "@/components/ui/skeleton";
-import GridEmptyState from "@/components/ui/empty-state";
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
+import { ServerSideTable, fitMeta, numericMeta } from "@/components/table";
+import type { ConfirmState } from "@/components/features/queues/types";
+import { QueueConfirmDialog } from "@/components/features/confirm-dialog";
 
-const QUEUES_PAGE_SIZE = 100;
 
 export function QueuesView() {
   const { data } = useCluster();
@@ -51,7 +43,7 @@ export function QueuesView() {
   const debouncedSearch = useDebouncedValue(search, 300);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
-    pageSize: QUEUES_PAGE_SIZE,
+    pageSize: DEFAULT_PAGE_SIZE,
   });
   const [sorting, setSorting] = useState<SortingState>([]);
   const [query, setQuery] = useState<FilterQuery>(() => createFilterQuery());
@@ -81,7 +73,6 @@ export function QueuesView() {
   const {
     queues,
     totalCount,
-    filteredCount,
     pageCount,
     loading,
     error,
@@ -163,7 +154,7 @@ export function QueuesView() {
           </div>
         ),
         enableResizing: true,
-        meta: { fillWidth: true, skeleton: <Skeleton className="h-4 w-40" /> }
+        meta: fitMeta
       },
       {
         accessorKey: "type",
@@ -236,13 +227,9 @@ export function QueuesView() {
     setConfirm(null);
     try {
       if (kind === "purge") {
-        await purgeQueue(queue.vhost, queue.name);
-        toast.success("Queue purged", {
-          description: `${fmtInt(queue.ready)} messages removed from ${queue.name}.`,
-        });
+        await handlePurgeQueue(queue);
       } else {
-        await deleteQueue(queue.vhost, queue.name);
-        toast.success("Queue deleted", { description: `${queue.name} was removed.` });
+        await handleDeleteQueue(queue);
       }
     } catch (cause) {
       toast.error(
@@ -255,20 +242,17 @@ export function QueuesView() {
     }
   };
 
-  const table = useTable({
-    features: dataGridFeatures,
-    defaultColumn: { size: 120, minSize: 80 },
-    data: queues,
-    columns,
-    manualPagination: true,
-    manualSorting: true,
-    autoResetPageIndex: false,
-    pageCount,
-    rowCount: filteredCount,
-    state: { pagination, sorting },
-    onPaginationChange: handlePaginationChange,
-    onSortingChange: handleSortingChange,
-  });
+  async function handlePurgeQueue(queue: Queue) {
+    await purgeQueue(queue.vhost, queue.name);
+    toast.success("Queue purged", {
+      description: `${fmtInt(queue.ready)} messages removed from ${queue.name}.`,
+    });
+  }
+
+  async function handleDeleteQueue(queue: Queue) {
+    await deleteQueue(queue.vhost, queue.name);
+    toast.success("Queue deleted", { description: `${queue.name} was removed.` });
+  }
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -289,61 +273,52 @@ export function QueuesView() {
           </>
         }
       />
-
-      <DataGrid
-        table={table}
-        recordCount={filteredCount}
+      
+      <ServerSideTable
         isLoading={loading}
-        onRowClick={(row: Queue) => navigate(routeHref("queue", row.name))}
-        emptyMessage={
-          <GridEmptyState
-            icon={<ListOrdered />}
-            title="No queues match"
-            description="Adjust the search or clear the filters to see every declared queue."
-            error={error}
-            retry={retry}
-            action={
-              <Button variant="outline" size="sm" onClick={() => clearFilters()}>
-                Clear filters
-              </Button>
-            }
-          />
-        }
-        tableLayout={{
-          dense: true,
-          headerBorder: true,
-          width: "auto",
+        data={queues}
+        columns={columns}
+        totalCount={totalCount}
+        pageCount={pageCount}
+        state={{ pagination, sorting }}
+        emptyState={{
+          icon: <ListOrdered />,
+          title: "No queues match",
+          description: "Adjust the search or clear the filters to see every declared queue.",
+          action: <Button variant="outline" size="sm" onClick={() => clearFilters()}>Clear filters</Button>
         }}
-      >
-        <Frame spacing="sm" className="min-w-0">
-          <FrameHeader>
-            <FilterBar
-              search={search}
-              onSearch={handleSearch}
-              placeholder="Search queues by name"
-              className="justify-end"
-            >
-              <Filters
-                fields={filterFields}
-                query={query}
-                onQueryChange={handleQueryChange}
-                size="sm"
-                showClear
-              />
-            </FilterBar>
-          </FrameHeader>
-          <FramePanel>
-            <DataGridScrollArea>
-              <DataGridTable />
-            </DataGridScrollArea>
-          </FramePanel>
-          <FrameFooter>
-            <DataGridPagination sizes={DEFAULT_PAGES_OPTIONS} />
-          </FrameFooter>
-        </Frame>
-      </DataGrid>
+        error={{
+          message: error,
+          retry
+        }}
+        actions={
+          <FilterBar
+            search={search}
+            onSearch={handleSearch}
+            placeholder="Search queues by name"
+            className="justify-end"
+          >
+            <Filters
+              fields={filterFields}
+              query={query}
+              onQueryChange={handleQueryChange}
+              size="sm"
+              showClear
+            />
+          </FilterBar>
+        }
+        onRowClick={(row: Queue) => navigate(routeHref("queue", row.name))}
+        onPaginationChange={handlePaginationChange}
+        onSortingChange={handleSortingChange}
+      />
 
-      <ConfirmDialog
+      <QueueConfirmDialog
+        confirm={confirm}
+        setConfirm={setConfirm}
+        confirmQueue={confirmQueue}
+      />
+
+      {/* <ConfirmDialog
         open={Boolean(confirm)}
         onOpenChange={(open) => (open ? undefined : setConfirm(null))}
         title={confirm?.kind === "purge" ? "Purge queue?" : "Delete queue?"}
@@ -355,8 +330,7 @@ export function QueuesView() {
         confirmLabel={confirm?.kind === "purge" ? "Purge messages" : "Delete queue"}
         tone={confirm?.kind === "delete" ? "destructive" : "default"}
         onConfirm={confirmQueue}
-      />
+      /> */}
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-import { Skeleton } from "./ui/skeleton";
+import { Skeleton } from "../ui/skeleton"
 
 export const numericMeta = {
   headerClassName: "w-px whitespace-nowrap text-end [&>div]:justify-end",

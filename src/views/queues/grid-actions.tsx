@@ -1,11 +1,17 @@
 import type { DialogRequest } from "@/components/dialogs/dialogs-provider";
+import type { ConfirmState } from "@/components/features/queues/types";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import type { Queue } from "@/data/types";
 import { EraserIcon, MoreHorizontalIcon, SendIcon, Trash2Icon } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 
-export type ConfirmState = { kind: "purge" | "delete"; queue: Queue } | null;
 
 type Props = {
   rowData: Queue;

@@ -21,7 +21,7 @@ import type { Vhost } from "@/data/types";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
 import { Skeleton } from "@/components/ui/skeleton";
-import { numericMeta } from "@/components/table-meta-numeric";
+import { numericMeta } from "@/components/table";
 import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
 import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";

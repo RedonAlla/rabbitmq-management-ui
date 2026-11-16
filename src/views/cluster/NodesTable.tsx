@@ -15,7 +15,7 @@ import { Frame, FrameHeader, FramePanel } from "@/components/reui/frame"
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
 import GridEmptyState from "@/components/ui/empty-state"
-import { numericMeta } from "@/components/table-meta-numeric"
+import { numericMeta } from "@/components/table"
 import { Skeleton } from "@/components/ui/skeleton"
 
 type Props = {

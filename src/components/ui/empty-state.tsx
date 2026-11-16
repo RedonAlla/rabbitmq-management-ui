@@ -8,6 +8,7 @@ import {
   EmptyTitle
 } from "@/components/ui/empty";
 import type { ReactNode } from "react";
+import { ConditionalRender } from "../conditional-render";
 
 type Props = {
   error: string | null;
@@ -15,7 +16,7 @@ type Props = {
   action?: ReactNode;
   title: string;
   description: string;
-  icon: ReactNode
+  icon: ReactNode;
 };
 
 export default function GridEmptyState({
@@ -32,23 +33,26 @@ export default function GridEmptyState({
 
   return (
     <Empty>
+
       <EmptyHeader>
+
         <EmptyMedia variant="icon">
           {icon}
         </EmptyMedia>
+
         <EmptyTitle>{title}</EmptyTitle>
+
         <EmptyDescription>
           {description}
         </EmptyDescription>
+
       </EmptyHeader>
-      {
-        action ? 
-        (
-          <EmptyContent>
+
+      <ConditionalRender condition={action !== undefined}>
+        <EmptyContent>
             {action}
         </EmptyContent>
-        ) : null
-      }
+      </ConditionalRender>
     </Empty>
   );
 }
