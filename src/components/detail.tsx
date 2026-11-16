@@ -7,6 +7,7 @@ import {
   FrameTitle,
 } from "@/components/reui/frame";
 import { cn } from "@/lib/utils";
+import { ConditionalRender } from "./conditional-render";
 
 export interface Fact {
   label: string;
@@ -30,7 +31,9 @@ export function FactPanel({
     <Frame spacing="sm" className="min-w-0">
       <FrameHeader className="flex flex-col gap-0.5">
         <FrameTitle>{title}</FrameTitle>
-        {description ? <FrameDescription>{description}</FrameDescription> : null}
+        <ConditionalRender condition={Boolean(description)}>
+          <FrameDescription>{description}</FrameDescription> 
+        </ConditionalRender>
       </FrameHeader>
       <FramePanel className="flex flex-col">
         <dl className="flex flex-col divide-y divide-border">
@@ -60,7 +63,9 @@ export function FactPanel({
           ))}
         </dl>
       </FramePanel>
-      {footer ? footer : null}
+      <ConditionalRender condition={Boolean(footer)}>
+        {footer}
+      </ConditionalRender>
     </Frame>
   );
 }
@@ -94,9 +99,15 @@ export function SectionFrame({
       <FrameHeader className="flex flex-row items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-0.5">
           <FrameTitle>{title}</FrameTitle>
-          {description ? <FrameDescription>{description}</FrameDescription> : null}
+          <ConditionalRender condition={description !== undefined}>
+            <FrameDescription>{description}</FrameDescription>
+          </ConditionalRender>
         </div>
-        {actions ? <div className="flex shrink-0 items-center gap-1.5">{actions}</div> : null}
+
+        <ConditionalRender condition={Boolean(actions)}>
+          <div className="flex shrink-0 items-center gap-1.5">{actions}</div> 
+        </ConditionalRender>
+            
       </FrameHeader>
       <FramePanel className={cn("min-w-0", bodyClassName)}>{children}</FramePanel>
     </Frame>

@@ -10,6 +10,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Spinner } from "@/components/ui/spinner";
+import { ConditionalRender } from "./conditional-render";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -52,7 +53,10 @@ export function ConfirmDialog({
               onOpenChange(false);
             }}
           >
-            {pending ? <Spinner data-icon="inline-start" /> : null}
+            <ConditionalRender condition={pending}>
+              <Spinner data-icon="inline-start" />
+            </ConditionalRender>
+
             {confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
