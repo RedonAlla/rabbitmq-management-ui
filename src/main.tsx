@@ -10,6 +10,11 @@ import { RouterProvider } from "@/lib/router"
 import { AuthProvider } from "@/store/auth"
 import { ClusterProvider } from "@/store/cluster"
 
+if (import.meta.env.MODE === "demo") {
+  const { installMockBackend } = await import("@/lib/mock-backend")
+  installMockBackend()
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider defaultTheme="light" storageKey="rmq-theme">
