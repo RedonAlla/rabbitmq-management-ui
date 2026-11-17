@@ -96,8 +96,13 @@ export function LoginView() {
 
       <Card className="w-full max-w-sm ring-1 ring-foreground/10">
         <CardHeader className="justify-items-center gap-3 text-center">
-          <IconTile variant="solid" size="lg" aria-hidden="true">
-            <span className="text-mono text-sm font-semibold">RQ</span>
+          <IconTile
+            variant="solid"
+            size="lg"
+            className="bg-[#181714]"
+            aria-hidden="true"
+          >
+            <img src="/favicon.svg" alt="" className="w-8" />
           </IconTile>
           <div className="flex flex-col gap-0.5">
             <CardTitle>RabbitMQ Management</CardTitle>
