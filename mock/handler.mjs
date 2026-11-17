@@ -314,6 +314,171 @@ function rateDetails(counter, rate, ageSeconds, incrSeconds) {
   return { rate, avg_rate: rate, avg, samples }
 }
 
+function lengthDetails(value, rate, ageSeconds, incrSeconds) {
+  const count = Math.max(2, Math.round(ageSeconds / incrSeconds))
+  const amplitude = Math.max(1, rate) * incrSeconds * 4
+  const samples = []
+  let sum = 0
+  for (let index = 0; index < count; index += 1) {
+    const wave =
+      Math.sin(index / 2.3) * amplitude + Math.cos(index / 5.1) * amplitude * 0.45
+    const sample =
+      index === count - 1 ? value : Math.max(0, Math.round(value + wave))
+    sum += sample
+    samples.push({
+      sample,
+      timestamp: Date.now() - (count - 1 - index) * incrSeconds * 1000,
+    })
+  }
+  return {
+    rate: 0,
+    avg_rate: 0,
+    avg: Math.round(sum / samples.length),
+    samples,
+  }
+}
+
+function policyMatches(pattern, name) {
+  try {
+    return new RegExp(pattern).test(name)
+  } catch {
+    return false
+  }
+}
+
+function effectivePolicy(entries, vhost, name) {
+  const candidates = entries
+    .filter((entry) => entry.vhost === vhost && policyMatches(entry.pattern ?? "", name))
+    .sort((left, right) => (right.priority ?? 0) - (left.priority ?? 0))
+  return candidates[0] ?? null
+}
+
+function queueDetail(queue, url) {
+  const params = url.searchParams
+  const age = (key, fallback) =>
+    Math.max(60, Number(params.get(`${key}_age`) ?? fallback) || fallback)
+  const incr = (key, fallback) =>
+    Math.max(5, Number(params.get(`${key}_incr`) ?? fallback) || fallback)
+
+  const msgAge = age("msg_rates", 600)
+  const msgIncr = incr("msg_rates", 5)
+  const lengthAge = age("lengths", msgAge)
+  const lengthIncr = incr("lengths", msgIncr)
+  const dataAge = age("data_rates", msgAge)
+  const dataIncr = incr("data_rates", msgIncr)
+
+  const stats = queue.message_stats ?? {}
+  const rateOf = (details) => details?.rate ?? 0
+  const publishRate = rateOf(stats.publish_details)
+  const deliverRate = rateOf(stats.deliver_details)
+  const ackRate = rateOf(stats.ack_details)
+  const redeliverRate = rateOf(stats.redeliver_details)
+
+  const messages = queue.messages_ready + queue.messages_unacknowledged
+  const persistent = queue.durable ? Math.round(messages * 0.86) : 0
+  const inMemory = queue.type === "classic" ? messages : 0
+  const avgMessageBytes = 1024
+
+  const policy = effectivePolicy(state.policies, queue.vhost, queue.name)
+  const operatorPolicy = effectivePolicy(state.operatorPolicies, queue.vhost, queue.name)
+  const idle = queue.consumers === 0 || queue.state === "idle"
+  const now = Date.now()
+  const headSeconds =
+    queue.messages_ready > 0
+      ? Math.min(86_400, Math.round(queue.messages_ready / Math.max(deliverRate, 0.2)))
+      : null
+  const reductionRate = publishRate * 6 + deliverRate * 2
+
+  return {
+    ...queue,
+    messages,
+    messages_persistent: persistent,
+    messages_ram: inMemory,
+    messages_ready_ram: queue.type === "classic" ? queue.messages_ready : 0,
+    messages_unacknowledged_ram:
+      queue.type === "classic" ? queue.messages_unacknowledged : 0,
+    message_bytes: messages * avgMessageBytes,
+    message_bytes_persistent: persistent * avgMessageBytes,
+    message_bytes_ram: inMemory * avgMessageBytes,
+    message_bytes_ready: queue.messages_ready * avgMessageBytes,
+    message_bytes_unacknowledged: queue.messages_unacknowledged * avgMessageBytes,
+    storage_version: 2,
+    internal_owner: false,
+    single_active_consumer_tag: null,
+    consumer_capacity: null,
+    consumer_utilisation:
+      queue.consumers > 0 ? Math.min(0.97, 0.52 + (queue.name.length % 40) / 100) : null,
+    operator_policy: operatorPolicy?.name ?? null,
+    effective_policy_definition: policy?.definition ?? {},
+    effective_operator_policy_definition: operatorPolicy?.definition ?? {},
+    idle_since: idle
+      ? new Date(now - (600 + queue.name.length * 37) * 1000).toISOString()
+      : null,
+    head_message_timestamp:
+      headSeconds === null ? null : new Date(now - headSeconds * 1000).toISOString(),
+    messages_details: lengthDetails(messages, publishRate, lengthAge, lengthIncr),
+    messages_ready_details: lengthDetails(
+      queue.messages_ready,
+      publishRate,
+      lengthAge,
+      lengthIncr
+    ),
+    messages_unacknowledged_details: lengthDetails(
+      queue.messages_unacknowledged,
+      deliverRate,
+      lengthAge,
+      lengthIncr
+    ),
+    reductions: Math.round(reductionRate * 86_400),
+    reductions_details: rateDetails(
+      Math.round(reductionRate * dataAge),
+      reductionRate,
+      dataAge,
+      dataIncr
+    ),
+    message_stats: {
+      publish_details: rateDetails(Math.round(publishRate * 86_400), publishRate, msgAge, msgIncr),
+      deliver_details: rateDetails(Math.round(deliverRate * 86_400), deliverRate, msgAge, msgIncr),
+      ack_details: rateDetails(Math.round(ackRate * 86_400), ackRate, msgAge, msgIncr),
+      deliver_get_details: rateDetails(Math.round(deliverRate * 86_400), deliverRate, msgAge, msgIncr),
+      get_details: rateDetails(0, 0, msgAge, msgIncr),
+      get_empty_details: rateDetails(0, 0, msgAge, msgIncr),
+      get_no_ack_details: rateDetails(0, 0, msgAge, msgIncr),
+      redeliver_details: rateDetails(
+        Math.round(redeliverRate * 86_400),
+        redeliverRate,
+        msgAge,
+        msgIncr
+      ),
+      redeliver: stats.redeliver ?? 0,
+    },
+    consumer_details: state.consumers
+      .filter(
+        (consumer) =>
+          consumer.queue.name === queue.name && consumer.queue.vhost === queue.vhost
+      )
+      .map((consumer) => ({
+        consumer_tag: consumer.consumer_tag,
+        queue: consumer.queue,
+        channel_details: consumer.channel_details,
+        ack_required: consumer.ack_required,
+        exclusive: consumer.exclusive,
+        prefetch_count: consumer.prefetch_count,
+        active: consumer.active ?? true,
+        activity_status: consumer.activity_status ?? "up",
+        consumer_timeout: consumer.consumer_timeout,
+        arguments: consumer.arguments ?? {},
+      })),
+    garbage_collection: {
+      max_heap_size: 0,
+      min_bin_vheap_size: 46422,
+      min_heap_size: 233,
+      fullsweep_after: 65535,
+      minor_gcs: 1200 + queue.name.length * 173,
+    },
+  }
+}
+
 function recalcConsumers() {
   for (const channel of state.channels) {
     channel.consumer_count = state.consumers.filter(
@@ -727,7 +892,7 @@ export async function handleMockRequest(req, res) {
       const queue = state.queues.find((entry) => entry.vhost === vhost && entry.name === name)
       if (rest.length === 2 && method === "GET") {
         if (!queue) return sendError(res, 404, "not_found", `queue '${name}' in vhost '${vhost}' not found`)
-        sendJson(res, 200, queue)
+        sendJson(res, 200, queueDetail(queue, url))
         return
       }
       if (rest.length === 2 && method === "PUT") {

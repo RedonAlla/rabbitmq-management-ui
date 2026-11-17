@@ -27,6 +27,7 @@ import {
 import { fetchDefinitions, uploadDefinitions } from "@/lib/rabbit-api"
 import { useCluster } from "@/store/cluster"
 import { useAuth } from "@/store/auth"
+import { ConditionalRender } from "@/components/conditional-render"
 
 interface SelectedFile {
   name: string
@@ -196,7 +197,9 @@ export function DefinitionsView() {
         description="Move users, virtual hosts, topology and policies between brokers as a JSON document."
       />
 
-      {error ? <RegionError message={error} onRetry={actions.retry} /> : null}
+      <ConditionalRender condition={error !== null}>
+        <RegionError message={error!} onRetry={actions.retry} /> 
+      </ConditionalRender>
 
       <div className="grid min-w-0 gap-4 xl:grid-cols-2 xl:items-start">
         <SectionFrame
@@ -204,9 +207,10 @@ export function DefinitionsView() {
           description="Download the broker's definitions from the management API."
           actions={<Badge variant="outline">Full snapshot</Badge>}
         >
-          {status === "loading" ? (
-            <RegionSkeleton rows={6} />
-          ) : (
+          <ConditionalRender
+            condition={status !== "loading" }
+            default={<RegionSkeleton rows={3} />}
+          >
             <div className="flex flex-col gap-3">
               <p className="text-sm text-muted-foreground">
                 The exported JSON contains all virtual hosts, users,
@@ -227,16 +231,17 @@ export function DefinitionsView() {
                   onClick={handleExport}
                   disabled={exporting}
                 >
-                  {exporting ? (
+                  <ConditionalRender
+                    condition={exporting}
+                    default={<DownloadIcon data-icon="inline-start" aria-hidden="true" />}
+                  >
                     <Spinner aria-hidden="true" />
-                  ) : (
-                    <DownloadIcon data-icon="inline-start" aria-hidden="true" />
-                  )}
+                  </ConditionalRender>
                   {exporting ? "Exporting…" : "Export definitions"}
                 </Button>
               </div>
             </div>
-          )}
+          </ConditionalRender>
         </SectionFrame>
 
         <SectionFrame
@@ -261,7 +266,27 @@ export function DefinitionsView() {
               onChange={handleFileChange}
             />
 
-            {file ? (
+            <ConditionalRender
+              condition={file !== null}
+              default={
+                <RegionEmpty
+                  title="No definitions file"
+                  description="Choose a JSON file exported from a RabbitMQ broker to preview and import it."
+                  icon={<FileJsonIcon />}
+                  action={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={importing}
+                      onClick={() => inputRef.current?.click()}
+                    >
+                      <UploadIcon data-icon="inline-start" aria-hidden="true" />
+                      Choose file
+                    </Button>
+                  }
+                />
+              }
+            >
               <div className="flex flex-col gap-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <Badge variant="outline" className="shrink-0">
@@ -270,10 +295,10 @@ export function DefinitionsView() {
                   </Badge>
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="truncate text-sm font-medium">
-                      {file.name}
+                      {file?.name}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      RabbitMQ {file.definitions.rabbit_version}
+                      RabbitMQ {file?.definitions?.rabbit_version}
                     </span>
                   </div>
                   <Button
@@ -289,56 +314,39 @@ export function DefinitionsView() {
                 <dl className="grid grid-cols-3 gap-3" role="status">
                   <CountStat
                     label="Vhosts"
-                    value={file.definitions.vhosts.length}
+                    value={file?.definitions?.vhosts?.length!}
                   />
                   <CountStat
                     label="Queues"
-                    value={file.definitions.queues.length}
+                    value={file?.definitions?.queues?.length!}
                   />
                   <CountStat
                     label="Exchanges"
-                    value={file.definitions.exchanges.length}
+                    value={file?.definitions?.exchanges?.length!}
                   />
                   <CountStat
                     label="Bindings"
-                    value={file.definitions.bindings.length}
+                    value={file?.definitions?.bindings?.length!}
                   />
                   <CountStat
                     label="Users"
-                    value={file.definitions.users.length}
+                    value={file?.definitions?.users?.length!}
                   />
                   <CountStat
                     label="Policies"
-                    value={file.definitions.policies.length}
+                    value={file?.definitions?.policies?.length!}
                   />
                 </dl>
               </div>
-            ) : (
-              <RegionEmpty
-                title="No definitions file"
-                description="Choose a JSON file exported from a RabbitMQ broker to preview and import it."
-                icon={<FileJsonIcon />}
-                action={
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={importing}
-                    onClick={() => inputRef.current?.click()}
-                  >
-                    <UploadIcon data-icon="inline-start" aria-hidden="true" />
-                    Choose file
-                  </Button>
-                }
-              />
-            )}
+            </ConditionalRender>
 
-            {parseError ? (
+            <ConditionalRender condition={parseError !== null}>
               <Alert variant="destructive">
                 <TriangleAlertIcon aria-hidden="true" />
                 <AlertTitle>Could not read definitions</AlertTitle>
                 <AlertDescription>{parseError}</AlertDescription>
               </Alert>
-            ) : null}
+            </ConditionalRender>
 
             <p className="border-t border-border pt-3 text-xs text-muted-foreground">
               Existing users, virtual hosts, queues, exchanges and policies with
@@ -356,11 +364,12 @@ export function DefinitionsView() {
                 onClick={handleImport}
                 disabled={!file || status === "loading" || importing}
               >
-                {importing ? (
+                <ConditionalRender
+                  condition={importing}
+                  default={<UploadIcon data-icon="inline-start" aria-hidden="true" />}
+                >
                   <Spinner aria-hidden="true" />
-                ) : (
-                  <UploadIcon data-icon="inline-start" aria-hidden="true" />
-                )}
+                </ConditionalRender>
                 {importing ? "Importing…" : "Import definitions"}
               </Button>
             </div>

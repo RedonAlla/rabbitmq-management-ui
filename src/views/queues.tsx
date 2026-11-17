@@ -376,20 +376,6 @@ export function QueuesView() {
         setConfirm={setConfirm}
         confirmQueue={confirmQueue}
       />
-
-      {/* <ConfirmDialog
-        open={Boolean(confirm)}
-        onOpenChange={(open) => (open ? undefined : setConfirm(null))}
-        title={confirm?.kind === "purge" ? "Purge queue?" : "Delete queue?"}
-        description={
-          confirm?.kind === "purge"
-            ? `This removes ${fmtInt(confirm.queue.ready)} ready messages from ${confirm.queue.name}. Consumers stay attached.`
-            : `This permanently deletes ${confirm?.queue.name ?? ""} with its bindings and consumers.`
-        }
-        confirmLabel={confirm?.kind === "purge" ? "Purge messages" : "Delete queue"}
-        tone={confirm?.kind === "delete" ? "destructive" : "default"}
-        onConfirm={confirmQueue}
-      /> */}
     </div>
   )
 }
