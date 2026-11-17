@@ -1,17 +1,12 @@
-import {
-  MessageSquareIcon,
-  SendIcon,
-  TimerIcon,
-  UsersIcon,
-} from "lucide-react";
-import { KpiCard, KpiGrid } from "@/components/kpi";
-import type { Channel } from "@/data/types";
-import { fmtInt, fmtRate } from "@/lib/format";
+import { MessageSquareIcon, SendIcon, TimerIcon, UsersIcon } from "lucide-react"
+import { KpiCard, KpiGrid } from "@/components/kpi"
+import type { Channel } from "@/data/types"
+import { fmtInt, fmtRate } from "@/lib/format"
 
 type Props = {
-  channel: Channel;
-  subscriptions: number;
-};
+  channel: Channel
+  subscriptions: number
+}
 
 export default function ChannelKpis({ channel, subscriptions }: Props) {
   return (
@@ -43,5 +38,5 @@ export default function ChannelKpis({ channel, subscriptions }: Props) {
         icon={<SendIcon aria-hidden="true" />}
       />
     </KpiGrid>
-  );
+  )
 }

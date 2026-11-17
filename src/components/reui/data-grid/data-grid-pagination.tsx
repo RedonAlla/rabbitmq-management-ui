@@ -126,8 +126,7 @@ function getDataGridPaginationItems(
  * and keep the arrows' height. Hardcoding one value would be right in three
  * styles and wrong in five.
  */
-const PAGE_BUTTON_WIDTH_CLASS =
-  "min-w-7"
+const PAGE_BUTTON_WIDTH_CLASS = "min-w-7"
 
 function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
   const { i18n, table, recordCount, isLoading } = useDataGrid()
@@ -181,7 +180,7 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
           mergedProps.sizesSkeleton
         ) : (
           <>
-            <div className="text-muted-foreground text-sm">
+            <div className="text-sm text-muted-foreground">
               {mergedProps.rowsPerPageLabel}
             </div>
             <Select
@@ -222,7 +221,7 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
           mergedProps.infoSkeleton
         ) : (
           <>
-            <div className="text-muted-foreground order-2 text-sm text-nowrap sm:order-1">
+            <div className="order-2 text-sm text-nowrap text-muted-foreground sm:order-1">
               {paginationInfo}
             </div>
             {pageCount > 1 && (

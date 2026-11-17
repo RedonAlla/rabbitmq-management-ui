@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -7,7 +7,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"
 
 const SHORTCUTS = [
   ["⌘ K", "Open the command palette"],
@@ -27,24 +27,29 @@ const SHORTCUTS = [
   ["d", "Toggle dark mode"],
   ["⌘ B", "Collapse the sidebar"],
   ["Esc", "Close the current layer"],
-];
+]
 
 type Props = {
-  open: boolean;
-  onClose: () => void;
+  open: boolean
+  onClose: () => void
 }
 
-export default function ShortcutsDialog({open, onClose}: Props) {
+export default function ShortcutsDialog({ open, onClose }: Props) {
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Keyboard shortcuts</DialogTitle>
-          <DialogDescription>Move around the management UI without a mouse.</DialogDescription>
+          <DialogDescription>
+            Move around the management UI without a mouse.
+          </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col divide-y divide-border">
           {SHORTCUTS.map(([keys, label]) => (
-            <div key={keys} className="flex items-center justify-between gap-4 py-2 first:pt-0 last:pb-0">
+            <div
+              key={keys}
+              className="flex items-center justify-between gap-4 py-2 first:pt-0 last:pb-0"
+            >
               <span className="text-sm text-muted-foreground">{label}</span>
               <kbd className="border border-border bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
                 {keys}
@@ -53,9 +58,11 @@ export default function ShortcutsDialog({open, onClose}: Props) {
           ))}
         </div>
         <DialogFooter>
-          <DialogClose render={<Button type="button" variant="outline" />}>Close</DialogClose>
+          <DialogClose render={<Button type="button" variant="outline" />}>
+            Close
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

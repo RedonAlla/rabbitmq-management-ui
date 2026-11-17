@@ -1,12 +1,12 @@
-import { PageHeader } from "@/components/page-header";
-import { DetailLayout, SectionFrame } from "@/components/detail";
-import { ChartSkeleton } from "@/components/region-states";
-import { KpiSkeleton } from "@/components/kpi-skeleton";
-import { QueueBackButton } from "./header";
-import { QueueCountersPanel } from "./counters-panel";
-import { QueueDetailsPanel } from "./details-panel";
-import { QueueLifecyclePanel } from "./lifecycle-panel";
-import { QueueStoragePanel } from "./storage-panel";
+import { PageHeader } from "@/components/page-header"
+import { DetailLayout, SectionFrame } from "@/components/detail"
+import { ChartSkeleton } from "@/components/region-states"
+import { KpiSkeleton } from "@/components/kpi-skeleton"
+import { QueueBackButton } from "./header"
+import { QueueCountersPanel } from "./counters-panel"
+import { QueueDetailsPanel } from "./details-panel"
+import { QueueLifecyclePanel } from "./lifecycle-panel"
+import { QueueStoragePanel } from "./storage-panel"
 
 export function QueueDetailSkeleton({ title }: { title: string }) {
   return (
@@ -41,5 +41,5 @@ export function QueueDetailSkeleton({ title }: { title: string }) {
         }
       />
     </div>
-  );
+  )
 }

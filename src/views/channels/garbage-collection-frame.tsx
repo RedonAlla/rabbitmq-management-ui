@@ -1,19 +1,23 @@
-import { RefreshCwIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { SectionFrame } from "@/components/detail";
-import { RegionEmpty, RegionError, RegionSkeleton } from "@/components/region-states";
-import { fmtInt } from "@/lib/format";
-import type { ChannelGarbageCollection } from "@/lib/rabbit-api";
+import { RefreshCwIcon } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { SectionFrame } from "@/components/detail"
+import {
+  RegionEmpty,
+  RegionError,
+  RegionSkeleton,
+} from "@/components/region-states"
+import { fmtInt } from "@/lib/format"
+import type { ChannelGarbageCollection } from "@/lib/rabbit-api"
 
 type Props = {
-  collection: ChannelGarbageCollection | null;
-  loading: boolean;
-  error: string | null;
-  onRetry: () => void;
-};
+  collection: ChannelGarbageCollection | null
+  loading: boolean
+  error: string | null
+  onRetry: () => void
+}
 
 function gcValue(value: number | null): string {
-  return value === null ? "—" : fmtInt(value);
+  return value === null ? "—" : fmtInt(value)
 }
 
 export default function GarbageCollectionFrame({
@@ -81,5 +85,5 @@ export default function GarbageCollectionFrame({
         />
       )}
     </SectionFrame>
-  );
+  )
 }

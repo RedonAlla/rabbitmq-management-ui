@@ -10,10 +10,18 @@ import { policyColumns } from "./policy-columns"
 import PolicyDetailDrawer from "./PolicyDetailDrawer"
 import { matchesText } from "@/lib/filtering"
 import { useTable } from "@tanstack/react-table"
-import { DataGrid, dataGridFeatures } from "@/components/reui/data-grid/data-grid"
+import {
+  DataGrid,
+  dataGridFeatures,
+} from "@/components/reui/data-grid/data-grid"
 import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants"
 import GridEmptyState from "@/components/ui/empty-state"
-import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame"
+import {
+  Frame,
+  FrameFooter,
+  FrameHeader,
+  FramePanel,
+} from "@/components/reui/frame"
 import { FilterBar, SelectFilter } from "@/components/filters-bar"
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
@@ -52,10 +60,10 @@ export default function OperatorPolicies() {
   )
 
   const applied = useCallback(
-      (policy: Policy) =>
-        data.queues.filter((queue) => matchesPolicy(policy, queue)).length,
-      [data.queues]
-    )
+    (policy: Policy) =>
+      data.queues.filter((queue) => matchesPolicy(policy, queue)).length,
+    [data.queues]
+  )
 
   const columns = useMemo(
     () => policyColumns(applied, setPendingDelete),
@@ -68,7 +76,7 @@ export default function OperatorPolicies() {
     data: policies,
     columns,
     initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
-  });
+  })
 
   const clearFilters = () => {
     setSearch("")
@@ -77,7 +85,6 @@ export default function OperatorPolicies() {
 
   return (
     <section className="flex min-w-0 flex-col gap-2">
-
       <DataGrid
         table={table}
         recordCount={policies.length}
@@ -94,7 +101,11 @@ export default function OperatorPolicies() {
             error={error}
             retry={actions.retry}
             action={
-              <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => clearFilters()}
+              >
                 Clear filters
               </Button>
             }
@@ -113,8 +124,8 @@ export default function OperatorPolicies() {
               <div className="flex min-w-0 flex-col gap-0.5">
                 <h2 className="text-sm font-semibold">Operator policies</h2>
                 <p className="text-xs text-muted-foreground">
-                  Administrators use these to override user policies for critical
-                  limits.
+                  Administrators use these to override user policies for
+                  critical limits.
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
@@ -180,7 +191,9 @@ export default function OperatorPolicies() {
           } catch (cause) {
             toast.error("Operator policy was not deleted", {
               description:
-                cause instanceof Error ? cause.message : "The management API did not respond.",
+                cause instanceof Error
+                  ? cause.message
+                  : "The management API did not respond.",
             })
           }
         }}

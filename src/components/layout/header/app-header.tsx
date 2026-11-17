@@ -1,12 +1,12 @@
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import { SearchAction } from "./search-action";
-import { RefreshActions } from "./refresh-actions";
-import { ToggleTheme } from "./toggle-theme";
-import { UserActions } from "./user-actions";
-import type { SetStateAction } from "react";
-import type { RefreshInterval } from "@/store/cluster";
-import { HelpActions } from "./help-actions";
+import { SidebarTrigger } from "@/components/ui/sidebar"
+import { Separator } from "@/components/ui/separator"
+import { SearchAction } from "./search-action"
+import { RefreshActions } from "./refresh-actions"
+import { ToggleTheme } from "./toggle-theme"
+import { UserActions } from "./user-actions"
+import type { SetStateAction } from "react"
+import type { RefreshInterval } from "@/store/cluster"
+import { HelpActions } from "./help-actions"
 
 const TITLES: Record<string, string> = {
   overview: "Overview",
@@ -29,12 +29,12 @@ const TITLES: Record<string, string> = {
 }
 
 type Props = {
-  clusterName: string;
-  route: string;
-  refreshInterval: RefreshInterval;
-  refresh: () => void;
-  setRefreshInterval: (value: RefreshInterval) => void;
-  setPaletteOpen: (value: SetStateAction<boolean>) => void;
+  clusterName: string
+  route: string
+  refreshInterval: RefreshInterval
+  refresh: () => void
+  setRefreshInterval: (value: RefreshInterval) => void
+  setPaletteOpen: (value: SetStateAction<boolean>) => void
 }
 
 export function AppHeader({
@@ -43,7 +43,7 @@ export function AppHeader({
   refreshInterval,
   refresh,
   setPaletteOpen,
-  setRefreshInterval
+  setRefreshInterval,
 }: Props) {
   const pageTitle = TITLES[route] ?? "Not found"
 
@@ -63,8 +63,7 @@ export function AppHeader({
       <div className="flex items-center gap-1.5">
         <RefreshActions
           refreshInterval={refreshInterval}
-          setRefreshInterval={setRefreshInterval
-        }
+          setRefreshInterval={setRefreshInterval}
         />
         <ToggleTheme />
         <HelpActions refresh={refresh} />

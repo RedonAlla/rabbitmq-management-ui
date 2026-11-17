@@ -1,26 +1,22 @@
-import { useMemo } from "react";
-import { fmtRate } from "@/lib/format";
+import { useMemo } from "react"
+import { fmtRate } from "@/lib/format"
 import {
   averageSeries,
   buildRateChartDataFromSamples,
   RATE_RANGES,
   RATE_WINDOWS,
-} from "@/lib/chart-data";
-import type { QueueDetail, QueueRateRange } from "@/lib/rabbit-api";
-import {
-  ChartFrame,
-  ChartRangeTabs,
-  RateChart,
-} from "@/components/charts";
+} from "@/lib/chart-data"
+import type { QueueDetail, QueueRateRange } from "@/lib/rabbit-api"
+import { ChartFrame, ChartRangeTabs, RateChart } from "@/components/charts"
 
 type Props = {
-  detail: QueueDetail | null;
-  range: QueueRateRange;
-  setRange: (range: QueueRateRange) => void;
-  loading: boolean;
-  error: string | null;
-  onRetry: () => void;
-};
+  detail: QueueDetail | null
+  range: QueueRateRange
+  setRange: (range: QueueRateRange) => void
+  loading: boolean
+  error: string | null
+  onRetry: () => void
+}
 
 export function MessageRatesChart({
   detail,
@@ -31,20 +27,26 @@ export function MessageRatesChart({
   onRetry,
 }: Props) {
   const data = useMemo(() => {
-    if (!detail) return [];
+    if (!detail) return []
     return buildRateChartDataFromSamples([
       { key: "publish", samples: detail.rates.publish.samples },
       { key: "deliver", samples: detail.rates.deliver.samples },
       { key: "ack", samples: detail.rates.ack.samples },
       { key: "redeliver", samples: detail.rates.redeliver.samples },
-    ]);
-  }, [detail]);
+    ])
+  }, [detail])
 
   return (
     <ChartFrame
       title="Message rates"
       description={`Publish, deliver, ack and redeliver rates per second over the ${RATE_WINDOWS[range]}.`}
-      actions={<ChartRangeTabs value={range} onChange={setRange} options={RATE_RANGES} />}
+      actions={
+        <ChartRangeTabs
+          value={range}
+          onChange={setRange}
+          options={RATE_RANGES}
+        />
+      }
       hasData={data.length > 1}
       loading={loading}
       error={error}
@@ -84,5 +86,5 @@ export function MessageRatesChart({
         ]}
       />
     </ChartFrame>
-  );
+  )
 }

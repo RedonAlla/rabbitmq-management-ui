@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,20 +8,20 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Spinner } from "@/components/ui/spinner";
-import { ConditionalRender } from "./conditional-render";
+} from "@/components/ui/alert-dialog"
+import { Spinner } from "@/components/ui/spinner"
+import { ConditionalRender } from "./conditional-render"
 
 interface ConfirmDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: ReactNode;
-  confirmLabel: string;
-  onConfirm: () => void;
-  tone?: "default" | "destructive";
-  pending?: boolean;
-  children?: ReactNode;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  description: ReactNode
+  confirmLabel: string
+  onConfirm: () => void
+  tone?: "default" | "destructive"
+  pending?: boolean
+  children?: ReactNode
 }
 
 export function ConfirmDialog({
@@ -36,7 +36,10 @@ export function ConfirmDialog({
   children,
 }: ConfirmDialogProps) {
   return (
-    <AlertDialog open={open} onOpenChange={(next) => (pending ? undefined : onOpenChange(next))}>
+    <AlertDialog
+      open={open}
+      onOpenChange={(next) => (pending ? undefined : onOpenChange(next))}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -49,8 +52,8 @@ export function ConfirmDialog({
             variant={tone === "destructive" ? "destructive" : "default"}
             disabled={pending}
             onClick={() => {
-              onConfirm();
-              onOpenChange(false);
+              onConfirm()
+              onOpenChange(false)
             }}
           >
             <ConditionalRender condition={pending}>
@@ -62,5 +65,5 @@ export function ConfirmDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
+  )
 }

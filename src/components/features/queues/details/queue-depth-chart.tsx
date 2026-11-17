@@ -1,25 +1,21 @@
-import { useMemo } from "react";
-import { fmtInt } from "@/lib/format";
+import { useMemo } from "react"
+import { fmtInt } from "@/lib/format"
 import {
   buildLengthChartDataFromSamples,
   RATE_RANGES,
   RATE_WINDOWS,
-} from "@/lib/chart-data";
-import type { QueueDetail, QueueRateRange } from "@/lib/rabbit-api";
-import {
-  ChartFrame,
-  ChartRangeTabs,
-  LengthChart,
-} from "@/components/charts";
+} from "@/lib/chart-data"
+import type { QueueDetail, QueueRateRange } from "@/lib/rabbit-api"
+import { ChartFrame, ChartRangeTabs, LengthChart } from "@/components/charts"
 
 type Props = {
-  detail: QueueDetail | null;
-  range: QueueRateRange;
-  setRange: (range: QueueRateRange) => void;
-  loading: boolean;
-  error: string | null;
-  onRetry: () => void;
-};
+  detail: QueueDetail | null
+  range: QueueRateRange
+  setRange: (range: QueueRateRange) => void
+  loading: boolean
+  error: string | null
+  onRetry: () => void
+}
 
 export function QueueDepthChart({
   detail,
@@ -30,19 +26,25 @@ export function QueueDepthChart({
   onRetry,
 }: Props) {
   const data = useMemo(() => {
-    if (!detail) return [];
+    if (!detail) return []
     return buildLengthChartDataFromSamples([
       { key: "messages", samples: detail.lengths.messages.samples },
       { key: "ready", samples: detail.lengths.ready.samples },
       { key: "unacked", samples: detail.lengths.unacked.samples },
-    ]);
-  }, [detail]);
+    ])
+  }, [detail])
 
   return (
     <ChartFrame
       title="Queue depth"
       description={`Messages held in the queue over the ${RATE_WINDOWS[range]}.`}
-      actions={<ChartRangeTabs value={range} onChange={setRange} options={RATE_RANGES} />}
+      actions={
+        <ChartRangeTabs
+          value={range}
+          onChange={setRange}
+          options={RATE_RANGES}
+        />
+      }
       hasData={data.length > 1}
       loading={loading}
       error={error}
@@ -74,5 +76,5 @@ export function QueueDepthChart({
         ]}
       />
     </ChartFrame>
-  );
+  )
 }

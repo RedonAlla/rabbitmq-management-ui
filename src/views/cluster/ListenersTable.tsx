@@ -1,70 +1,97 @@
-import { useMemo } from "react";
-import { Kayak } from "lucide-react";
-import { useTable, type ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@/components/reui/badge";
-import { TlsBadge } from "@/components/badges";
-import type { PortInfo } from "@/data/types";
-import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
-import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
-import GridEmptyState from "@/components/ui/empty-state";
-import { Frame, FrameHeader, FramePanel } from "@/components/reui/frame";
-import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
-import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
-import { Skeleton } from "@/components/ui/skeleton";
-import { numericMeta } from "@/components/table";
+import { useMemo } from "react"
+import { Kayak } from "lucide-react"
+import { useTable, type ColumnDef } from "@tanstack/react-table"
+import { Badge } from "@/components/reui/badge"
+import { TlsBadge } from "@/components/badges"
+import type { PortInfo } from "@/data/types"
+import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header"
+import {
+  DataGrid,
+  dataGridFeatures,
+  type DataGridFeatures,
+} from "@/components/reui/data-grid/data-grid"
+import GridEmptyState from "@/components/ui/empty-state"
+import { Frame, FrameHeader, FramePanel } from "@/components/reui/frame"
+import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
+import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
+import { Skeleton } from "@/components/ui/skeleton"
+import { numericMeta } from "@/components/table"
 
 type Props = {
-  ports: PortInfo[];
-  loading: boolean;
-  onRetry: () => void;
-  error: string | null;
-};
+  ports: PortInfo[]
+  loading: boolean
+  onRetry: () => void
+  error: string | null
+}
 
-export default function ListenersTable({ ports, loading, error, onRetry }: Props) {
+export default function ListenersTable({
+  ports,
+  loading,
+  error,
+  onRetry,
+}: Props) {
   const columns = useMemo<ColumnDef<DataGridFeatures, PortInfo>[]>(
     () => [
       {
         accessorKey: "port",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Port" />,
-        cell: ({ row }) => <span className="data-cell font-medium">{row.original.port}</span>,
-        meta: { skeleton: <Skeleton className="h-4 w-12" /> }
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Port" />
+        ),
+        cell: ({ row }) => (
+          <span className="data-cell font-medium">{row.original.port}</span>
+        ),
+        meta: { skeleton: <Skeleton className="h-4 w-12" /> },
       },
       {
         accessorKey: "protocol",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Protocol" />,
-        cell: ({ row }) => <span className="text-sm">{row.original.protocol}</span>,
-        meta: { skeleton: <Skeleton className="h-4 w-12" /> }
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Protocol" />
+        ),
+        cell: ({ row }) => (
+          <span className="text-sm">{row.original.protocol}</span>
+        ),
+        meta: { skeleton: <Skeleton className="h-4 w-12" /> },
       },
       {
         accessorKey: "tls",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="TLS" />,
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="TLS" />
+        ),
         cell: ({ row }) => <TlsBadge ssl={row.original.tls} />,
-        meta: { skeleton: <Skeleton className="h-4 w-12" /> }
+        meta: { skeleton: <Skeleton className="h-4 w-12" /> },
       },
       {
         accessorKey: "nodes",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Nodes" />,
-        cell: ({ row }) => <span className="data-cell">{row.original.nodes}</span>,
-        meta: numericMeta
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Nodes" />
+        ),
+        cell: ({ row }) => (
+          <span className="data-cell">{row.original.nodes}</span>
+        ),
+        meta: numericMeta,
       },
       {
         accessorKey: "context",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Context" />,
-        cell: ({ row }) => (
-          <span className="data-cell text-xs text-muted-foreground">{row.original.context}</span>
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Context" />
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-12" /> }
+        cell: ({ row }) => (
+          <span className="data-cell text-xs text-muted-foreground">
+            {row.original.context}
+          </span>
+        ),
+        meta: { skeleton: <Skeleton className="h-4 w-12" /> },
       },
     ],
     []
-  );
+  )
 
   const table = useTable({
     features: dataGridFeatures,
     defaultColumn: { size: 120, minSize: 80 },
     data: ports,
-    columns
-  });
+    columns,
+  })
 
   return (
     <section className="flex min-w-0 flex-col gap-2">
@@ -110,5 +137,5 @@ export default function ListenersTable({ ports, loading, error, onRetry }: Props
         </Frame>
       </DataGrid>
     </section>
-  );
+  )
 }

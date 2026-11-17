@@ -1,11 +1,14 @@
 import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { useTheme } from "@/components/theme-provider"
-import { ThemeIcon } from "./theme-icon";
-
+import { ThemeIcon } from "./theme-icon"
 
 export function ToggleTheme() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme()
 
   const isDark =
     theme === "dark" ||

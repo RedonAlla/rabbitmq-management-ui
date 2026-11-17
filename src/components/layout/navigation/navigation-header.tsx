@@ -32,9 +32,7 @@ export function NavigationHeader({ clusterName }: Props) {
               className="size-10 shrink-0 rounded-lg bg-[#181714] p-1"
             />
             <div className="grid min-w-0 flex-1 text-left leading-tight">
-              <span className="truncate text-sm font-semibold">
-                RabbitMQ
-              </span>
+              <span className="truncate text-sm font-semibold">RabbitMQ</span>
               <span className="truncate text-xs font-normal text-muted-foreground">
                 {clusterName}
               </span>

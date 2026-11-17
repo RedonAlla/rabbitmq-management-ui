@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo } from "react"
 import {
   ActivityIcon,
   BoxesIcon,
@@ -17,7 +17,7 @@ import {
   TriangleAlertIcon,
   UsersIcon,
   WaypointsIcon,
-} from "lucide-react";
+} from "lucide-react"
 import {
   Command,
   CommandDialog,
@@ -28,11 +28,11 @@ import {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-} from "@/components/ui/command";
-import { useCluster } from "@/store/cluster";
-import { useRoute, routeHref } from "@/lib/router";
-import { useDialogs } from "@/components/dialogs/dialogs-provider";
-import { useTheme } from "@/components/theme-provider";
+} from "@/components/ui/command"
+import { useCluster } from "@/store/cluster"
+import { useRoute, routeHref } from "@/lib/router"
+import { useDialogs } from "@/components/dialogs/dialogs-provider"
+import { useTheme } from "@/components/theme-provider"
 
 const PAGES = [
   { view: "overview", label: "Overview", icon: LayoutDashboardIcon },
@@ -47,36 +47,44 @@ const PAGES = [
   { view: "policies", label: "Policies", icon: ShieldCheckIcon },
   { view: "limits", label: "Limits", icon: GaugeIcon },
   { view: "cluster", label: "Cluster", icon: ServerIcon },
-  { view: "definitions", label: "Import / export definitions", icon: FileJsonIcon },
-];
+  {
+    view: "definitions",
+    label: "Import / export definitions",
+    icon: FileJsonIcon,
+  },
+]
 
 interface CommandPaletteProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
-  const { data } = useCluster();
-  const { navigate } = useRoute();
-  const { openDialog } = useDialogs();
-  const { theme, setTheme } = useTheme();
+  const { data } = useCluster()
+  const { navigate } = useRoute()
+  const { openDialog } = useDialogs()
+  const { theme, setTheme } = useTheme()
 
   const run = (callback: () => void) => {
-    onOpenChange(false);
-    callback();
-  };
+    onOpenChange(false)
+    callback()
+  }
 
   const queues = useMemo(
     () => [...data.queues].sort((a, b) => b.ready - a.ready).slice(0, 6),
     [data.queues]
-  );
+  )
   const exchanges = useMemo(
     () => [...data.exchanges].filter((entry) => entry.name).slice(0, 5),
     [data.exchanges]
-  );
+  )
 
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange} title="Command palette">
+    <CommandDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Command palette"
+    >
       <Command loop>
         <CommandInput placeholder="Search pages, queues, exchanges or run a command…" />
         <CommandList>
@@ -99,11 +107,15 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               <CommandItem
                 key={`${queue.vhost}/${queue.name}`}
                 value={`queue ${queue.name} ${queue.vhost}`}
-                onSelect={() => run(() => navigate(routeHref("queue", queue.name)))}
+                onSelect={() =>
+                  run(() => navigate(routeHref("queue", queue.name)))
+                }
               >
                 <ActivityIcon aria-hidden="true" />
                 <span className="truncate">{queue.name}</span>
-                <span className="ml-auto text-xs text-muted-foreground">{queue.vhost}</span>
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {queue.vhost}
+                </span>
               </CommandItem>
             ))}
           </CommandGroup>
@@ -112,11 +124,15 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               <CommandItem
                 key={`${exchange.vhost}/${exchange.name}`}
                 value={`exchange ${exchange.name} ${exchange.vhost}`}
-                onSelect={() => run(() => navigate(routeHref("exchange", exchange.name)))}
+                onSelect={() =>
+                  run(() => navigate(routeHref("exchange", exchange.name)))
+                }
               >
                 <WaypointsIcon aria-hidden="true" />
                 <span className="truncate">{exchange.name}</span>
-                <span className="ml-auto text-xs text-muted-foreground">{exchange.type}</span>
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {exchange.type}
+                </span>
               </CommandItem>
             ))}
           </CommandGroup>
@@ -146,7 +162,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             <CommandItem
               value="theme dark light mode"
               onSelect={() =>
-                run(() => setTheme(theme === "dark" || document.documentElement.classList.contains("dark") ? "light" : "dark"))
+                run(() =>
+                  setTheme(
+                    theme === "dark" ||
+                      document.documentElement.classList.contains("dark")
+                      ? "light"
+                      : "dark"
+                  )
+                )
               }
             >
               <SunMoonIcon aria-hidden="true" />
@@ -165,5 +188,5 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         </CommandList>
       </Command>
     </CommandDialog>
-  );
+  )
 }

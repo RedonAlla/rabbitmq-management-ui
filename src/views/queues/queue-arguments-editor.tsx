@@ -1,8 +1,8 @@
-import { ArrowUpRightIcon, ListPlusIcon, PlusIcon, XIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import Field from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { ArrowUpRightIcon, ListPlusIcon, PlusIcon, XIcon } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import Field from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import {
   Popover,
   PopoverContent,
@@ -10,32 +10,32 @@ import {
   PopoverHeader,
   PopoverTitle,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui/popover"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import type { QueueDeclarationType } from "@/lib/rabbit-api";
-import { cn } from "@/lib/utils";
-import { ARGUMENT_PRESETS } from "@/views/queues/queue-argument-presets";
+} from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Textarea } from "@/components/ui/textarea"
+import type { QueueDeclarationType } from "@/lib/rabbit-api"
+import { cn } from "@/lib/utils"
+import { ARGUMENT_PRESETS } from "@/views/queues/queue-argument-presets"
 import type {
   ArgumentMode,
   ArgumentRow,
   ArgumentType,
-} from "@/views/queues/queue-arguments";
+} from "@/views/queues/queue-arguments"
 
 const ARGUMENT_TYPE_OPTIONS: { value: ArgumentType; label: string }[] = [
   { value: "string", label: "String" },
   { value: "number", label: "Number" },
   { value: "boolean", label: "Boolean" },
   { value: "list", label: "List" },
-];
+]
 
 const ARGUMENT_VALUE_PLACEHOLDER: Record<
   Exclude<ArgumentType, "boolean">,
@@ -44,9 +44,9 @@ const ARGUMENT_VALUE_PLACEHOLDER: Record<
   string: "value",
   number: "0",
   list: "a, b, c",
-};
+}
 
-const ARGUMENT_JSON_PLACEHOLDER = '{\n  "x-max-length": 50000\n}';
+const ARGUMENT_JSON_PLACEHOLDER = '{\n  "x-max-length": 50000\n}'
 
 export default function QueueArgumentsEditor({
   type,
@@ -65,21 +65,21 @@ export default function QueueArgumentsEditor({
   onTogglePreset,
   onApplyPresets,
 }: {
-  type: QueueDeclarationType;
-  mode: ArgumentMode;
-  onModeChange: (mode: ArgumentMode) => void;
-  rows: ArgumentRow[];
-  onAddRow: () => void;
-  onUpdateRow: (id: number, patch: Partial<Omit<ArgumentRow, "id">>) => void;
-  onUpdateValue: (id: number, value: string) => void;
-  onRemoveRow: (id: number) => void;
-  json: string;
-  onJsonChange: (value: string) => void;
-  presetsOpen: boolean;
-  onPresetsOpenChange: (open: boolean) => void;
-  presetSelection: string[];
-  onTogglePreset: (id: string, checked: boolean) => void;
-  onApplyPresets: () => void;
+  type: QueueDeclarationType
+  mode: ArgumentMode
+  onModeChange: (mode: ArgumentMode) => void
+  rows: ArgumentRow[]
+  onAddRow: () => void
+  onUpdateRow: (id: number, patch: Partial<Omit<ArgumentRow, "id">>) => void
+  onUpdateValue: (id: number, value: string) => void
+  onRemoveRow: (id: number) => void
+  json: string
+  onJsonChange: (value: string) => void
+  presetsOpen: boolean
+  onPresetsOpenChange: (open: boolean) => void
+  presetSelection: string[]
+  onTogglePreset: (id: string, checked: boolean) => void
+  onApplyPresets: () => void
 }) {
   return (
     <Field
@@ -130,7 +130,7 @@ export default function QueueArgumentsEditor({
               </PopoverHeader>
               <div className="flex flex-col gap-2">
                 {ARGUMENT_PRESETS[type].map((preset) => {
-                  const selected = presetSelection.includes(preset.id);
+                  const selected = presetSelection.includes(preset.id)
                   return (
                     <div
                       key={preset.id}
@@ -142,11 +142,13 @@ export default function QueueArgumentsEditor({
                       )}
                       onClick={(event) => {
                         if (
-                          (event.target as HTMLElement).closest("[role=checkbox]")
+                          (event.target as HTMLElement).closest(
+                            "[role=checkbox]"
+                          )
                         ) {
-                          return;
+                          return
                         }
-                        onTogglePreset(preset.id, !selected);
+                        onTogglePreset(preset.id, !selected)
                       }}
                     >
                       <Checkbox
@@ -181,7 +183,7 @@ export default function QueueArgumentsEditor({
                         ) : null}
                       </span>
                     </div>
-                  );
+                  )
                 })}
               </div>
               <Button
@@ -219,7 +221,10 @@ export default function QueueArgumentsEditor({
                   })
                 }
               >
-                <SelectTrigger aria-label="Argument type" className="w-24 shrink-0">
+                <SelectTrigger
+                  aria-label="Argument type"
+                  className="w-24 shrink-0"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -336,5 +341,5 @@ export default function QueueArgumentsEditor({
         </TabsContent>
       </Tabs>
     </Field>
-  );
+  )
 }

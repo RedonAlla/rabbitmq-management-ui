@@ -1,19 +1,19 @@
-import { FactPanel, SectionFrame } from "@/components/detail";
-import { RegionSkeleton } from "@/components/region-states";
-import { fmtTimestamp, orDash } from "@/lib/format";
-import type { QueueDetail } from "@/lib/rabbit-api";
+import { FactPanel, SectionFrame } from "@/components/detail"
+import { RegionSkeleton } from "@/components/region-states"
+import { fmtTimestamp, orDash } from "@/lib/format"
+import type { QueueDetail } from "@/lib/rabbit-api"
 
 export function QueueLifecyclePanel({
   detail,
 }: {
-  detail: QueueDetail | null;
+  detail: QueueDetail | null
 }) {
   if (!detail) {
     return (
       <SectionFrame title="Lifecycle">
         <RegionSkeleton rows={5} />
       </SectionFrame>
-    );
+    )
   }
 
   return (
@@ -50,5 +50,5 @@ export function QueueLifecyclePanel({
         },
       ]}
     />
-  );
+  )
 }

@@ -1,14 +1,14 @@
-import { Badge } from "@/components/reui/badge";
-import { PageHeader } from "@/components/page-header";
-import { RegionError } from "@/components/region-states";
-import { FactPanel } from "@/components/detail";
-import { useCluster } from "@/store/cluster";
-import { fmtAgo, fmtDate } from "@/lib/format";
-import NodesTable from "./cluster/NodesTable";
-import ListenersTable from "./cluster/ListenersTable";
+import { Badge } from "@/components/reui/badge"
+import { PageHeader } from "@/components/page-header"
+import { RegionError } from "@/components/region-states"
+import { FactPanel } from "@/components/detail"
+import { useCluster } from "@/store/cluster"
+import { fmtAgo, fmtDate } from "@/lib/format"
+import NodesTable from "./cluster/NodesTable"
+import ListenersTable from "./cluster/ListenersTable"
 
 export function ClusterView() {
-  const { data, status, error, actions } = useCluster();
+  const { data, status, error, actions } = useCluster()
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -44,8 +44,18 @@ export function ClusterView() {
         ]}
       />
 
-      <NodesTable nodes={data.nodes} loading={status === "loading"} error={error} onRetry={actions.retry} />
-      <ListenersTable ports={data.ports} loading={status === "loading"} error={error} onRetry={actions.retry} />
+      <NodesTable
+        nodes={data.nodes}
+        loading={status === "loading"}
+        error={error}
+        onRetry={actions.retry}
+      />
+      <ListenersTable
+        ports={data.ports}
+        loading={status === "loading"}
+        error={error}
+        onRetry={actions.retry}
+      />
     </div>
-  );
+  )
 }

@@ -43,10 +43,7 @@ export interface Exchange {
 }
 
 export type BindingArgumentValue =
-  | string
-  | number
-  | boolean
-  | Array<string | number | boolean>
+  string | number | boolean | Array<string | number | boolean>
 
 export interface Binding {
   source: string

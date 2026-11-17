@@ -1,4 +1,4 @@
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function ChartRangeTabs<T extends number>({
   value,
@@ -6,10 +6,10 @@ export function ChartRangeTabs<T extends number>({
   options,
   ariaLabel = "Chart range",
 }: {
-  value: T;
-  onChange: (value: T) => void;
-  options: { value: T; label: string; ariaLabel: string }[];
-  ariaLabel?: string;
+  value: T
+  onChange: (value: T) => void
+  options: { value: T; label: string; ariaLabel: string }[]
+  ariaLabel?: string
 }) {
   return (
     <Tabs
@@ -29,5 +29,5 @@ export function ChartRangeTabs<T extends number>({
         ))}
       </TabsList>
     </Tabs>
-  );
+  )
 }

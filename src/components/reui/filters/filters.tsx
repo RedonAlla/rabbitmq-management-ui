@@ -859,8 +859,7 @@ export function Filters<V = unknown, O = unknown>({
       // The same lookup the chrome uses, so a headless consumer can ask it too.
       resolveEditor: (field, operator) =>
         resolveFilterEditor(field, operator, editors) as
-          | FilterEditor<V, O>
-          | undefined,
+          FilterEditor<V, O> | undefined,
       resolution: resolutionStore,
       addRule,
       addGroup,

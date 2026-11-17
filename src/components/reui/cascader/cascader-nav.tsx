@@ -51,7 +51,7 @@ function CascaderNav({ className, ...props }: CascaderNavProps) {
     className: cn(
       // `py-1`, not `py-1.5`: the row inside sets its own per-style height, so
       // even padding read too tall. 6px beside the field, 4px above and below.
-      "border-border/60 flex shrink-0 flex-col gap-1 border-b px-1.5 py-1",
+      "flex shrink-0 flex-col gap-1 border-b border-border/60 px-1.5 py-1",
       className
     ),
   }
@@ -89,7 +89,7 @@ function CascaderBack({ className, children, ...props }: CascaderBackProps) {
     "aria-label": labels.back,
     onClick: () => popLevel(),
     className: cn(
-      "text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring/50 flex shrink-0 items-center justify-center rounded-md outline-hidden transition-colors focus-visible:ring-2",
+      "flex shrink-0 items-center justify-center rounded-md text-muted-foreground outline-hidden transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring/50",
       // A notch under the row height: an affordance, not a second field.
       "size-6",
       className
@@ -164,7 +164,7 @@ function CascaderBreadcrumb({
     "data-slot": "cascader-breadcrumb",
     "aria-label": labels.breadcrumbLabel,
     className: cn(
-      "text-muted-foreground flex min-w-0 shrink-0 items-center gap-0.5 pt-1.5 pb-0.5 text-xs",
+      "flex min-w-0 shrink-0 items-center gap-0.5 pt-1.5 pb-0.5 text-xs text-muted-foreground",
       // Lines up with the ROWS, not the header: each style's list padding plus
       // its row inset. vega/mira/rhea `p-1`+`pl-2`, nova `p-1`+`pl-1.5`, maia
       // `p-1`+`pl-3`, lyra `pl-2`, luma/sera `p-1.5`+`pl-3`, per style-*.css.
@@ -191,7 +191,7 @@ function CascaderBreadcrumb({
             type="button"
             data-slot="cascader-breadcrumb-item"
             onClick={() => goTo(segment.node)}
-            className="hover:text-foreground focus-visible:ring-ring/50 max-w-32 truncate rounded-sm outline-hidden transition-colors focus-visible:ring-2"
+            className="max-w-32 truncate rounded-sm outline-hidden transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             {segment.node.label}
           </button>
@@ -206,7 +206,7 @@ function CascaderBreadcrumb({
             className={cn(
               "max-w-32 truncate",
               segment.node.value === currentValue &&
-                "text-foreground font-medium"
+                "font-medium text-foreground"
             )}
           >
             {segment.node.label}
@@ -504,7 +504,7 @@ function CascaderInput({
         /* No trigger to carry the invalid state in the `inline` case. */
         {...(invalid ? { "aria-invalid": true, "data-invalid": "" } : null)}
         className={cn(
-          "placeholder:text-muted-foreground h-full w-full min-w-0 flex-1 bg-transparent px-1.5 text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+          "h-full w-full min-w-0 flex-1 bg-transparent px-1.5 text-sm outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
           backVisible && "ps-0",
           className
         )}
@@ -577,7 +577,7 @@ function CascaderValue({
     content = children(selected, path)
   } else if (selectedValues.length === 0) {
     content = (
-      <span className="text-muted-foreground truncate">{placeholder}</span>
+      <span className="truncate text-muted-foreground">{placeholder}</span>
     )
   } else if (display === "count" || (multiple && selectedValues.length > 1)) {
     content = labels.selectedCount(selectedValues.length)
@@ -593,7 +593,7 @@ function CascaderValue({
         {showIcon && leaf?.icon ? (
           <span
             data-slot="cascader-value-icon"
-            className="text-muted-foreground flex shrink-0 items-center"
+            className="flex shrink-0 items-center text-muted-foreground"
           >
             {leaf.icon}
           </span>
@@ -609,7 +609,7 @@ function CascaderValue({
                 title={segment.hidden
                   .map((n) => n.label)
                   .join(` ${labels.pathSeparator} `)}
-                className="text-muted-foreground shrink-0"
+                className="shrink-0 text-muted-foreground"
               >
                 &hellip;
               </span>

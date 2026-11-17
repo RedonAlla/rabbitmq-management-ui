@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState } from "react"
 import {
   ActivityIcon,
   ArrowDownToLineIcon,
@@ -7,67 +7,55 @@ import {
   GitBranchIcon,
   HeartIcon,
   UnplugIcon,
-} from "lucide-react";
-import { toast } from "sonner";
-import { Badge } from "@/components/reui/badge";
-import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/page-header";
-import { KpiCard, KpiGrid } from "@/components/kpi";
-import {
-  DetailLayout,
-  FactPanel,
-  SectionFrame,
-} from "@/components/detail";
-import {
-  ConnectionStateBadge,
-  TlsBadge,
-  VhostBadge,
-} from "@/components/badges";
-import { ConfirmDialog } from "@/components/confirm-dialog";
+} from "lucide-react"
+import { toast } from "sonner"
+import { Badge } from "@/components/reui/badge"
+import { Button } from "@/components/ui/button"
+import { PageHeader } from "@/components/page-header"
+import { KpiCard, KpiGrid } from "@/components/kpi"
+import { DetailLayout, FactPanel, SectionFrame } from "@/components/detail"
+import { ConnectionStateBadge, TlsBadge, VhostBadge } from "@/components/badges"
+import { ConfirmDialog } from "@/components/confirm-dialog"
 import {
   RegionEmpty,
   RegionError,
   RegionSkeleton,
-} from "@/components/region-states";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { useRoute, routeHref } from "@/lib/router";
-import {
-  fmtInt,
-  fmtRate,
-  fmtSince,
-  fmtTimestamp,
-  orDash,
-} from "@/lib/format";
-import type { ConnectionRateRange } from "@/lib/rabbit-api";
+} from "@/components/region-states"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { useRoute, routeHref } from "@/lib/router"
+import { fmtInt, fmtRate, fmtSince, fmtTimestamp, orDash } from "@/lib/format"
+import type { ConnectionRateRange } from "@/lib/rabbit-api"
 import {
   buildRateChartData,
   chronological,
   RATE_RANGES,
   RATE_WINDOWS,
-} from "@/lib/chart-data";
-import { flattenProperties } from "@/lib/properties";
-import { useConnectionDetail } from "@/hooks/use-connection-detail";
-import { useConnectionChannels } from "@/hooks/use-connection-channels";
-import ChannelsTable from "@/views/connections/channels-table";
-import { ChartRangeTabs, RateChart } from "@/components/charts";
-import { KpiSkeleton } from "@/components/kpi-skeleton";
-import { PropertyList } from "@/components/property-list";
+} from "@/lib/chart-data"
+import { flattenProperties } from "@/lib/properties"
+import { useConnectionDetail } from "@/hooks/use-connection-detail"
+import { useConnectionChannels } from "@/hooks/use-connection-channels"
+import ChannelsTable from "@/views/connections/channels-table"
+import { ChartRangeTabs, RateChart } from "@/components/charts"
+import { KpiSkeleton } from "@/components/kpi-skeleton"
+import { PropertyList } from "@/components/property-list"
 
 const GC_PROPERTY_LABELS: Record<string, string> = {
-  min_bin_vheap_size: "Minimum binary virtual heap size in words (min_bin_vheap_size)",
+  min_bin_vheap_size:
+    "Minimum binary virtual heap size in words (min_bin_vheap_size)",
   min_heap_size: "Minimum heap size in words (min_heap_size)",
-  fullsweep_after: "Maximum generational collections before fullsweep (fullsweep_after)",
+  fullsweep_after:
+    "Maximum generational collections before fullsweep (fullsweep_after)",
   minor_gcs: "Number of minor GCs (minor_gcs)",
   max_heap_size: "Maximum amount of heap memory (max_heap_size)",
-};
+}
 
 function fmtByteRate(value: number): string {
-  return `${fmtRate(value).replace("/s", "")} B/s`;
+  return `${fmtRate(value).replace("/s", "")} B/s`
 }
 
 function HeartbeatValue({ seconds }: { seconds: number }) {
-  const enabled = seconds > 0;
+  const enabled = seconds > 0
   return (
     <span className="inline-flex items-center gap-1">
       <HeartIcon
@@ -79,22 +67,22 @@ function HeartbeatValue({ seconds }: { seconds: number }) {
       />
       {enabled ? `${seconds}s` : "disabled"}
     </span>
-  );
+  )
 }
 
 export function ConnectionDetailView() {
-  const { route, navigate } = useRoute();
-  const [range, setRange] = useState<ConnectionRateRange>(60);
+  const { route, navigate } = useRoute()
+  const [range, setRange] = useState<ConnectionRateRange>(60)
   const { connection, loading, error, status, retry, closeConnection } =
-    useConnectionDetail(route.id, range);
+    useConnectionDetail(route.id, range)
   const {
     channels,
     loading: channelsLoading,
     error: channelsError,
     retry: retryChannels,
-  } = useConnectionChannels(route.id);
-  const [confirmClose, setConfirmClose] = useState(false);
-  const [closeReason, setCloseReason] = useState("");
+  } = useConnectionChannels(route.id)
+  const [confirmClose, setConfirmClose] = useState(false)
+  const [closeReason, setCloseReason] = useState("")
 
   const rangeControl = (
     <ChartRangeTabs
@@ -103,14 +91,18 @@ export function ConnectionDetailView() {
       options={RATE_RANGES}
       ariaLabel="Rate sample range"
     />
-  );
+  )
 
   const backAction = (
-    <Button variant="outline" nativeButton={false} render={<a href={routeHref("connections")} />}>
+    <Button
+      variant="outline"
+      nativeButton={false}
+      render={<a href={routeHref("connections")} />}
+    >
       <ArrowLeftIcon data-icon="inline-start" aria-hidden="true" />
       Back to connections
     </Button>
-  );
+  )
 
   if (error) {
     return (
@@ -131,7 +123,11 @@ export function ConnectionDetailView() {
               description={`No open connection with name ${route.id ?? "unknown"}. It may have been closed.`}
               icon={<UnplugIcon />}
               action={
-                <Button variant="outline" nativeButton={false} render={<a href={routeHref("connections")} />}>
+                <Button
+                  variant="outline"
+                  nativeButton={false}
+                  render={<a href={routeHref("connections")} />}
+                >
                   <ArrowLeftIcon data-icon="inline-start" aria-hidden="true" />
                   Back to connections
                 </Button>
@@ -142,7 +138,7 @@ export function ConnectionDetailView() {
           )}
         </SectionFrame>
       </div>
-    );
+    )
   }
 
   if (loading || !connection) {
@@ -177,20 +173,20 @@ export function ConnectionDetailView() {
           }
         />
       </div>
-    );
+    )
   }
 
-  const chartData = buildRateChartData(connection);
-  const clientProperties = flattenProperties(connection.clientProperties);
+  const chartData = buildRateChartData(connection)
+  const clientProperties = flattenProperties(connection.clientProperties)
   const garbageCollection = connection.garbageCollection
     ? flattenProperties(connection.garbageCollection).map(
         ([label, value]) =>
           [GC_PROPERTY_LABELS[label] ?? label, value] as [string, unknown]
       )
-    : null;
+    : null
   const reductionsSamples = connection.reductionsRate
     ? chronological(connection.reductionsRate.samples)
-    : [];
+    : []
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -270,7 +266,6 @@ export function ConnectionDetailView() {
       <DetailLayout
         main={
           <>
-
             {chartData.length ? (
               <>
                 <SectionFrame
@@ -344,7 +339,8 @@ export function ConnectionDetailView() {
                 <PropertyList entries={garbageCollection} />
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  The broker did not report garbage collection statistics for this connection.
+                  The broker did not report garbage collection statistics for
+                  this connection.
                 </p>
               )}
             </SectionFrame>
@@ -382,7 +378,10 @@ export function ConnectionDetailView() {
                 { label: "Auth", value: connection.authMechanism },
                 { label: "Channels", value: fmtInt(connection.channels) },
                 { label: "Channel max", value: orDash(connection.channelMax) },
-                { label: "Frame max", value: `${fmtInt(connection.frameMax)} bytes` },
+                {
+                  label: "Frame max",
+                  value: `${fmtInt(connection.frameMax)} bytes`,
+                },
               ]}
             />
             <FactPanel
@@ -398,10 +397,23 @@ export function ConnectionDetailView() {
                   value: `${connection.peerHost}:${connection.peerPort}`,
                   mono: true,
                 },
-                { label: "TLS", value: connection.ssl ? "Enabled" : "Plain text" },
-                { label: "SSL protocol", value: orDash(connection.sslProtocol) },
-                { label: "Cipher", value: orDash(connection.sslCipher), mono: true },
-                { label: "Key exchange", value: orDash(connection.sslKeyExchange) },
+                {
+                  label: "TLS",
+                  value: connection.ssl ? "Enabled" : "Plain text",
+                },
+                {
+                  label: "SSL protocol",
+                  value: orDash(connection.sslProtocol),
+                },
+                {
+                  label: "Cipher",
+                  value: orDash(connection.sslCipher),
+                  mono: true,
+                },
+                {
+                  label: "Key exchange",
+                  value: orDash(connection.sslKeyExchange),
+                },
                 { label: "SSL hash", value: orDash(connection.sslHash) },
                 {
                   label: "Peer cert subject",
@@ -427,20 +439,32 @@ export function ConnectionDetailView() {
                   label: "Heartbeat",
                   value: <HeartbeatValue seconds={connection.timeout} />,
                 },
-                { label: "Send pending", value: `${fmtInt(connection.sendPending)} bytes` },
+                {
+                  label: "Send pending",
+                  value: `${fmtInt(connection.sendPending)} bytes`,
+                },
               ]}
             />
             <FactPanel
               title="Activity"
               facts={[
-                { label: "Connected at", value: fmtTimestamp(connection.connectedAt) },
+                {
+                  label: "Connected at",
+                  value: fmtTimestamp(connection.connectedAt),
+                },
                 {
                   label: "Age",
                   value: fmtSince(connection.connectedAt, new Date().getTime()),
                 },
-                { label: "Received", value: `${fmtInt(connection.recvOct)} bytes` },
+                {
+                  label: "Received",
+                  value: `${fmtInt(connection.recvOct)} bytes`,
+                },
                 { label: "Sent", value: `${fmtInt(connection.sendOct)} bytes` },
-                { label: "Packets received", value: fmtInt(connection.recvCount) },
+                {
+                  label: "Packets received",
+                  value: fmtInt(connection.recvCount),
+                },
                 { label: "Packets sent", value: fmtInt(connection.sendCount) },
                 { label: "Reductions", value: fmtInt(connection.reductions) },
               ]}
@@ -452,24 +476,24 @@ export function ConnectionDetailView() {
       <ConfirmDialog
         open={confirmClose}
         onOpenChange={(open) => {
-          if (open) return;
-          setConfirmClose(false);
-          setCloseReason("");
+          if (open) return
+          setConfirmClose(false)
+          setCloseReason("")
         }}
         title="Close connection?"
         description={`${connection.name} and its ${connection.channels} channels will be closed. Attached consumers stop receiving messages.`}
         confirmLabel="Close connection"
         tone="destructive"
         onConfirm={() => {
-          const reason = closeReason;
-          setConfirmClose(false);
-          setCloseReason("");
+          const reason = closeReason
+          setConfirmClose(false)
+          setCloseReason("")
           closeConnection(reason)
             .then(() => {
               toast.success("Connection closed", {
                 description: `${connection.name} was closed.`,
-              });
-              navigate(routeHref("connections"));
+              })
+              navigate(routeHref("connections"))
             })
             .catch((cause: unknown) => {
               toast.error("Connection was not closed", {
@@ -477,8 +501,8 @@ export function ConnectionDetailView() {
                   cause instanceof Error
                     ? cause.message
                     : "The management API did not respond.",
-              });
-            });
+              })
+            })
         }}
       >
         <div className="flex flex-col gap-1.5">
@@ -492,5 +516,5 @@ export function ConnectionDetailView() {
         </div>
       </ConfirmDialog>
     </div>
-  );
+  )
 }

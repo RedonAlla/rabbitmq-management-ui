@@ -39,8 +39,7 @@ export const CASCADER_LIST_HEIGHT_CLASS =
  * `scroll-padding` floored at 4px so lyra's `0` does not strand a row.
  * Mirrored per style from `registry/styles/style-*.css`; keep them in step.
  */
-export const CASCADER_LIST_PAD_CLASS =
-  "[--cascader-list-pad:4px]"
+export const CASCADER_LIST_PAD_CLASS = "[--cascader-list-pad:4px]"
 
 /** The scrollport: a `max-h-*` on the ScrollArea ROOT bounds nothing. */
 export const CASCADER_SCROLL_CLASS =
@@ -737,8 +736,7 @@ function getSelectionChildren<T>(
   index: CascaderIndex<T>
 ): Map<string, CascaderNode<T>[]> {
   let map = SELECTION_CHILDREN.get(index) as
-    | Map<string, CascaderNode<T>[]>
-    | undefined
+    Map<string, CascaderNode<T>[]> | undefined
   if (map) return map
   map = new Map()
   for (const [value, parent] of index.parentOf) {

@@ -1,10 +1,10 @@
-import { useState, type FormEvent } from "react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import Field from "@/components/ui/field";
-import FormError from "@/components/ui/form-error";
-import { Input } from "@/components/ui/input";
+import { useState, type FormEvent } from "react"
+import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import Field from "@/components/ui/field"
+import FormError from "@/components/ui/form-error"
+import { Input } from "@/components/ui/input"
 import {
   Sheet,
   SheetClose,
@@ -13,48 +13,57 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
-import { useCluster } from "@/store/cluster";
+} from "@/components/ui/sheet"
+import { cn } from "@/lib/utils"
+import { useCluster } from "@/store/cluster"
 
 const USER_TAGS = [
   {
     name: "administrator",
-    description: "User can do everything monitoring can do, manage users, vhosts and permissions, close other user's connections, and manage policies and parameters for all vhosts.",
+    description:
+      "User can do everything monitoring can do, manage users, vhosts and permissions, close other user's connections, and manage policies and parameters for all vhosts.",
   },
   {
     name: "management",
-    description: "Sign in to the management UI and view resources in assigned virtual hosts.",
+    description:
+      "Sign in to the management UI and view resources in assigned virtual hosts.",
   },
   {
     name: "policymaker",
-    description: "User can access the management plugin and manage policies and parameters for the vhosts they have access to.",
+    description:
+      "User can access the management plugin and manage policies and parameters for the vhosts they have access to.",
   },
   {
     name: "monitoring",
-    description: "User can access the management plugin and see all connections and channels as well as node-related information.",
+    description:
+      "User can access the management plugin and see all connections and channels as well as node-related information.",
   },
-];
+]
 
-export default function AddUserDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { data, actions } = useCluster();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [tag, setTag] = useState("management");
-  const [error, setError] = useState("");
+export default function AddUserDialog({
+  open,
+  onClose,
+}: {
+  open: boolean
+  onClose: () => void
+}) {
+  const { data, actions } = useCluster()
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [tag, setTag] = useState("management")
+  const [error, setError] = useState("")
 
   const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    const clean = username.trim();
+    event.preventDefault()
+    const clean = username.trim()
 
-    if (!clean)
-      return setError("Enter a username.");
+    if (!clean) return setError("Enter a username.")
 
-    if (data.users.some((user) => user.username === clean)) 
-      return setError(`${clean} already exists.`);
-    
+    if (data.users.some((user) => user.username === clean))
+      return setError(`${clean} already exists.`)
+
     if (password.trim().length < 4)
-      return setError("Use a password of at least 4 characters.");
+      return setError("Use a password of at least 4 characters.")
 
     try {
       await actions.addUser({
@@ -62,21 +71,25 @@ export default function AddUserDialog({ open, onClose }: { open: boolean; onClos
         password,
         tags: [tag],
         vhosts: ["/"],
-      });
+      })
 
-      toast.success("User created", { description: `${clean} has the ${tag} tag.` });
+      toast.success("User created", {
+        description: `${clean} has the ${tag} tag.`,
+      })
 
-      setUsername("");
-      setPassword("");
-      setTag("management");
-      setError("");
-      onClose();
+      setUsername("")
+      setPassword("")
+      setTag("management")
+      setError("")
+      onClose()
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "The management API did not respond."
-      );
+        cause instanceof Error
+          ? cause.message
+          : "The management API did not respond."
+      )
     }
-  };
+  }
 
   return (
     <Sheet open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
@@ -84,7 +97,9 @@ export default function AddUserDialog({ open, onClose }: { open: boolean; onClos
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
           <SheetHeader>
             <SheetTitle>Add user</SheetTitle>
-            <SheetDescription>Create a user and choose the tags that grant management access.</SheetDescription>
+            <SheetDescription>
+              Create a user and choose the tags that grant management access.
+            </SheetDescription>
           </SheetHeader>
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
             <Field label="Username" htmlFor="user-name">
@@ -92,8 +107,8 @@ export default function AddUserDialog({ open, onClose }: { open: boolean; onClos
                 id="user-name"
                 value={username}
                 onChange={(event) => {
-                  setUsername(event.target.value);
-                  setError("");
+                  setUsername(event.target.value)
+                  setError("")
                 }}
                 placeholder="reporting"
                 autoFocus
@@ -111,13 +126,15 @@ export default function AddUserDialog({ open, onClose }: { open: boolean; onClos
             <Field label="Tags">
               <div className="flex flex-col gap-2">
                 {USER_TAGS.map((option) => {
-                  const selected = tag === option.name;
+                  const selected = tag === option.name
                   return (
                     <label
                       key={option.name}
                       className={cn(
                         "flex cursor-pointer items-start gap-3 rounded-lg border px-2.5 py-1 transition-colors",
-                        selected ? "border-primary bg-primary/5" : "border-input hover:bg-accent/50",
+                        selected
+                          ? "border-primary bg-primary/5"
+                          : "border-input hover:bg-accent/50"
                       )}
                     >
                       <Checkbox
@@ -126,22 +143,28 @@ export default function AddUserDialog({ open, onClose }: { open: boolean; onClos
                         className="mt-0.5"
                       />
                       <span className="flex min-w-0 flex-col gap-0.5">
-                        <span className="text-sm font-medium">{option.name}</span>
-                        <span className="text-xs text-muted-foreground">{option.description}</span>
+                        <span className="text-sm font-medium">
+                          {option.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {option.description}
+                        </span>
                       </span>
                     </label>
-                  );
+                  )
                 })}
               </div>
             </Field>
             <FormError>{error}</FormError>
           </div>
           <SheetFooter className="border-t sm:flex-row sm:justify-end">
-            <SheetClose render={<Button type="button" variant="outline" />}>Cancel</SheetClose>
+            <SheetClose render={<Button type="button" variant="outline" />}>
+              Cancel
+            </SheetClose>
             <Button type="submit">Create user</Button>
           </SheetFooter>
         </form>
       </SheetContent>
     </Sheet>
-  );
+  )
 }

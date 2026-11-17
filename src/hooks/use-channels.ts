@@ -49,7 +49,9 @@ interface ChannelsQueryResult {
   closeChannel: (name: string) => Promise<void>
 }
 
-export function useChannels(options: ChannelsQueryOptions): ChannelsQueryResult {
+export function useChannels(
+  options: ChannelsQueryOptions
+): ChannelsQueryResult {
   const { user } = useAuth()
   const [result, setResult] = useState<{
     key: string

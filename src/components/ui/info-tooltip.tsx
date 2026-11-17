@@ -1,22 +1,19 @@
-import type { ReactNode } from "react";
-import { InfoIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import type { ReactNode } from "react"
+import { InfoIcon } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/tooltip"
 
 type Props = {
-  label: string;
-  children: ReactNode;
+  label: string
+  children: ReactNode
 }
 
-export default function InfoTooltip({
-  label,
-  children,
-}: Props) {
+export default function InfoTooltip({ label, children }: Props) {
   return (
     <TooltipProvider>
       <Tooltip>
@@ -37,5 +34,5 @@ export default function InfoTooltip({
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
-  );
+  )
 }

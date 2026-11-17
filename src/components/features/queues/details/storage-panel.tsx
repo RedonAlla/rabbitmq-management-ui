@@ -1,19 +1,15 @@
-import { FactPanel, SectionFrame } from "@/components/detail";
-import { RegionSkeleton } from "@/components/region-states";
-import { fmtBytes } from "@/lib/format";
-import type { QueueDetail } from "@/lib/rabbit-api";
+import { FactPanel, SectionFrame } from "@/components/detail"
+import { RegionSkeleton } from "@/components/region-states"
+import { fmtBytes } from "@/lib/format"
+import type { QueueDetail } from "@/lib/rabbit-api"
 
-export function QueueStoragePanel({
-  detail,
-}: {
-  detail: QueueDetail | null;
-}) {
+export function QueueStoragePanel({ detail }: { detail: QueueDetail | null }) {
   if (!detail) {
     return (
       <SectionFrame title="Storage">
         <RegionSkeleton rows={4} />
       </SectionFrame>
-    );
+    )
   }
 
   return (
@@ -43,5 +39,5 @@ export function QueueStoragePanel({
         },
       ]}
     />
-  );
+  )
 }

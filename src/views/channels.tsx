@@ -1,48 +1,57 @@
-import { useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useCallback, useMemo, useState } from "react"
+import { toast } from "sonner"
 import {
   useTable,
   type ColumnDef,
   type OnChangeFn,
   type PaginationState,
   type SortingState,
-} from "@tanstack/react-table";
-import { Badge } from "@/components/reui/badge";
-import { PageHeader } from "@/components/page-header";
-import { FilterBar } from "@/components/filters-bar";
-import { StateBadge, VhostBadge } from "@/components/badges";
-import { ConfirmDialog } from "@/components/confirm-dialog";
-import { useRoute, routeHref } from "@/lib/router";
-import { fmtInt } from "@/lib/format";
-import type { Channel } from "@/data/types";
-import { useChannels } from "@/hooks/use-channels";
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
-import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
-import { fitMeta, numericMeta } from "@/components/table";
-import GridActions from "./channels/grid-actions";
-import { DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
-import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
-import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
-import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
-import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
-import { GitBranch } from "lucide-react";
-import GridEmptyState from "@/components/ui/empty-state";
-import { Button } from "@/components/ui/button";
-import PrefetchColumnHeader from "./channels/prefetch-column-header";
+} from "@tanstack/react-table"
+import { Badge } from "@/components/reui/badge"
+import { PageHeader } from "@/components/page-header"
+import { FilterBar } from "@/components/filters-bar"
+import { StateBadge, VhostBadge } from "@/components/badges"
+import { ConfirmDialog } from "@/components/confirm-dialog"
+import { useRoute, routeHref } from "@/lib/router"
+import { fmtInt } from "@/lib/format"
+import type { Channel } from "@/data/types"
+import { useChannels } from "@/hooks/use-channels"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
+import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header"
+import {
+  DataGrid,
+  dataGridFeatures,
+  type DataGridFeatures,
+} from "@/components/reui/data-grid/data-grid"
+import { fitMeta, numericMeta } from "@/components/table"
+import GridActions from "./channels/grid-actions"
+import { DEFAULT_PAGES_OPTIONS } from "@/lib/constants"
+import {
+  Frame,
+  FrameFooter,
+  FrameHeader,
+  FramePanel,
+} from "@/components/reui/frame"
+import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
+import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
+import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination"
+import { GitBranch } from "lucide-react"
+import GridEmptyState from "@/components/ui/empty-state"
+import { Button } from "@/components/ui/button"
+import PrefetchColumnHeader from "./channels/prefetch-column-header"
 
-const CHANNELS_PAGE_SIZE = 100;
+const CHANNELS_PAGE_SIZE = 100
 
 export function ChannelsView() {
-  const { navigate } = useRoute();
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebouncedValue(search, 300);
+  const { navigate } = useRoute()
+  const [search, setSearch] = useState("")
+  const debouncedSearch = useDebouncedValue(search, 300)
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: CHANNELS_PAGE_SIZE,
-  });
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [pendingClose, setPendingClose] = useState<Channel | null>(null);
+  })
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [pendingClose, setPendingClose] = useState<Channel | null>(null)
 
   const query = useMemo(
     () => ({
@@ -52,7 +61,7 @@ export function ChannelsView() {
       sorting,
     }),
     [pagination.pageIndex, pagination.pageSize, debouncedSearch, sorting]
-  );
+  )
 
   const {
     channels,
@@ -63,51 +72,52 @@ export function ChannelsView() {
     error,
     retry,
     closeChannel,
-  } = useChannels(query);
+  } = useChannels(query)
 
   const resetPage = useCallback(() => {
     setPagination((previous) =>
       previous.pageIndex === 0 ? previous : { ...previous, pageIndex: 0 }
-    );
-  }, []);
+    )
+  }, [])
 
   const clearFilters = () => {
-    setSearch("");
-    resetPage();
-  };
+    setSearch("")
+    resetPage()
+  }
 
   const handleSearch = (value: string) => {
-    setSearch(value);
-    resetPage();
-  };
+    setSearch(value)
+    resetPage()
+  }
 
   const handleSortingChange = useCallback<OnChangeFn<SortingState>>(
     (updater) => {
-      setSorting(updater);
-      resetPage();
+      setSorting(updater)
+      resetPage()
     },
     [resetPage]
-  );
+  )
 
   const handlePaginationChange = useCallback<OnChangeFn<PaginationState>>(
     (updater) => {
       setPagination((previous) => {
-        const next =
-          typeof updater === "function" ? updater(previous) : updater;
+        const next = typeof updater === "function" ? updater(previous) : updater
         if (next.pageSize !== previous.pageSize) {
-          return { pageIndex: 0, pageSize: next.pageSize };
+          return { pageIndex: 0, pageSize: next.pageSize }
         }
-        return next;
-      });
+        return next
+      })
     },
     []
-  );
+  )
 
   const columns = useMemo<ColumnDef<DataGridFeatures, Channel>[]>(
     () => [
       {
         accessorKey: "id",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Name" />,
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Name" />
+        ),
         cell: ({ row }) => (
           <div className="flex min-w-0 flex-col gap-1">
             <span className="truncate font-medium">{row.original.id}</span>
@@ -120,19 +130,25 @@ export function ChannelsView() {
       },
       {
         accessorKey: "vhost",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Virtual Host" />,
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Virtual Host" />
+        ),
         cell: ({ row }) => <VhostBadge>{row.original.vhost}</VhostBadge>,
         meta: fitMeta,
       },
       {
         accessorKey: "user",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="User" />,
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="User" />
+        ),
         cell: ({ row }) => <span className="text-sm">{row.original.user}</span>,
         meta: fitMeta,
       },
       {
         accessorKey: "node",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Node" />,
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Node" />
+        ),
         cell: ({ row }) => (
           <span className="data-cell text-xs">{row.original.node}</span>
         ),
@@ -140,14 +156,20 @@ export function ChannelsView() {
       },
       {
         accessorKey: "state",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="State" />,
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="State" />
+        ),
         cell: ({ row }) => <StateBadge state={row.original.state} />,
         meta: fitMeta,
       },
       {
         accessorKey: "consumers",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Consumers" />,
-        cell: ({ row }) => <span className="data-cell">{fmtInt(row.original.consumers)}</span>,
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Consumers" />
+        ),
+        cell: ({ row }) => (
+          <span className="data-cell">{fmtInt(row.original.consumers)}</span>
+        ),
         meta: numericMeta,
       },
       {
@@ -162,31 +184,47 @@ export function ChannelsView() {
       },
       {
         accessorKey: "unacked",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Unacked" />,
-        cell: ({ row }) => <span className="data-cell">{fmtInt(row.original.unacked)}</span>,
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Unacked" />
+        ),
+        cell: ({ row }) => (
+          <span className="data-cell">{fmtInt(row.original.unacked)}</span>
+        ),
         meta: numericMeta,
       },
       {
         accessorKey: "messagesUncommitted",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Uncommitted" />,
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Uncommitted" />
+        ),
         cell: ({ row }) => (
-          <span className="data-cell">{fmtInt(row.original.messagesUncommitted)}</span>
+          <span className="data-cell">
+            {fmtInt(row.original.messagesUncommitted)}
+          </span>
         ),
         meta: numericMeta,
       },
       {
         accessorKey: "messagesUnconfirmed",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Unconfirmed" />,
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Unconfirmed" />
+        ),
         cell: ({ row }) => (
-          <span className="data-cell">{fmtInt(row.original.messagesUnconfirmed)}</span>
+          <span className="data-cell">
+            {fmtInt(row.original.messagesUnconfirmed)}
+          </span>
         ),
         meta: numericMeta,
       },
       {
         accessorKey: "acksUncommitted",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Acks uncommitted" />,
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Acks uncommitted" />
+        ),
         cell: ({ row }) => (
-          <span className="data-cell">{fmtInt(row.original.acksUncommitted)}</span>
+          <span className="data-cell">
+            {fmtInt(row.original.acksUncommitted)}
+          </span>
         ),
         meta: numericMeta,
       },
@@ -200,7 +238,7 @@ export function ChannelsView() {
       },
     ],
     []
-  );
+  )
 
   const table = useTable({
     features: dataGridFeatures,
@@ -215,23 +253,23 @@ export function ChannelsView() {
     state: { pagination, sorting },
     onPaginationChange: handlePaginationChange,
     onSortingChange: handleSortingChange,
-  });
+  })
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader
         title="Channels"
         description="Open AMQP channels with their consumers and message counters."
-        actions={
-          <Badge variant="outline">{fmtInt(totalCount)} channels</Badge>
-        }
+        actions={<Badge variant="outline">{fmtInt(totalCount)} channels</Badge>}
       />
 
       <DataGrid
         table={table}
         recordCount={filteredCount}
         isLoading={loading}
-        onRowClick={(channel: Channel) => navigate(routeHref("channel", channel.id))}
+        onRowClick={(channel: Channel) =>
+          navigate(routeHref("channel", channel.id))
+        }
         emptyMessage={
           <GridEmptyState
             icon={<GitBranch />}
@@ -240,7 +278,11 @@ export function ChannelsView() {
             description="No channel matches this search. Clear the filters to see every open channel."
             retry={retry}
             action={
-              <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => clearFilters()}
+              >
                 Clear filters
               </Button>
             }
@@ -281,14 +323,14 @@ export function ChannelsView() {
         confirmLabel="Close channel"
         tone="destructive"
         onConfirm={() => {
-          if (!pendingClose) return;
-          const channel = pendingClose;
-          setPendingClose(null);
+          if (!pendingClose) return
+          const channel = pendingClose
+          setPendingClose(null)
           closeChannel(channel.id)
             .then(() => {
               toast.success("Channel closed", {
                 description: `Channel ${channel.id} was closed.`,
-              });
+              })
             })
             .catch((cause: unknown) => {
               toast.error("Channel was not closed", {
@@ -296,10 +338,10 @@ export function ChannelsView() {
                   cause instanceof Error
                     ? cause.message
                     : "The management API did not respond.",
-              });
-            });
+              })
+            })
         }}
       />
     </div>
-  );
+  )
 }

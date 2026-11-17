@@ -1,15 +1,23 @@
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuShortcut, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { CircleHelpIcon, RefreshCwIcon } from "lucide-react";
-import { useDialogs } from "@/components/dialogs/dialogs-provider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { CircleHelpIcon, RefreshCwIcon } from "lucide-react"
+import { useDialogs } from "@/components/dialogs/dialogs-provider"
 
 type Props = {
   refresh: () => void
 }
 
-export function HelpActions({refresh}: Props) {
-  const { openDialog } = useDialogs();
-  
+export function HelpActions({ refresh }: Props) {
+  const { openDialog } = useDialogs()
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -32,9 +40,7 @@ export function HelpActions({refresh}: Props) {
             Refresh snapshot
             <DropdownMenuShortcut>R</DropdownMenuShortcut>
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => openDialog({ type: "shortcuts" })}
-          >
+          <DropdownMenuItem onClick={() => openDialog({ type: "shortcuts" })}>
             <CircleHelpIcon aria-hidden="true" />
             Keyboard shortcuts
           </DropdownMenuItem>

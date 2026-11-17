@@ -267,8 +267,7 @@ export function FiltersBuilder<V, O>({
               className="transition-[color,background-color,border-color,box-shadow]"
             >
               {/* No filter-plus glyph in phosphor or remixicon. */}
-              <ListFilterPlusIcon
-              />
+              <ListFilterPlusIcon />
               {compact ? null : actions.labels.addFilter}
             </Button>
           )

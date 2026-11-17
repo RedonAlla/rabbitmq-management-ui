@@ -1,6 +1,6 @@
-import { KpiGrid } from "@/components/kpi";
-import { Frame, FramePanel } from "@/components/reui/frame";
-import { Skeleton } from "@/components/ui/skeleton";
+import { KpiGrid } from "@/components/kpi"
+import { Frame, FramePanel } from "@/components/reui/frame"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function KpiSkeleton({ count = 4 }: { count?: number }) {
   return (
@@ -14,5 +14,5 @@ export function KpiSkeleton({ count = 4 }: { count?: number }) {
         </Frame>
       ))}
     </KpiGrid>
-  );
+  )
 }

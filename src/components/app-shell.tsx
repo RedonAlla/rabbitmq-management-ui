@@ -8,17 +8,13 @@ import {
 import { CommandPalette } from "@/components/command-palette"
 import { useDialogs } from "@/components/dialogs/dialogs-provider"
 import { routeHref, useRoute } from "@/lib/router"
-import {
-  useCluster,
-  type RefreshInterval,
-} from "@/store/cluster"
+import { useCluster, type RefreshInterval } from "@/store/cluster"
 import {
   NavigationItems,
   NavigationHeader,
-  NavigationFooter
+  NavigationFooter,
 } from "./layout/navigation"
-import {
-  AppHeader} from "./layout/header"
+import { AppHeader } from "./layout/header"
 
 const routes: Record<string, string> = {
   o: "overview",
@@ -46,7 +42,7 @@ function isEditable(target: EventTarget | null): boolean {
 export function AppShell({ children }: { children: ReactNode }) {
   const { route, navigate } = useRoute()
   const { totals, data, actions, lastUpdated, refreshInterval } = useCluster()
-  
+
   const { openDialog } = useDialogs()
   const [paletteOpen, setPaletteOpen] = useState(false)
 
@@ -91,7 +87,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [navigate, openDialog])
-  
+
   const activeFor = (view: string) =>
     route.view === view ||
     (view === "queues" && route.view === "queue") ||
@@ -124,9 +120,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           refresh={actions.refresh}
           setPaletteOpen={setPaletteOpen}
           setRefreshInterval={(value) =>
-            actions.setRefreshInterval(
-              Number(value) as RefreshInterval
-            )
+            actions.setRefreshInterval(Number(value) as RefreshInterval)
           }
         />
 

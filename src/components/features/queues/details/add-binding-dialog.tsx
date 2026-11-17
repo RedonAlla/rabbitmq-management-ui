@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState, type FormEvent } from "react"
+import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -9,21 +9,21 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import DialogBody from "@/components/ui/dialog-body";
-import Field from "@/components/ui/field";
-import FormError from "@/components/ui/form-error";
-import { Input } from "@/components/ui/input";
-import JsonSection from "@/components/ui/json-section";
+} from "@/components/ui/dialog"
+import DialogBody from "@/components/ui/dialog-body"
+import Field from "@/components/ui/field"
+import FormError from "@/components/ui/form-error"
+import { Input } from "@/components/ui/input"
+import JsonSection from "@/components/ui/json-section"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import type { QueueArgumentValue } from "@/lib/rabbit-api";
-import { useCluster } from "@/store/cluster";
+} from "@/components/ui/select"
+import type { QueueArgumentValue } from "@/lib/rabbit-api"
+import { useCluster } from "@/store/cluster"
 
 function isArgumentValue(value: unknown): value is QueueArgumentValue {
   if (
@@ -31,7 +31,7 @@ function isArgumentValue(value: unknown): value is QueueArgumentValue {
     typeof value === "number" ||
     typeof value === "boolean"
   ) {
-    return true;
+    return true
   }
   return (
     Array.isArray(value) &&
@@ -41,35 +41,35 @@ function isArgumentValue(value: unknown): value is QueueArgumentValue {
         typeof item === "number" ||
         typeof item === "boolean"
     )
-  );
+  )
 }
 
 function parseArguments(text: string): {
-  args: Record<string, QueueArgumentValue> | null;
-  error: string | null;
+  args: Record<string, QueueArgumentValue> | null
+  error: string | null
 } {
-  if (!text.trim()) return { args: {}, error: null };
-  let parsed: unknown;
+  if (!text.trim()) return { args: {}, error: null }
+  let parsed: unknown
   try {
-    parsed = JSON.parse(text);
+    parsed = JSON.parse(text)
   } catch {
-    return { args: null, error: "Arguments must be valid JSON." };
+    return { args: null, error: "Arguments must be valid JSON." }
   }
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    return { args: null, error: "Arguments must be a JSON object." };
+    return { args: null, error: "Arguments must be a JSON object." }
   }
   for (const [key, value] of Object.entries(parsed)) {
     if (!isArgumentValue(value)) {
       return {
         args: null,
         error: `Argument ${key} must be a string, number, boolean, or a list of those.`,
-      };
+      }
     }
   }
   return {
     args: parsed as Record<string, QueueArgumentValue>,
     error: null,
-  };
+  }
 }
 
 export function AddBindingDialog({
@@ -78,42 +78,42 @@ export function AddBindingDialog({
   vhost,
   queue,
 }: {
-  open: boolean;
-  onClose: () => void;
-  vhost: string;
-  queue: string;
+  open: boolean
+  onClose: () => void
+  vhost: string
+  queue: string
 }) {
-  const { data, actions } = useCluster();
-  const [source, setSource] = useState("");
-  const [routingKey, setRoutingKey] = useState("");
-  const [args, setArgs] = useState("");
-  const [argsOpen, setArgsOpen] = useState(false);
-  const [error, setError] = useState("");
+  const { data, actions } = useCluster()
+  const [source, setSource] = useState("")
+  const [routingKey, setRoutingKey] = useState("")
+  const [args, setArgs] = useState("")
+  const [argsOpen, setArgsOpen] = useState(false)
+  const [error, setError] = useState("")
 
   const exchanges = data.exchanges.filter(
     (entry) => entry.vhost === vhost && entry.name !== ""
-  );
+  )
   const resolvedSource = exchanges.some((entry) => entry.name === source)
     ? source
-    : (exchanges[0]?.name ?? "");
+    : (exchanges[0]?.name ?? "")
 
   useEffect(() => {
-    if (!open) return;
-    setArgsOpen(false);
-    setError("");
-  }, [open]);
+    if (!open) return
+    setArgsOpen(false)
+    setError("")
+  }, [open])
 
   const submit = async (event: FormEvent) => {
-    event.preventDefault();
+    event.preventDefault()
     if (!resolvedSource) {
-      return setError("Choose the source exchange for this binding.");
+      return setError("Choose the source exchange for this binding.")
     }
-    const parsed = parseArguments(args);
+    const parsed = parseArguments(args)
     if (parsed.error) {
-      setArgsOpen(true);
-      return setError(parsed.error);
+      setArgsOpen(true)
+      return setError(parsed.error)
     }
-    const key = routingKey.trim();
+    const key = routingKey.trim()
     try {
       await actions.addBinding({
         vhost,
@@ -121,22 +121,22 @@ export function AddBindingDialog({
         destination: queue,
         routingKey: key,
         args: parsed.args ?? {},
-      });
+      })
       toast.success("Binding created", {
         description: `${resolvedSource} → ${queue}${key ? ` (${key})` : ""}.`,
-      });
-      setRoutingKey("");
-      setArgs("");
-      setError("");
-      onClose();
+      })
+      setRoutingKey("")
+      setArgs("")
+      setError("")
+      onClose()
     } catch (cause) {
       setError(
         cause instanceof Error
           ? cause.message
           : "The management API did not respond."
-      );
+      )
     }
-  };
+  }
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
@@ -176,8 +176,8 @@ export function AddBindingDialog({
                 <Select
                   value={resolvedSource}
                   onValueChange={(next) => {
-                    setSource(String(next));
-                    setError("");
+                    setSource(String(next))
+                    setError("")
                   }}
                 >
                   <SelectTrigger className="w-full">
@@ -206,8 +206,8 @@ export function AddBindingDialog({
                   id="binding-routing-key"
                   value={routingKey}
                   onChange={(event) => {
-                    setRoutingKey(event.target.value);
-                    setError("");
+                    setRoutingKey(event.target.value)
+                    setError("")
                   }}
                   placeholder="orders.created"
                   className="font-mono"
@@ -225,21 +225,19 @@ export function AddBindingDialog({
               valueTypes
               value={args}
               onChange={(next) => {
-                setArgs(next);
-                setError("");
+                setArgs(next)
+                setError("")
               }}
               open={argsOpen}
               onOpenChange={(next) => {
-                setArgsOpen(next);
-                setError("");
+                setArgsOpen(next)
+                setError("")
               }}
             />
             <FormError>{error}</FormError>
           </DialogBody>
           <DialogFooter>
-            <DialogClose
-              render={<Button type="button" variant="outline" />}
-            >
+            <DialogClose render={<Button type="button" variant="outline" />}>
               Cancel
             </DialogClose>
             <Button type="submit">Add binding</Button>
@@ -247,5 +245,5 @@ export function AddBindingDialog({
         </form>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

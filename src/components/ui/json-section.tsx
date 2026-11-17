@@ -1,51 +1,51 @@
-import { useRef, useState, type ReactNode } from "react";
-import { ChevronRightIcon, PlusIcon, XIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useRef, useState, type ReactNode } from "react"
+import { ChevronRightIcon, PlusIcon, XIcon } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import InfoTooltip from "@/components/ui/info-tooltip";
-import { Input } from "@/components/ui/input";
+} from "@/components/ui/collapsible"
+import InfoTooltip from "@/components/ui/info-tooltip"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import type { QueueArgumentValue } from "@/lib/rabbit-api";
-import { parsePairValue } from "@/lib/parse-value";
-import { cn } from "@/lib/utils";
+} from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Textarea } from "@/components/ui/textarea"
+import type { QueueArgumentValue } from "@/lib/rabbit-api"
+import { parsePairValue } from "@/lib/parse-value"
+import { cn } from "@/lib/utils"
 
 type KeyValueRow = {
-  id: number;
-  key: string;
-  value: string;
-  type: PairValueType;
-};
+  id: number
+  key: string
+  value: string
+  type: PairValueType
+}
 
-export type PairValueType = "string" | "number" | "boolean" | "list";
+export type PairValueType = "string" | "number" | "boolean" | "list"
 
 const PAIR_TYPE_LABELS: Record<PairValueType, string> = {
   string: "String",
   number: "Number",
   boolean: "Boolean",
   list: "List",
-};
+}
 
 function inferType(value: unknown): PairValueType {
-  if (typeof value === "number") return "number";
-  if (typeof value === "boolean") return "boolean";
-  if (Array.isArray(value)) return "list";
-  return "string";
+  if (typeof value === "number") return "number"
+  if (typeof value === "boolean") return "boolean"
+  if (Array.isArray(value)) return "list"
+  return "string"
 }
 
 function valueToText(value: unknown): string {
-  return typeof value === "string" ? value : JSON.stringify(value);
+  return typeof value === "string" ? value : JSON.stringify(value)
 }
 
 function isScalar(value: unknown): value is string | number | boolean {
@@ -53,34 +53,34 @@ function isScalar(value: unknown): value is string | number | boolean {
     typeof value === "string" ||
     typeof value === "number" ||
     typeof value === "boolean"
-  );
+  )
 }
 
 function typedRowValue(row: KeyValueRow): QueueArgumentValue {
   switch (row.type) {
     case "number": {
-      const number = Number(row.value);
+      const number = Number(row.value)
       return row.value.trim() !== "" && Number.isFinite(number)
         ? number
-        : row.value;
+        : row.value
     }
     case "boolean": {
-      const text = row.value.trim().toLowerCase();
-      return text === "true" ? true : text === "false" ? false : row.value;
+      const text = row.value.trim().toLowerCase()
+      return text === "true" ? true : text === "false" ? false : row.value
     }
     case "list": {
       try {
-        const parsed: unknown = JSON.parse(row.value);
+        const parsed: unknown = JSON.parse(row.value)
         if (Array.isArray(parsed) && parsed.every(isScalar)) {
-          return parsed as Array<string | number | boolean>;
+          return parsed as Array<string | number | boolean>
         }
       } catch {
         // Keep the raw text when it is not a JSON list.
       }
-      return row.value;
+      return row.value
     }
     default:
-      return row.value;
+      return row.value
   }
 }
 
@@ -88,33 +88,31 @@ function jsonTextToKeyValueRows(
   text: string,
   typed: boolean
 ): Array<Omit<KeyValueRow, "id">> {
-  if (!text.trim()) return [];
-  let parsed: unknown;
+  if (!text.trim()) return []
+  let parsed: unknown
   try {
-    parsed = JSON.parse(text);
+    parsed = JSON.parse(text)
   } catch {
-    return [];
+    return []
   }
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    return [];
+    return []
   }
   return Object.entries(parsed).map(([key, value]) => ({
     key,
     value: valueToText(value),
     type: typed ? inferType(value) : "string",
-  }));
+  }))
 }
 
 function keyValueRowsToJsonText(rows: KeyValueRow[], typed: boolean): string {
-  const object: Record<string, QueueArgumentValue> = {};
+  const object: Record<string, QueueArgumentValue> = {}
   for (const row of rows) {
-    const key = row.key.trim();
-    if (!key) continue;
-    object[key] = typed ? typedRowValue(row) : parsePairValue(row.value);
+    const key = row.key.trim()
+    if (!key) continue
+    object[key] = typed ? typedRowValue(row) : parsePairValue(row.value)
   }
-  return Object.keys(object).length > 0
-    ? JSON.stringify(object, null, 2)
-    : "";
+  return Object.keys(object).length > 0 ? JSON.stringify(object, null, 2) : ""
 }
 
 export default function JsonSection({
@@ -131,38 +129,38 @@ export default function JsonSection({
   open,
   onOpenChange,
 }: {
-  label: string;
-  id: string;
-  info: ReactNode;
-  placeholder: string;
-  keyPlaceholder: string;
-  valuePlaceholder: string;
-  itemName: string;
-  valueTypes?: boolean;
-  value: string;
-  onChange: (value: string) => void;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  label: string
+  id: string
+  info: ReactNode
+  placeholder: string
+  keyPlaceholder: string
+  valuePlaceholder: string
+  itemName: string
+  valueTypes?: boolean
+  value: string
+  onChange: (value: string) => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }) {
-  const [mode, setMode] = useState<"pairs" | "json">("pairs");
+  const [mode, setMode] = useState<"pairs" | "json">("pairs")
   const [rows, setRows] = useState<KeyValueRow[]>(() =>
     jsonTextToKeyValueRows(value, valueTypes).map((row, index) => ({
       ...row,
       id: index + 1,
     }))
-  );
-  const nextRowId = useRef(rows.length + 1);
+  )
+  const nextRowId = useRef(rows.length + 1)
 
   const updateRows = (next: KeyValueRow[]) => {
-    setRows(next);
-    onChange(keyValueRowsToJsonText(next, valueTypes));
-  };
+    setRows(next)
+    onChange(keyValueRowsToJsonText(next, valueTypes))
+  }
 
   const changeMode = (next: string) => {
-    if (next === mode) return;
+    if (next === mode) return
     if (next === "json") {
       if (rows.length > 0 || !value.trim()) {
-        onChange(keyValueRowsToJsonText(rows, valueTypes));
+        onChange(keyValueRowsToJsonText(rows, valueTypes))
       }
     } else {
       setRows(
@@ -170,11 +168,11 @@ export default function JsonSection({
           ...row,
           id: nextRowId.current++,
         }))
-      );
+      )
     }
-    setMode(next as "pairs" | "json");
-    if (!open) onOpenChange(true);
-  };
+    setMode(next as "pairs" | "json")
+    if (!open) onOpenChange(true)
+  }
 
   return (
     <Collapsible open={open} onOpenChange={onOpenChange}>
@@ -205,10 +203,16 @@ export default function JsonSection({
             </InfoTooltip>
           </div>
           <TabsList className="ms-auto">
-            <TabsTrigger value="pairs" className="px-1 text-xs sm:px-1.5 sm:text-sm">
+            <TabsTrigger
+              value="pairs"
+              className="px-1 text-xs sm:px-1.5 sm:text-sm"
+            >
               Key / value
             </TabsTrigger>
-            <TabsTrigger value="json" className="px-1 text-xs sm:px-1.5 sm:text-sm">
+            <TabsTrigger
+              value="json"
+              className="px-1 text-xs sm:px-1.5 sm:text-sm"
+            >
               JSON
             </TabsTrigger>
           </TabsList>
@@ -226,24 +230,24 @@ export default function JsonSection({
                   value={row.key}
                   className="min-w-0 flex-1 font-mono"
                   onChange={(event) => {
-                    const key = event.target.value;
+                    const key = event.target.value
                     updateRows(
                       rows.map((entry) =>
                         entry.id === row.id ? { ...entry, key } : entry
                       )
-                    );
+                    )
                   }}
                 />
                 {valueTypes ? (
                   <Select
                     value={row.type}
                     onValueChange={(next) => {
-                      const type = String(next) as PairValueType;
+                      const type = String(next) as PairValueType
                       updateRows(
                         rows.map((entry) =>
                           entry.id === row.id ? { ...entry, type } : entry
                         )
-                      );
+                      )
                     }}
                   >
                     <SelectTrigger
@@ -259,13 +263,13 @@ export default function JsonSection({
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {(
-                        Object.keys(PAIR_TYPE_LABELS) as PairValueType[]
-                      ).map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {PAIR_TYPE_LABELS[type]}
-                        </SelectItem>
-                      ))}
+                      {(Object.keys(PAIR_TYPE_LABELS) as PairValueType[]).map(
+                        (type) => (
+                          <SelectItem key={type} value={type}>
+                            {PAIR_TYPE_LABELS[type]}
+                          </SelectItem>
+                        )
+                      )}
                     </SelectContent>
                   </Select>
                 ) : null}
@@ -285,12 +289,12 @@ export default function JsonSection({
                   value={row.value}
                   className="min-w-0 flex-1 font-mono"
                   onChange={(event) => {
-                    const next = event.target.value;
+                    const next = event.target.value
                     updateRows(
                       rows.map((entry) =>
                         entry.id === row.id ? { ...entry, value: next } : entry
                       )
-                    );
+                    )
                   }}
                 />
                 <Button
@@ -340,5 +344,5 @@ export default function JsonSection({
         </CollapsibleContent>
       </Tabs>
     </Collapsible>
-  );
+  )
 }

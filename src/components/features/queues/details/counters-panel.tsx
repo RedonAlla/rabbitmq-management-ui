@@ -1,19 +1,15 @@
-import { FactPanel, SectionFrame } from "@/components/detail";
-import { RegionSkeleton } from "@/components/region-states";
-import { fmtInt, fmtRate } from "@/lib/format";
-import type { QueueDetail } from "@/lib/rabbit-api";
+import { FactPanel, SectionFrame } from "@/components/detail"
+import { RegionSkeleton } from "@/components/region-states"
+import { fmtInt, fmtRate } from "@/lib/format"
+import type { QueueDetail } from "@/lib/rabbit-api"
 
-export function QueueCountersPanel({
-  detail,
-}: {
-  detail: QueueDetail | null;
-}) {
+export function QueueCountersPanel({ detail }: { detail: QueueDetail | null }) {
   if (!detail) {
     return (
       <SectionFrame title="Counters">
         <RegionSkeleton rows={6} />
       </SectionFrame>
-    );
+    )
   }
 
   return (
@@ -61,5 +57,5 @@ export function QueueCountersPanel({
         },
       ]}
     />
-  );
+  )
 }

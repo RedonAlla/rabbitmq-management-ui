@@ -304,11 +304,7 @@ export function useCascaderSelection<T = unknown>(): CascaderSelection<T> {
  * - `"external"`: `setPath` called from outside the primitive's own flows.
  */
 export type CascaderPathChangeReason =
-  | "drill"
-  | "back"
-  | "breadcrumb"
-  | "reveal"
-  | "external"
+  "drill" | "back" | "breadcrumb" | "reveal" | "external"
 
 /** Everything independent of the selection mode; the rest is on the two arms. */
 export interface CascaderBaseProps<T = unknown> {
@@ -500,8 +496,7 @@ export interface CascaderMultipleProps<
 
 /** `multiple` discriminates: `value`, `onValueChange` and `max` narrow with it. */
 export type CascaderProps<T = unknown> =
-  | CascaderSingleProps<T>
-  | CascaderMultipleProps<T>
+  CascaderSingleProps<T> | CascaderMultipleProps<T>
 
 /** Normalizes to an array. `""` is "no selection", not a node: it is the
  * uncontrolled default, and resolving it would render a blank chip. */
@@ -2376,7 +2371,9 @@ function CascaderTrigger({
     >
       {children}
       {showIcon ? (
-        <ChevronDownIcon className={`${TRIGGER_ICON_CLASS} pointer-events-none shrink-0`} />
+        <ChevronDownIcon
+          className={`${TRIGGER_ICON_CLASS} pointer-events-none shrink-0`}
+        />
       ) : null}
     </ComboboxPrimitive.Trigger>
   )
@@ -2391,12 +2388,10 @@ function CascaderTrigger({
  * depends on ReUI's theme CSS; `build-registry` flattens one in on install. */
 
 /** Icon size for a combobox surface: 14px in mira and sera, 16px elsewhere. */
-const TRIGGER_ICON_CLASS =
-  "text-muted-foreground size-4"
+const TRIGGER_ICON_CLASS = "text-muted-foreground size-4"
 
 /** The same ladder, applied only to trigger children that carry no size. */
-const TRIGGER_ICON_FALLBACK_CLASS =
-  "[&_svg:not([class*='size-'])]:size-4"
+const TRIGGER_ICON_FALLBACK_CLASS = "[&_svg:not([class*='size-'])]:size-4"
 
 /** The chips field: a form-control surface, so it carries the invalid states. */
 const CHIPS_CLASS =
@@ -2405,8 +2400,7 @@ const CHIPS_CLASS =
 const CHIP_CLASS =
   "text-foreground flex w-fit items-center justify-center gap-1 font-medium whitespace-nowrap bg-muted rounded-sm px-1.5 text-xs has-data-[slot=combobox-chip-remove]:pr-0 h-[calc(--spacing(5.25))]"
 
-const CHIP_REMOVE_CLASS =
-  "opacity-50 hover:opacity-100 -ml-1"
+const CHIP_REMOVE_CLASS = "opacity-50 hover:opacity-100 -ml-1"
 
 /** The floating panel's surface. The shared popup's `InputGroup` sizing is
  * left out (mirrored in `cascader-nav.tsx`), as are its `max-h-72` and
@@ -2531,7 +2525,7 @@ function CascaderChips({
         (nodes.length === 0 ? (
           <span
             data-slot="cascader-chips-placeholder"
-            className="text-muted-foreground truncate"
+            className="truncate text-muted-foreground"
           >
             {placeholder}
           </span>
@@ -2973,7 +2967,7 @@ function CascaderEmpty({
             if (query.trim() && searchState?.error) retrySearch()
             else retryLevel(levelKey)
           }}
-          className="text-foreground hover:bg-accent focus-visible:ring-ring/50 rounded-md px-2 py-0.5 font-medium outline-hidden transition-colors focus-visible:ring-2"
+          className="rounded-md px-2 py-0.5 font-medium text-foreground outline-hidden transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           {labels.retry}
         </button>

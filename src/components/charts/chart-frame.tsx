@@ -1,25 +1,25 @@
-import type { ReactNode } from "react";
-import { RefreshCwIcon } from "lucide-react";
-import { SectionFrame } from "@/components/detail";
+import type { ReactNode } from "react"
+import { RefreshCwIcon } from "lucide-react"
+import { SectionFrame } from "@/components/detail"
 import {
   ChartSkeleton,
   RegionEmpty,
   RegionError,
-} from "@/components/region-states";
-import { Button } from "@/components/ui/button";
-import { ConditionalRender } from "../conditional-render";
+} from "@/components/region-states"
+import { Button } from "@/components/ui/button"
+import { ConditionalRender } from "../conditional-render"
 
 interface ChartFrameProps {
-  title: string;
-  description: string;
-  actions?: ReactNode;
-  hasData: boolean;
-  loading: boolean;
-  error: string | null;
-  onRetry: () => void;
-  emptyTitle?: string;
-  emptyDescription: string;
-  children: ReactNode;
+  title: string
+  description: string
+  actions?: ReactNode
+  hasData: boolean
+  loading: boolean
+  error: string | null
+  onRetry: () => void
+  emptyTitle?: string
+  emptyDescription: string
+  children: ReactNode
 }
 
 export function ChartFrame({
@@ -46,19 +46,26 @@ export function ChartFrame({
 
       <ConditionalRender
         condition={hasData}
-        default={<RegionEmpty
-          title={emptyTitle}
-          description={emptyDescription}
-          action={
-            <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-              <RefreshCwIcon data-icon="inline-start" aria-hidden="true" />
-              Retry
-            </Button>
-          }
-        />}
+        default={
+          <RegionEmpty
+            title={emptyTitle}
+            description={emptyDescription}
+            action={
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onRetry}
+              >
+                <RefreshCwIcon data-icon="inline-start" aria-hidden="true" />
+                Retry
+              </Button>
+            }
+          />
+        }
       >
         {children}
       </ConditionalRender>
     </SectionFrame>
-  );
+  )
 }

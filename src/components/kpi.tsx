@@ -1,13 +1,13 @@
-import type { ReactNode } from "react";
-import { ArrowDownRightIcon, ArrowUpRightIcon, MinusIcon } from "lucide-react";
-import { Badge } from "@/components/reui/badge";
-import { Frame, FramePanel } from "@/components/reui/frame";
-import { IconTile } from "@/components/reui/icon-tile";
-import { cn } from "@/lib/utils";
+import type { ReactNode } from "react"
+import { ArrowDownRightIcon, ArrowUpRightIcon, MinusIcon } from "lucide-react"
+import { Badge } from "@/components/reui/badge"
+import { Frame, FramePanel } from "@/components/reui/frame"
+import { IconTile } from "@/components/reui/icon-tile"
+import { cn } from "@/lib/utils"
 
 interface SparklineProps {
-  values: number[];
-  tone?: "primary" | "success" | "warning" | "muted";
+  values: number[]
+  tone?: "primary" | "success" | "warning" | "muted"
 }
 
 const toneClass = {
@@ -15,22 +15,22 @@ const toneClass = {
   success: "text-success-foreground",
   warning: "text-warning-foreground",
   muted: "text-muted-foreground",
-};
+}
 
 export function Sparkline({ values, tone = "primary" }: SparklineProps) {
-  if (values.length < 2) return null;
-  const width = 84;
-  const height = 24;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = max - min || 1;
+  if (values.length < 2) return null
+  const width = 84
+  const height = 24
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const span = max - min || 1
   const points = values
     .map((value, index) => {
-      const x = (index / (values.length - 1)) * width;
-      const y = height - ((value - min) / span) * (height - 4) - 2;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
+      const x = (index / (values.length - 1)) * width
+      const y = height - ((value - min) / span) * (height - 4) - 2
+      return `${x.toFixed(1)},${y.toFixed(1)}`
     })
-    .join(" ");
+    .join(" ")
 
   return (
     <svg
@@ -54,17 +54,17 @@ export function Sparkline({ values, tone = "primary" }: SparklineProps) {
         fill="currentColor"
       />
     </svg>
-  );
+  )
 }
 
 interface KpiCardProps {
-  label: string;
-  value: string;
-  detail?: string;
-  trend?: number;
-  icon?: ReactNode;
-  spark?: number[];
-  tone?: "primary" | "success" | "warning" | "muted";
+  label: string
+  value: string
+  detail?: string
+  trend?: number
+  icon?: ReactNode
+  spark?: number[]
+  tone?: "primary" | "success" | "warning" | "muted"
 }
 
 function TrendBadge({ trend }: { trend: number }) {
@@ -74,9 +74,9 @@ function TrendBadge({ trend }: { trend: number }) {
         <MinusIcon aria-hidden="true" />
         0%
       </Badge>
-    );
+    )
   }
-  const positive = trend > 0;
+  const positive = trend > 0
   return (
     <Badge variant={positive ? "success-light" : "destructive-light"}>
       {positive ? (
@@ -86,17 +86,29 @@ function TrendBadge({ trend }: { trend: number }) {
       )}
       {Math.abs(trend).toFixed(1)}%
     </Badge>
-  );
+  )
 }
 
-export function KpiCard({ label, value, detail, trend, icon, spark, tone = "primary" }: KpiCardProps) {
+export function KpiCard({
+  label,
+  value,
+  detail,
+  trend,
+  icon,
+  spark,
+  tone = "primary",
+}: KpiCardProps) {
   return (
     <Frame spacing="sm" className="min-w-0">
       <FramePanel className="flex min-w-0 flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
-            <span className="text-xs font-medium text-muted-foreground">{label}</span>
-            <span className="text-mono truncate text-2xl font-semibold tracking-tight">{value}</span>
+            <span className="text-xs font-medium text-muted-foreground">
+              {label}
+            </span>
+            <span className="text-mono truncate text-2xl font-semibold tracking-tight">
+              {value}
+            </span>
           </div>
           {icon ? (
             <IconTile
@@ -112,16 +124,26 @@ export function KpiCard({ label, value, detail, trend, icon, spark, tone = "prim
         <div className="flex min-w-0 items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             {typeof trend === "number" ? <TrendBadge trend={trend} /> : null}
-            {detail ? <span className="truncate text-xs text-muted-foreground">{detail}</span> : null}
+            {detail ? (
+              <span className="truncate text-xs text-muted-foreground">
+                {detail}
+              </span>
+            ) : null}
           </div>
           {spark ? <Sparkline values={spark} tone={tone} /> : null}
         </div>
       </FramePanel>
     </Frame>
-  );
+  )
 }
 
-export function KpiGrid({ children, columns = 4 }: { children: ReactNode; columns?: 3 | 4 }) {
+export function KpiGrid({
+  children,
+  columns = 4,
+}: {
+  children: ReactNode
+  columns?: 3 | 4
+}) {
   return (
     <div
       className={cn(
@@ -131,5 +153,5 @@ export function KpiGrid({ children, columns = 4 }: { children: ReactNode; column
     >
       {children}
     </div>
-  );
+  )
 }

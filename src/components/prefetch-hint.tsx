@@ -1,9 +1,9 @@
-import { InfoIcon } from "lucide-react";
+import { InfoIcon } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/tooltip"
 
 export function PrefetchHintContent() {
   return (
@@ -15,7 +15,7 @@ export function PrefetchHintContent() {
         result in an unlimited prefetch.
       </span>
     </TooltipContent>
-  );
+  )
 }
 
 export function PrefetchHint() {
@@ -26,7 +26,7 @@ export function PrefetchHint() {
           <span
             tabIndex={0}
             aria-label="About channel prefetch count"
-            className="inline-flex text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-3.5"
+            className="inline-flex text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&_svg]:size-3.5"
           >
             <InfoIcon />
           </span>
@@ -34,5 +34,5 @@ export function PrefetchHint() {
       />
       <PrefetchHintContent />
     </Tooltip>
-  );
+  )
 }

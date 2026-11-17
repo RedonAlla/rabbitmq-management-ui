@@ -1,28 +1,34 @@
-import type { ReactNode } from "react";
-import { SearchIcon } from "lucide-react";
+import type { ReactNode } from "react"
+import { SearchIcon } from "lucide-react"
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from "@/components/ui/input-group";
+} from "@/components/ui/input-group"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+} from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 
 interface FilterBarProps {
-  search: string;
-  onSearch: (value: string) => void;
-  placeholder: string;
-  children?: ReactNode;
-  className?: string;
+  search: string
+  onSearch: (value: string) => void
+  placeholder: string
+  children?: ReactNode
+  className?: string
 }
 
-export function FilterBar({ search, onSearch, placeholder, children, className }: FilterBarProps) {
+export function FilterBar({
+  search,
+  onSearch,
+  placeholder,
+  children,
+  className,
+}: FilterBarProps) {
   return (
     <div
       className={cn(
@@ -45,16 +51,16 @@ export function FilterBar({ search, onSearch, placeholder, children, className }
         <div className="flex flex-wrap items-center gap-2">{children}</div>
       ) : null}
     </div>
-  );
+  )
 }
 
 interface SelectFilterProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  label: string;
-  allLabel: string;
-  className?: string;
+  value: string
+  onChange: (value: string) => void
+  options: { value: string; label: string }[]
+  label: string
+  allLabel: string
+  className?: string
 }
 
 export function SelectFilter({
@@ -79,5 +85,5 @@ export function SelectFilter({
         ))}
       </SelectContent>
     </Select>
-  );
+  )
 }

@@ -1,19 +1,19 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from "react"
 import {
   Frame,
   FrameDescription,
   FrameHeader,
   FramePanel,
   FrameTitle,
-} from "@/components/reui/frame";
-import { cn } from "@/lib/utils";
-import { ConditionalRender } from "./conditional-render";
+} from "@/components/reui/frame"
+import { cn } from "@/lib/utils"
+import { ConditionalRender } from "./conditional-render"
 
 export interface Fact {
-  label: string;
-  value: ReactNode;
-  mono?: boolean;
-  hint?: ReactNode;
+  label: string
+  value: ReactNode
+  mono?: boolean
+  hint?: ReactNode
 }
 
 export function FactPanel({
@@ -22,17 +22,17 @@ export function FactPanel({
   facts,
   footer,
 }: {
-  title: string;
-  description?: string;
-  facts: Fact[];
-  footer?: ReactNode;
+  title: string
+  description?: string
+  facts: Fact[]
+  footer?: ReactNode
 }) {
   return (
     <Frame spacing="sm" className="min-w-0">
       <FrameHeader className="flex flex-col gap-0.5">
         <FrameTitle>{title}</FrameTitle>
         <ConditionalRender condition={Boolean(description)}>
-          <FrameDescription>{description}</FrameDescription> 
+          <FrameDescription>{description}</FrameDescription>
         </ConditionalRender>
       </FrameHeader>
       <FramePanel className="flex flex-col">
@@ -67,16 +67,22 @@ export function FactPanel({
         {footer}
       </ConditionalRender>
     </Frame>
-  );
+  )
 }
 
-export function DetailLayout({ main, side }: { main: ReactNode; side: ReactNode }) {
+export function DetailLayout({
+  main,
+  side,
+}: {
+  main: ReactNode
+  side: ReactNode
+}) {
   return (
     <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
       <div className="flex min-w-0 flex-col gap-4">{main}</div>
       <div className="flex min-w-0 flex-col gap-4">{side}</div>
     </div>
-  );
+  )
 }
 
 export function SectionFrame({
@@ -87,12 +93,12 @@ export function SectionFrame({
   className,
   bodyClassName,
 }: {
-  title: string;
-  description?: string;
-  actions?: ReactNode;
-  children: ReactNode;
-  className?: string;
-  bodyClassName?: string;
+  title: string
+  description?: string
+  actions?: ReactNode
+  children: ReactNode
+  className?: string
+  bodyClassName?: string
 }) {
   return (
     <Frame spacing="sm" className={cn("min-w-0", className)}>
@@ -105,11 +111,12 @@ export function SectionFrame({
         </div>
 
         <ConditionalRender condition={Boolean(actions)}>
-          <div className="flex shrink-0 items-center gap-1.5">{actions}</div> 
+          <div className="flex shrink-0 items-center gap-1.5">{actions}</div>
         </ConditionalRender>
-            
       </FrameHeader>
-      <FramePanel className={cn("min-w-0", bodyClassName)}>{children}</FramePanel>
+      <FramePanel className={cn("min-w-0", bodyClassName)}>
+        {children}
+      </FramePanel>
     </Frame>
-  );
+  )
 }

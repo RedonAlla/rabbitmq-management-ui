@@ -25,9 +25,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { routeHref } from "@/lib/router"
-import {
-  useCluster,
-} from "@/store/cluster"
+import { useCluster } from "@/store/cluster"
 
 type Props = {
   activeFor: (view: string) => boolean
@@ -38,10 +36,10 @@ const NAV_GROUPS = [
     label: "Cluster",
     items: [
       {
-        view: "overview", 
+        view: "overview",
         label: "Overview",
-        icon: LayoutDashboardIcon
-      }
+        icon: LayoutDashboardIcon,
+      },
     ],
   },
   {
@@ -91,7 +89,6 @@ const NAV_GROUPS = [
     ],
   },
 ] as const
-
 
 export function NavigationItems({ activeFor }: Props) {
   const { totals } = useCluster()

@@ -1,26 +1,26 @@
-import { useMemo, useState } from "react";
-import { Badge } from "@/components/reui/badge";
-import { PageHeader } from "@/components/page-header";
-import { DetailLayout, FactPanel } from "@/components/detail";
-import { StateBadge, VhostBadge } from "@/components/badges";
-import { useCluster } from "@/store/cluster";
-import { useChannelDetail } from "@/hooks/use-channel-detail";
-import { useRoute } from "@/lib/router";
-import { fmtInt, fmtRate } from "@/lib/format";
+import { useMemo, useState } from "react"
+import { Badge } from "@/components/reui/badge"
+import { PageHeader } from "@/components/page-header"
+import { DetailLayout, FactPanel } from "@/components/detail"
+import { StateBadge, VhostBadge } from "@/components/badges"
+import { useCluster } from "@/store/cluster"
+import { useChannelDetail } from "@/hooks/use-channel-detail"
+import { useRoute } from "@/lib/router"
+import { fmtInt, fmtRate } from "@/lib/format"
 import {
   averageSeries,
   buildRateChartDataFromSamples,
   RATE_RANGES,
   RATE_WINDOWS,
   type ChartPoint,
-} from "@/lib/chart-data";
-import type { ChannelRateKey, ChannelRateRange } from "@/lib/rabbit-api";
-import { NotFoundView } from "@/views/not-found";
-import GarbageCollectionFrame from "@/views/channels/garbage-collection-frame";
-import ConsumersTable from "@/views/channels/consumers-table";
-import ChannelKpis from "@/views/channels/kpis";
-import { ChartFrame, ChartRangeTabs, RateChart } from "@/components/charts";
-import { PrefetchHint } from "@/components/prefetch-hint";
+} from "@/lib/chart-data"
+import type { ChannelRateKey, ChannelRateRange } from "@/lib/rabbit-api"
+import { NotFoundView } from "@/views/not-found"
+import GarbageCollectionFrame from "@/views/channels/garbage-collection-frame"
+import ConsumersTable from "@/views/channels/consumers-table"
+import ChannelKpis from "@/views/channels/kpis"
+import { ChartFrame, ChartRangeTabs, RateChart } from "@/components/charts"
+import { PrefetchHint } from "@/components/prefetch-hint"
 
 const RATE_SERIES: { key: ChannelRateKey; label: string; color: string }[] = [
   { key: "ack", label: "Ack", color: "var(--chart-1)" },
@@ -31,30 +31,32 @@ const RATE_SERIES: { key: ChannelRateKey; label: string; color: string }[] = [
   { key: "getEmpty", label: "Get empty", color: "var(--chart-6)" },
   { key: "getNoAck", label: "Get no ack", color: "var(--chart-7)" },
   { key: "redeliver", label: "Redeliver", color: "var(--chart-8)" },
-];
+]
 
 const REDUCTIONS_SERIES: {
-  key: ChannelRateKey;
-  label: string;
-  color: string;
-} = { key: "reductions", label: "Reductions", color: "var(--chart-3)" };
+  key: ChannelRateKey
+  label: string
+  color: string
+} = { key: "reductions", label: "Reductions", color: "var(--chart-3)" }
 
 export function ChannelDetailView() {
-  const { route } = useRoute();
-  const { data } = useCluster();
-  const [range, setRange] = useState<ChannelRateRange>(60);
+  const { route } = useRoute()
+  const { data } = useCluster()
+  const [range, setRange] = useState<ChannelRateRange>(60)
   const {
     detail,
     loading: detailLoading,
     error: detailError,
     retry: retryDetail,
-  } = useChannelDetail(route.id, range);
+  } = useChannelDetail(route.id, range)
 
-  const channel = data.channels.find((entry) => entry.id === route.id);
-  const connection = data.connections.find((entry) => entry.id === channel?.connection);
-  const consumers = detail?.consumers ?? [];
+  const channel = data.channels.find((entry) => entry.id === route.id)
+  const connection = data.connections.find(
+    (entry) => entry.id === channel?.connection
+  )
+  const consumers = detail?.consumers ?? []
   const chartData = useMemo<ChartPoint[]>(() => {
-    if (!detail) return [];
+    if (!detail) return []
     return buildRateChartDataFromSamples([
       ...RATE_SERIES.map((series) => ({
         key: series.key,
@@ -64,16 +66,16 @@ export function ChannelDetailView() {
         key: REDUCTIONS_SERIES.key,
         samples: detail.rates[REDUCTIONS_SERIES.key].samples,
       },
-    ]);
-  }, [detail]);
+    ])
+  }, [detail])
   const rateAverages = useMemo(() => {
-    const averages = {} as Record<ChannelRateKey, number>;
+    const averages = {} as Record<ChannelRateKey, number>
     for (const series of [...RATE_SERIES, REDUCTIONS_SERIES]) {
-      averages[series.key] = averageSeries(chartData, series.key);
+      averages[series.key] = averageSeries(chartData, series.key)
     }
-    return averages;
-  }, [chartData]);
-  const garbageCollection = detail?.garbageCollection ?? null;
+    return averages
+  }, [chartData])
+  const garbageCollection = detail?.garbageCollection ?? null
 
   const rangeControl = (
     <ChartRangeTabs
@@ -82,7 +84,7 @@ export function ChannelDetailView() {
       options={RATE_RANGES}
       ariaLabel="Chart range"
     />
-  );
+  )
 
   if (!channel) {
     return (
@@ -90,7 +92,7 @@ export function ChannelDetailView() {
         title="Channel not found"
         description={`No open channel with id ${route.id ?? "unknown"}. It may have been closed.`}
       />
-    );
+    )
   }
 
   return (
@@ -101,8 +103,12 @@ export function ChannelDetailView() {
           <>
             <StateBadge state={channel.state} />
             <VhostBadge>{channel.vhost}</VhostBadge>
-            {channel.confirmMode ? <Badge variant="info-light">Confirm mode</Badge> : null}
-            {channel.transactional ? <Badge variant="warning-light">Transactional</Badge> : null}
+            {channel.confirmMode ? (
+              <Badge variant="info-light">Confirm mode</Badge>
+            ) : null}
+            {channel.transactional ? (
+              <Badge variant="warning-light">Transactional</Badge>
+            ) : null}
           </>
         }
         description={
@@ -191,12 +197,30 @@ export function ChannelDetailView() {
               title="In-flight counters"
               description="Work held by this channel that has not yet been settled."
               facts={[
-                { label: "Acks uncommitted", value: fmtInt(channel.acksUncommitted) },
-                { label: "Messages uncommitted", value: fmtInt(channel.messagesUncommitted) },
-                { label: "Messages unconfirmed", value: fmtInt(channel.messagesUnconfirmed) },
-                { label: "Messages unacknowledged", value: fmtInt(channel.unacked) },
-                { label: "Pending raft commands", value: fmtInt(channel.pendingRaftCommands) },
-                { label: "Cached segments", value: fmtInt(channel.cachedSegments) },
+                {
+                  label: "Acks uncommitted",
+                  value: fmtInt(channel.acksUncommitted),
+                },
+                {
+                  label: "Messages uncommitted",
+                  value: fmtInt(channel.messagesUncommitted),
+                },
+                {
+                  label: "Messages unconfirmed",
+                  value: fmtInt(channel.messagesUnconfirmed),
+                },
+                {
+                  label: "Messages unacknowledged",
+                  value: fmtInt(channel.unacked),
+                },
+                {
+                  label: "Pending raft commands",
+                  value: fmtInt(channel.pendingRaftCommands),
+                },
+                {
+                  label: "Cached segments",
+                  value: fmtInt(channel.cachedSegments),
+                },
               ]}
             />
             <FactPanel
@@ -205,17 +229,27 @@ export function ChannelDetailView() {
                 {
                   label: "Prefetch",
                   hint: <PrefetchHint />,
-                  value: channel.prefetch === 0 ? "Unlimited" : String(channel.prefetch),
+                  value:
+                    channel.prefetch === 0
+                      ? "Unlimited"
+                      : String(channel.prefetch),
                 },
                 {
                   label: "Confirm mode",
                   value: (
-                    <Badge variant={channel.confirmMode ? "success-light" : "outline"}>
+                    <Badge
+                      variant={
+                        channel.confirmMode ? "success-light" : "outline"
+                      }
+                    >
                       {channel.confirmMode ? "Enabled" : "Disabled"}
                     </Badge>
                   ),
                 },
-                { label: "Transactional", value: channel.transactional ? "Yes" : "No" },
+                {
+                  label: "Transactional",
+                  value: channel.transactional ? "Yes" : "No",
+                },
                 { label: "Consumers", value: String(channel.consumers) },
               ]}
             />
@@ -223,5 +257,5 @@ export function ChannelDetailView() {
         }
       />
     </div>
-  );
+  )
 }

@@ -1,8 +1,8 @@
-import type { Queue } from "@/data/types";
+import type { Queue } from "@/data/types"
 
-export type Kind = "purge" | "delete";
+export type Kind = "purge" | "delete"
 
 export type ConfirmState = {
-  kind: Kind;
+  kind: Kind
   queue: Queue
-} | null;
+} | null

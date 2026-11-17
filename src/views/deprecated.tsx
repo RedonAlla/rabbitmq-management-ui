@@ -1,75 +1,96 @@
-import { useMemo, useState } from "react";
-import { Boxes, TriangleAlertIcon } from "lucide-react";
-import { useTable, type ColumnDef } from "@tanstack/react-table";
-import { Alert, AlertDescription, AlertTitle } from "@/components/reui/alert";
-import { Badge } from "@/components/reui/badge";
-import { PageHeader } from "@/components/page-header";
-import { FilterBar, SelectFilter } from "@/components/filters-bar";
-import { useCluster } from "@/store/cluster";
-import { matchesText } from "@/lib/filtering";
-import type { DeprecatedFeature, DeprecationPhase } from "@/data/types";
-import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
-import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";
-import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
-import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
-import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
-import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
-import GridEmptyState from "@/components/ui/empty-state";
-import { Button } from "@/components/ui/button";
+import { useMemo, useState } from "react"
+import { Boxes, TriangleAlertIcon } from "lucide-react"
+import { useTable, type ColumnDef } from "@tanstack/react-table"
+import { Alert, AlertDescription, AlertTitle } from "@/components/reui/alert"
+import { Badge } from "@/components/reui/badge"
+import { PageHeader } from "@/components/page-header"
+import { FilterBar, SelectFilter } from "@/components/filters-bar"
+import { useCluster } from "@/store/cluster"
+import { matchesText } from "@/lib/filtering"
+import type { DeprecatedFeature, DeprecationPhase } from "@/data/types"
+import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header"
+import {
+  DataGrid,
+  dataGridFeatures,
+  type DataGridFeatures,
+} from "@/components/reui/data-grid/data-grid"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Frame,
+  FrameFooter,
+  FrameHeader,
+  FramePanel,
+} from "@/components/reui/frame"
+import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants"
+import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
+import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
+import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination"
+import GridEmptyState from "@/components/ui/empty-state"
+import { Button } from "@/components/ui/button"
 
 const PHASES: Record<
   DeprecationPhase,
   { label: string; variant: "warning-light" | "destructive-light" | "outline" }
 > = {
-  permitted_by_default: { label: "Permitted by default", variant: "warning-light" },
+  permitted_by_default: {
+    label: "Permitted by default",
+    variant: "warning-light",
+  },
   denied_by_default: { label: "Denied by default", variant: "warning-light" },
   disconnect: { label: "Disconnect", variant: "destructive-light" },
   removed: { label: "Removed", variant: "outline" },
-};
+}
 
-const PHASE_OPTIONS = (Object.keys(PHASES) as DeprecationPhase[]).map((phase) => ({
-  value: phase,
-  label: PHASES[phase].label,
-}));
+const PHASE_OPTIONS = (Object.keys(PHASES) as DeprecationPhase[]).map(
+  (phase) => ({
+    value: phase,
+    label: PHASES[phase].label,
+  })
+)
 
 export function DeprecatedFeaturesView() {
-  const { data, status, error, actions } = useCluster();
-  const [search, setSearch] = useState("");
-  const [phase, setPhase] = useState("all");
+  const { data, status, error, actions } = useCluster()
+  const [search, setSearch] = useState("")
+  const [phase, setPhase] = useState("all")
 
   const inUse = useMemo(
     () => data.deprecatedFeatures.filter((feature) => feature.inUse),
     [data.deprecatedFeatures]
-  );
+  )
 
   const features = useMemo(
     () =>
       data.deprecatedFeatures.filter(
         (feature) =>
-          (matchesText(feature.name, search) || matchesText(feature.desc, search)) &&
+          (matchesText(feature.name, search) ||
+            matchesText(feature.desc, search)) &&
           (phase === "all" || feature.phase === phase)
       ),
     [data.deprecatedFeatures, search, phase]
-  );
+  )
 
   const columns = useMemo<ColumnDef<DataGridFeatures, DeprecatedFeature>[]>(
     () => [
       {
         accessorKey: "name",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Feature" />,
-        cell: ({ row }) => <span className="data-cell font-medium">{row.original.name}</span>,
-        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Feature" />
+        ),
+        cell: ({ row }) => (
+          <span className="data-cell font-medium">{row.original.name}</span>
+        ),
+        meta: { skeleton: <Skeleton className="h-4 w-20" /> },
       },
       {
         accessorKey: "phase",
-        header: ({ column }) => <DataGridColumnHeader column={column} title="Deprecation phase" />,
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Deprecation phase" />
+        ),
         cell: ({ row }) => {
-          const meta = PHASES[row.original.phase];
-          return <Badge variant={meta.variant}>{meta.label}</Badge>;
+          const meta = PHASES[row.original.phase]
+          return <Badge variant={meta.variant}>{meta.label}</Badge>
         },
-        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
+        meta: { skeleton: <Skeleton className="h-4 w-20" /> },
       },
       {
         id: "status",
@@ -80,19 +101,21 @@ export function DeprecatedFeaturesView() {
           ) : (
             <Badge variant="outline">Not in use</Badge>
           ),
-        meta: { skeleton: <Skeleton className="h-4 w-20" /> }
+        meta: { skeleton: <Skeleton className="h-4 w-20" /> },
       },
       {
         id: "description",
         header: () => <span>Description</span>,
         cell: ({ row }) => (
-          <span className="block max-w-2xl text-xs text-muted-foreground">{row.original.desc}</span>
+          <span className="block max-w-2xl text-xs text-muted-foreground">
+            {row.original.desc}
+          </span>
         ),
-        meta: { fillWidth: true, skeleton: <Skeleton className="h-4 w-20" /> }
+        meta: { fillWidth: true, skeleton: <Skeleton className="h-4 w-20" /> },
       },
     ],
     []
-  );
+  )
 
   const table = useTable({
     features: dataGridFeatures,
@@ -100,7 +123,7 @@ export function DeprecatedFeaturesView() {
     data: features,
     columns,
     initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
-  });
+  })
 
   const clearFilters = () => {
     setSearch("")
@@ -141,7 +164,11 @@ export function DeprecatedFeaturesView() {
             error={error}
             retry={actions.retry}
             action={
-              <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => clearFilters()}
+              >
                 Clear filters
               </Button>
             }
@@ -183,7 +210,6 @@ export function DeprecatedFeaturesView() {
           </FrameFooter>
         </Frame>
       </DataGrid>
-      
     </div>
-  );
+  )
 }

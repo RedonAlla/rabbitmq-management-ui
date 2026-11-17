@@ -88,12 +88,7 @@ export interface FilterOperator {
  * every install, so a date ships as an `editor`.
  */
 export type FilterValueType =
-  | "text"
-  | "number"
-  | "range"
-  | "select"
-  | "multiselect"
-  | "boolean"
+  "text" | "number" | "range" | "select" | "multiselect" | "boolean"
 
 export interface FilterOption<O = unknown> {
   value: string
@@ -160,8 +155,7 @@ export interface FilterField<V = unknown, O = unknown> {
 
   /** Operators for this field. Falls back to the catalog for its `type`. */
   operators?:
-    | FilterOperator[]
-    | ((field: FilterField<V, O>) => FilterOperator[])
+    FilterOperator[] | ((field: FilterField<V, O>) => FilterOperator[])
   /**
    * The operator this field FALLS BACK to, not a way to preselect one. Both
    * create paths deliberately start a rule on `operator: ""` so the condition

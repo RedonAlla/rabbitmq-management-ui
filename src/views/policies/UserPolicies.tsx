@@ -6,10 +6,18 @@ import { useCluster } from "@/store/cluster"
 import type { Policy, Queue } from "@/data/types"
 import { policyColumns } from "./policy-columns"
 import PolicyDetailDrawer from "./PolicyDetailDrawer"
-import { DataGrid, dataGridFeatures } from "@/components/reui/data-grid/data-grid"
+import {
+  DataGrid,
+  dataGridFeatures,
+} from "@/components/reui/data-grid/data-grid"
 import { useTable } from "@tanstack/react-table"
 import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants"
-import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame"
+import {
+  Frame,
+  FrameFooter,
+  FrameHeader,
+  FramePanel,
+} from "@/components/reui/frame"
 import { FilterBar, SelectFilter } from "@/components/filters-bar"
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
@@ -50,17 +58,17 @@ export default function UserPolicies() {
   )
 
   const visible = useCallback(
-      (policy: Policy) =>
-        (matchesText(policy.name, search) ||
-          matchesText(policy.pattern, search)) &&
-        (vhost === "all" || policy.vhost === vhost),
-      [search, vhost]
-    )
-  
-    const policies = useMemo(
-      () => data.policies.filter(visible),
-      [data.policies, visible]
-    )
+    (policy: Policy) =>
+      (matchesText(policy.name, search) ||
+        matchesText(policy.pattern, search)) &&
+      (vhost === "all" || policy.vhost === vhost),
+    [search, vhost]
+  )
+
+  const policies = useMemo(
+    () => data.policies.filter(visible),
+    [data.policies, visible]
+  )
 
   const table = useTable({
     features: dataGridFeatures,
@@ -68,7 +76,7 @@ export default function UserPolicies() {
     data: policies,
     columns,
     initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
-  });
+  })
 
   const clearFilters = () => {
     setSearch("")
@@ -77,7 +85,6 @@ export default function UserPolicies() {
 
   return (
     <section className="flex min-w-0 flex-col gap-2">
-
       <DataGrid
         table={table}
         recordCount={policies.length}
@@ -94,7 +101,11 @@ export default function UserPolicies() {
             error={error}
             retry={actions.retry}
             action={
-              <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => clearFilters()}
+              >
                 Clear filters
               </Button>
             }
@@ -179,7 +190,9 @@ export default function UserPolicies() {
           } catch (cause) {
             toast.error("Policy was not deleted", {
               description:
-                cause instanceof Error ? cause.message : "The management API did not respond.",
+                cause instanceof Error
+                  ? cause.message
+                  : "The management API did not respond.",
             })
           }
         }}

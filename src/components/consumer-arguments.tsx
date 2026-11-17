@@ -1,21 +1,21 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
   Popover,
   PopoverContent,
   PopoverHeader,
   PopoverTitle,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { argumentText } from "@/lib/properties";
+} from "@/components/ui/popover"
+import { argumentText } from "@/lib/properties"
 
 export function ConsumerArguments({
   tag,
   arguments: consumerArguments,
 }: {
-  tag: string;
-  arguments: Record<string, unknown>;
+  tag: string
+  arguments: Record<string, unknown>
 }) {
-  const entries = Object.entries(consumerArguments);
+  const entries = Object.entries(consumerArguments)
   return (
     <Popover>
       <PopoverTrigger
@@ -43,7 +43,7 @@ export function ConsumerArguments({
                 key={key}
                 className="flex items-start justify-between gap-4 py-1.5 first:pt-0 last:pb-0"
               >
-                <dt className="data-cell text-xs text-muted-foreground [overflow-wrap:anywhere]">
+                <dt className="data-cell text-xs [overflow-wrap:anywhere] text-muted-foreground">
                   {key}
                 </dt>
                 <dd className="data-cell max-w-[60%] text-right text-xs [overflow-wrap:anywhere]">
@@ -59,5 +59,5 @@ export function ConsumerArguments({
         )}
       </PopoverContent>
     </Popover>
-  );
+  )
 }

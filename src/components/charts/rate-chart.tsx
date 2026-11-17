@@ -1,10 +1,4 @@
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import {
   ChartContainer,
   ChartLegend,
@@ -12,12 +6,12 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from "@/components/ui/chart";
-import { fmtCompact } from "@/lib/format";
-import type { ChartPoint, ChartSeries } from "@/lib/chart-data";
+} from "@/components/ui/chart"
+import { fmtCompact } from "@/lib/format"
+import type { ChartPoint, ChartSeries } from "@/lib/chart-data"
 
 function formatRateValue(value: number): string {
-  return value > 0 && value < 1 ? value.toFixed(2) : fmtCompact(value);
+  return value > 0 && value < 1 ? value.toFixed(2) : fmtCompact(value)
 }
 
 export function RateChart({
@@ -25,15 +19,15 @@ export function RateChart({
   data,
   series,
 }: {
-  title: string;
-  data: ChartPoint[];
-  series: ChartSeries[];
+  title: string
+  data: ChartPoint[]
+  series: ChartSeries[]
 }) {
-  const config: ChartConfig = {};
+  const config: ChartConfig = {}
   for (const item of series) {
-    config[item.key] = { label: item.label, color: item.color };
+    config[item.key] = { label: item.label, color: item.color }
   }
-  const legendItems = series.filter((item) => item.legend);
+  const legendItems = series.filter((item) => item.legend)
 
   return (
     <ChartContainer
@@ -99,7 +93,10 @@ export function RateChart({
             content={() => (
               <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pt-3 text-xs text-muted-foreground">
                 {legendItems.map((item) => (
-                  <span key={item.key} className="inline-flex items-center gap-1.5">
+                  <span
+                    key={item.key}
+                    className="inline-flex items-center gap-1.5"
+                  >
                     <span
                       aria-hidden="true"
                       className="h-2 w-2 shrink-0 rounded-[2px]"
@@ -116,5 +113,5 @@ export function RateChart({
         ) : null}
       </AreaChart>
     </ChartContainer>
-  );
+  )
 }

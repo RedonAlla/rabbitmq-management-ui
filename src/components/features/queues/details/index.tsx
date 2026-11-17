@@ -1,11 +1,11 @@
-export { QueueKpis } from "./kpis";
-export { AddBindingDialog } from "./add-binding-dialog";
-export { QueueBackButton, QueueDetailHeader } from "./header";
-export { QueueDepthChart } from "./queue-depth-chart";
-export { MessageRatesChart } from "./message-rates-chart";
-export { ReductionsChart } from "./reductions-chart";
-export { QueueDetailsPanel } from "./details-panel";
-export { QueueLifecyclePanel } from "./lifecycle-panel";
-export { QueueCountersPanel } from "./counters-panel";
-export { QueueStoragePanel } from "./storage-panel";
-export { QueueDetailSkeleton } from "./skeletons";
+export { QueueKpis } from "./kpis"
+export { AddBindingDialog } from "./add-binding-dialog"
+export { QueueBackButton, QueueDetailHeader } from "./header"
+export { QueueDepthChart } from "./queue-depth-chart"
+export { MessageRatesChart } from "./message-rates-chart"
+export { ReductionsChart } from "./reductions-chart"
+export { QueueDetailsPanel } from "./details-panel"
+export { QueueLifecyclePanel } from "./lifecycle-panel"
+export { QueueCountersPanel } from "./counters-panel"
+export { QueueStoragePanel } from "./storage-panel"
+export { QueueDetailSkeleton } from "./skeletons"

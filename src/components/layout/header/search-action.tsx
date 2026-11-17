@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/button"
-import { CommandIcon, SearchIcon } from "lucide-react";
-import type { SetStateAction } from "react";
+import { CommandIcon, SearchIcon } from "lucide-react"
+import type { SetStateAction } from "react"
 
 type Props = {
-  setPaletteOpen: (value: SetStateAction<boolean>) => void;
+  setPaletteOpen: (value: SetStateAction<boolean>) => void
 }
 
-export function SearchAction({setPaletteOpen}: Props) {  
+export function SearchAction({ setPaletteOpen }: Props) {
   return (
     <Button
       type="button"

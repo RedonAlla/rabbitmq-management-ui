@@ -80,9 +80,10 @@ export function useQueueDetail(
 
   return {
     detail,
-    loading:
-      Boolean(vhost && name) && hasSession && !requestError && !detail,
-    error: hasSession ? requestError : "Your session has expired. Sign in again.",
+    loading: Boolean(vhost && name) && hasSession && !requestError && !detail,
+    error: hasSession
+      ? requestError
+      : "Your session has expired. Sign in again.",
     status: requestStatus,
     retry,
   }

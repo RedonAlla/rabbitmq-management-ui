@@ -1,19 +1,20 @@
+import { ChevronDownIcon, TimerIcon } from "lucide-react"
+import { REFRESH_INTERVALS, type RefreshInterval } from "@/store/cluster"
 import {
-  ChevronDownIcon,
-  TimerIcon,
-} from "lucide-react"
-import {
-  REFRESH_INTERVALS,
-  type RefreshInterval,
-} from "@/store/cluster"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 
 type Props = {
-  refreshInterval: RefreshInterval;
+  refreshInterval: RefreshInterval
   setRefreshInterval: (value: RefreshInterval) => void
 }
-
 
 export function RefreshActions({ refreshInterval, setRefreshInterval }: Props) {
   return (

@@ -4,15 +4,15 @@ import {
   useMemo,
   useState,
   type ReactNode,
-} from "react";
-import ShortcutsDialog from "@/components/layout/shortcuts-dialog";
-import AddExchangeDialog from "@/views/exchanges/add-exchange-dialog";
-import PublishDrawer from "@/views/exchanges/publish-drawer";
-import EditLimitsDialog from "@/views/limits/edit-limits-dialog";
-import AddPolicyDialog from "@/views/policies/add-policy-dialog";
-import AddQueueDrawer from "@/views/queues/add-queue-drawer";
-import AddUserDialog from "@/views/user/add-user-dialog";
-import AddVhostDialog from "@/views/vhosts/add-vhost-dialog";
+} from "react"
+import ShortcutsDialog from "@/components/layout/shortcuts-dialog"
+import AddExchangeDialog from "@/views/exchanges/add-exchange-dialog"
+import PublishDrawer from "@/views/exchanges/publish-drawer"
+import EditLimitsDialog from "@/views/limits/edit-limits-dialog"
+import AddPolicyDialog from "@/views/policies/add-policy-dialog"
+import AddQueueDrawer from "@/views/queues/add-queue-drawer"
+import AddUserDialog from "@/views/user/add-user-dialog"
+import AddVhostDialog from "@/views/vhosts/add-vhost-dialog"
 
 export type DialogRequest =
   | { type: "add-queue"; onCreated?: () => void }
@@ -23,24 +23,24 @@ export type DialogRequest =
   | { type: "add-operator-policy" }
   | { type: "edit-limits"; vhost?: string }
   | { type: "publish"; exchange?: string; vhost?: string }
-  | { type: "shortcuts" };
+  | { type: "shortcuts" }
 
 interface DialogsContextValue {
-  dialog: DialogRequest | null;
-  openDialog: (request: DialogRequest) => void;
-  closeDialog: () => void;
+  dialog: DialogRequest | null
+  openDialog: (request: DialogRequest) => void
+  closeDialog: () => void
 }
 
-const DialogsContext = createContext<DialogsContextValue | null>(null);
+const DialogsContext = createContext<DialogsContextValue | null>(null)
 
 export function DialogsProvider({ children }: { children: ReactNode }) {
-  const [dialog, setDialog] = useState<DialogRequest | null>(null);
-  const closeDialog = () => setDialog(null);
+  const [dialog, setDialog] = useState<DialogRequest | null>(null)
+  const closeDialog = () => setDialog(null)
 
   const value = useMemo<DialogsContextValue>(
     () => ({ dialog, openDialog: setDialog, closeDialog }),
     [dialog]
-  );
+  )
 
   return (
     <DialogsContext.Provider value={value}>
@@ -50,10 +50,19 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
         onClose={closeDialog}
         onCreated={dialog?.type === "add-queue" ? dialog.onCreated : undefined}
       />
-      <AddExchangeDialog open={dialog?.type === "add-exchange"} onClose={closeDialog} />
+      <AddExchangeDialog
+        open={dialog?.type === "add-exchange"}
+        onClose={closeDialog}
+      />
       <AddUserDialog open={dialog?.type === "add-user"} onClose={closeDialog} />
-      <AddVhostDialog open={dialog?.type === "add-vhost"} onClose={closeDialog} />
-      <AddPolicyDialog open={dialog?.type === "add-policy"} onClose={closeDialog} />
+      <AddVhostDialog
+        open={dialog?.type === "add-vhost"}
+        onClose={closeDialog}
+      />
+      <AddPolicyDialog
+        open={dialog?.type === "add-policy"}
+        onClose={closeDialog}
+      />
       <AddPolicyDialog
         open={dialog?.type === "add-operator-policy"}
         onClose={closeDialog}
@@ -62,7 +71,9 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
       <PublishDrawer
         open={dialog?.type === "publish"}
         onClose={closeDialog}
-        initialExchange={dialog?.type === "publish" ? dialog.exchange : undefined}
+        initialExchange={
+          dialog?.type === "publish" ? dialog.exchange : undefined
+        }
         initialVhost={dialog?.type === "publish" ? dialog.vhost : undefined}
       />
       <EditLimitsDialog
@@ -70,13 +81,17 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
         onClose={closeDialog}
         initialVhost={dialog?.type === "edit-limits" ? dialog.vhost : undefined}
       />
-      <ShortcutsDialog open={dialog?.type === "shortcuts"} onClose={closeDialog} />
+      <ShortcutsDialog
+        open={dialog?.type === "shortcuts"}
+        onClose={closeDialog}
+      />
     </DialogsContext.Provider>
-  );
+  )
 }
 
 export function useDialogs(): DialogsContextValue {
-  const context = useContext(DialogsContext);
-  if (!context) throw new Error("useDialogs must be used inside DialogsProvider");
-  return context;
+  const context = useContext(DialogsContext)
+  if (!context)
+    throw new Error("useDialogs must be used inside DialogsProvider")
+  return context
 }

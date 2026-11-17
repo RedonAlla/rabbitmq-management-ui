@@ -1,27 +1,38 @@
-import type { DialogRequest } from "@/components/dialogs/dialogs-provider";
-import type { ConfirmState } from "@/components/features/queues/types";
-import { Button } from "@/components/ui/button";
+import type { DialogRequest } from "@/components/dialogs/dialogs-provider"
+import type { ConfirmState } from "@/components/features/queues/types"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import type { Queue } from "@/data/types";
-import { EraserIcon, MoreHorizontalIcon, SendIcon, Trash2Icon } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
-
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import type { Queue } from "@/data/types"
+import {
+  EraserIcon,
+  MoreHorizontalIcon,
+  SendIcon,
+  Trash2Icon,
+} from "lucide-react"
+import type { Dispatch, SetStateAction } from "react"
 
 type Props = {
-  rowData: Queue;
-  setConfirm: Dispatch<SetStateAction<ConfirmState>>;
-  openDialog: (request: DialogRequest) => void;
-};
+  rowData: Queue
+  setConfirm: Dispatch<SetStateAction<ConfirmState>>
+  openDialog: (request: DialogRequest) => void
+}
 
-export default function GridActions({ rowData, setConfirm, openDialog }: Props) {
+export default function GridActions({
+  rowData,
+  setConfirm,
+  openDialog,
+}: Props) {
   return (
-    <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
+    <div
+      className="flex justify-end"
+      onClick={(event) => event.stopPropagation()}
+    >
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
@@ -37,7 +48,9 @@ export default function GridActions({ rowData, setConfirm, openDialog }: Props) 
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
           <DropdownMenuItem
-            onClick={() => openDialog({ type: "publish", vhost: rowData.vhost })}
+            onClick={() =>
+              openDialog({ type: "publish", vhost: rowData.vhost })
+            }
           >
             <SendIcon aria-hidden="true" />
             Publish
@@ -59,5 +72,5 @@ export default function GridActions({ rowData, setConfirm, openDialog }: Props) 
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  );
+  )
 }

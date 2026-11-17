@@ -1,20 +1,20 @@
-import { RefreshCwIcon, ShieldIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { PropertyList } from "@/components/property-list";
-import { SectionFrame } from "@/components/detail";
+import { RefreshCwIcon, ShieldIcon } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { PropertyList } from "@/components/property-list"
+import { SectionFrame } from "@/components/detail"
 import {
   RegionEmpty,
   RegionError,
   RegionSkeleton,
-} from "@/components/region-states";
-import { fmtInt } from "@/lib/format";
-import type { QueueGarbageCollection } from "@/lib/rabbit-api";
-import { ConditionalRender } from "@/components/conditional-render";
+} from "@/components/region-states"
+import { fmtInt } from "@/lib/format"
+import type { QueueGarbageCollection } from "@/lib/rabbit-api"
+import { ConditionalRender } from "@/components/conditional-render"
 
 interface RegionProps {
-  loading: boolean;
-  error: string | null;
-  onRetry: () => void;
+  loading: boolean
+  error: string | null
+  onRetry: () => void
 }
 
 function RetryAction({ onRetry }: { onRetry: () => void }) {
@@ -23,7 +23,7 @@ function RetryAction({ onRetry }: { onRetry: () => void }) {
       <RefreshCwIcon data-icon="inline-start" aria-hidden="true" />
       Retry
     </Button>
-  );
+  )
 }
 
 export function QueueArgumentsFrame({
@@ -32,7 +32,7 @@ export function QueueArgumentsFrame({
   error,
   onRetry,
 }: RegionProps & { args: Record<string, unknown> }) {
-  const entries = Object.entries(args);
+  const entries = Object.entries(args)
   return (
     <SectionFrame
       title="Arguments"
@@ -52,7 +52,7 @@ export function QueueArgumentsFrame({
         />
       )}
     </SectionFrame>
-  );
+  )
 }
 
 export function QueuePolicyFrame({
@@ -63,11 +63,11 @@ export function QueuePolicyFrame({
   error,
   onRetry,
 }: RegionProps & {
-  policy: string | null;
-  operatorPolicy: string | null;
-  definition: Record<string, unknown>;
+  policy: string | null
+  operatorPolicy: string | null
+  definition: Record<string, unknown>
 }) {
-  const entries = Object.entries(definition);
+  const entries = Object.entries(definition)
   return (
     <SectionFrame
       title="Effective policy"
@@ -112,18 +112,17 @@ export function QueuePolicyFrame({
         </div>
       </ConditionalRender>
     </SectionFrame>
-  );
+  )
 }
 
 type GarbageCollectionItemProps = {
   fact: {
-    label: string;
-    value: number | null;
+    label: string
+    value: number | null
   }
 }
 
-function GarbageCollectionItem({fact}: GarbageCollectionItemProps)
-{
+function GarbageCollectionItem({ fact }: GarbageCollectionItemProps) {
   return (
     <div className="flex items-start justify-between gap-4 py-2 first:pt-0 last:pb-0">
       <dt className="text-xs text-muted-foreground">{fact.label}</dt>
@@ -131,7 +130,7 @@ function GarbageCollectionItem({fact}: GarbageCollectionItemProps)
         {fact.value === null ? "—" : fmtInt(fact.value)}
       </dd>
     </div>
-  );
+  )
 }
 
 export function QueueGarbageCollectionFrame({
@@ -142,7 +141,10 @@ export function QueueGarbageCollectionFrame({
 }: RegionProps & { collection: QueueGarbageCollection | null }) {
   const facts = collection
     ? [
-        { label: "Number of minor GCs (minor_gcs)", value: collection.minorGcs },
+        {
+          label: "Number of minor GCs (minor_gcs)",
+          value: collection.minorGcs,
+        },
         {
           label:
             "Maximum generational collections before fullsweep (fullsweep_after)",
@@ -162,7 +164,7 @@ export function QueueGarbageCollectionFrame({
           value: collection.minBinVheapSize,
         },
       ]
-    : [];
+    : []
 
   return (
     <SectionFrame
@@ -194,5 +196,5 @@ export function QueueGarbageCollectionFrame({
         </dl>
       </ConditionalRender>
     </SectionFrame>
-  );
+  )
 }

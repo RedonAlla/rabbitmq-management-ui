@@ -1,16 +1,19 @@
-import { Button } from "@/components/ui/button";
-import type { Connection } from "@/data/types";
-import { UnplugIcon } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
+import { Button } from "@/components/ui/button"
+import type { Connection } from "@/data/types"
+import { UnplugIcon } from "lucide-react"
+import type { Dispatch, SetStateAction } from "react"
 
 type Props = {
-  row: Connection;
-  setPendingClose: Dispatch<SetStateAction<Connection | null>>;
-};
+  row: Connection
+  setPendingClose: Dispatch<SetStateAction<Connection | null>>
+}
 
 export default function GridActions({ row, setPendingClose }: Props) {
   return (
-    <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
+    <div
+      className="flex justify-end"
+      onClick={(event) => event.stopPropagation()}
+    >
       <Button
         type="button"
         variant="destructive"
@@ -22,5 +25,5 @@ export default function GridActions({ row, setPendingClose }: Props) {
         <UnplugIcon aria-hidden="true" />
       </Button>
     </div>
-  );
+  )
 }

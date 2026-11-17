@@ -1,21 +1,34 @@
-import type { DialogRequest } from "@/components/dialogs/dialogs-provider";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import type { Exchange, Queue } from "@/data/types";
-import { MoreHorizontalIcon, SendIcon, Trash2Icon } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
+import type { DialogRequest } from "@/components/dialogs/dialogs-provider"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import type { Exchange, Queue } from "@/data/types"
+import { MoreHorizontalIcon, SendIcon, Trash2Icon } from "lucide-react"
+import type { Dispatch, SetStateAction } from "react"
 
-export type ConfirmState = { kind: "purge" | "delete"; queue: Queue } | null;
+export type ConfirmState = { kind: "purge" | "delete"; queue: Queue } | null
 
 type Props = {
-  row: Exchange;
-  setPendingDelete: Dispatch<SetStateAction<Exchange | null>>;
-  openDialog: (request: DialogRequest) => void;
-};
+  row: Exchange
+  setPendingDelete: Dispatch<SetStateAction<Exchange | null>>
+  openDialog: (request: DialogRequest) => void
+}
 
-export default function GridActions({ row, setPendingDelete, openDialog }: Props) {
+export default function GridActions({
+  row,
+  setPendingDelete,
+  openDialog,
+}: Props) {
   return (
-    <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
+    <div
+      className="flex justify-end"
+      onClick={(event) => event.stopPropagation()}
+    >
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
@@ -54,5 +67,5 @@ export default function GridActions({ row, setPendingDelete, openDialog }: Props
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  );
+  )
 }

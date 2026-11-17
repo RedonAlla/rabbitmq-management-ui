@@ -1,5 +1,9 @@
 import { Badge } from "@/components/reui/badge"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import type { Queue } from "@/data/types"
 
 interface Feature {
@@ -17,7 +21,7 @@ const DEDICATED_ARGS = new Set([
   "x-dead-letter-routing-key",
   "x-max-priority",
   "x-overflow",
-  "x-queue-type"
+  "x-queue-type",
 ])
 
 function queueFeatures(queue: Queue): Feature[] {
@@ -53,7 +57,8 @@ function queueFeatures(queue: Queue): Feature[] {
     {
       short: "Exp",
       name: "Queue expiry",
-      description: "Queue is deleted after being unused for the specified time (ms).",
+      description:
+        "Queue is deleted after being unused for the specified time (ms).",
       active: hasArg("x-expires"),
     },
     {
@@ -110,17 +115,12 @@ function queueFeatures(queue: Queue): Feature[] {
     .map(({ short, name, description }) => ({ short, name, description }))
 }
 
-function FeatureItem({ feature }: { feature: Feature })
-{
+function FeatureItem({ feature }: { feature: Feature }) {
   return (
     <Tooltip key={feature.short}>
       <TooltipTrigger
         render={
-          <Badge
-            variant="outline"
-            tabIndex={0}
-            aria-label={feature.name}
-          >
+          <Badge variant="outline" tabIndex={0} aria-label={feature.name}>
             {feature.short}
           </Badge>
         }
@@ -133,7 +133,7 @@ function FeatureItem({ feature }: { feature: Feature })
         <span className="opacity-80">{feature.description}</span>
       </TooltipContent>
     </Tooltip>
-  );
+  )
 }
 
 export default function QueueFeatures({ queue }: { queue: Queue }) {

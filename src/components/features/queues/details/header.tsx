@@ -5,22 +5,22 @@ import {
   MoreHorizontalIcon,
   SendIcon,
   Trash2Icon,
-} from "lucide-react";
-import { Badge } from "@/components/reui/badge";
-import { Button } from "@/components/ui/button";
+} from "lucide-react"
+import { Badge } from "@/components/reui/badge"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { PageHeader } from "@/components/page-header";
-import { StateBadge, TypeBadge, VhostBadge } from "@/components/badges";
-import { useDialogs } from "@/components/dialogs/dialogs-provider";
-import { routeHref } from "@/lib/router";
-import type { Queue } from "@/data/types";
-import type { QueueDetail } from "@/lib/rabbit-api";
+} from "@/components/ui/dropdown-menu"
+import { PageHeader } from "@/components/page-header"
+import { StateBadge, TypeBadge, VhostBadge } from "@/components/badges"
+import { useDialogs } from "@/components/dialogs/dialogs-provider"
+import { routeHref } from "@/lib/router"
+import type { Queue } from "@/data/types"
+import type { QueueDetail } from "@/lib/rabbit-api"
 
 export function QueueBackButton() {
   return (
@@ -32,16 +32,16 @@ export function QueueBackButton() {
       <ArrowLeftIcon data-icon="inline-start" aria-hidden="true" />
       Back to queues
     </Button>
-  );
+  )
 }
 
 type Props = {
-  queue: Queue;
-  detail: QueueDetail | null;
-  onPurge: () => void;
-  onDelete: () => void;
-  onAddBinding: () => void;
-};
+  queue: Queue
+  detail: QueueDetail | null
+  onPurge: () => void
+  onDelete: () => void
+  onAddBinding: () => void
+}
 
 export function QueueDetailHeader({
   queue,
@@ -50,8 +50,8 @@ export function QueueDetailHeader({
   onDelete,
   onAddBinding,
 }: Props) {
-  const { openDialog } = useDialogs();
-  const publish = () => openDialog({ type: "publish", vhost: queue.vhost });
+  const { openDialog } = useDialogs()
+  const publish = () => openDialog({ type: "publish", vhost: queue.vhost })
 
   return (
     <PageHeader
@@ -113,5 +113,5 @@ export function QueueDetailHeader({
         </>
       }
     />
-  );
+  )
 }

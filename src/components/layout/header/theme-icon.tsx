@@ -1,16 +1,13 @@
-import {
-  MoonIcon,
-  SunIcon,
-} from "lucide-react";
+import { MoonIcon, SunIcon } from "lucide-react"
 
 type Props = {
-  isDark: boolean;
+  isDark: boolean
 }
 
-export function ThemeIcon({isDark}: Props) {
-  return (
-    isDark
-      ? <SunIcon aria-hidden="true" />
-      : <MoonIcon aria-hidden="true" />
+export function ThemeIcon({ isDark }: Props) {
+  return isDark ? (
+    <SunIcon aria-hidden="true" />
+  ) : (
+    <MoonIcon aria-hidden="true" />
   )
 }

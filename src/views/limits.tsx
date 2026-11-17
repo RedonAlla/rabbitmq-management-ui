@@ -1,57 +1,72 @@
-import { useMemo } from "react";
-import { Gauge, PencilIcon, PlusIcon } from "lucide-react";
-import { useTable, type ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@/components/reui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { PageHeader } from "@/components/page-header";
-import { useDialogs } from "@/components/dialogs/dialogs-provider";
-import { useCluster } from "@/store/cluster";
-import { fmtInt, pct } from "@/lib/format";
-import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
-import { Skeleton } from "@/components/ui/skeleton";
-import GridEmptyState from "@/components/ui/empty-state";
-import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants";
-import { Frame, FrameFooter, FramePanel } from "@/components/reui/frame";
-import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
-import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
-import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
+import { useMemo } from "react"
+import { Gauge, PencilIcon, PlusIcon } from "lucide-react"
+import { useTable, type ColumnDef } from "@tanstack/react-table"
+import { Badge } from "@/components/reui/badge"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
+import { PageHeader } from "@/components/page-header"
+import { useDialogs } from "@/components/dialogs/dialogs-provider"
+import { useCluster } from "@/store/cluster"
+import { fmtInt, pct } from "@/lib/format"
+import {
+  DataGrid,
+  dataGridFeatures,
+  type DataGridFeatures,
+} from "@/components/reui/data-grid/data-grid"
+import { Skeleton } from "@/components/ui/skeleton"
+import GridEmptyState from "@/components/ui/empty-state"
+import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants"
+import { Frame, FrameFooter, FramePanel } from "@/components/reui/frame"
+import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
+import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
+import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination"
 
 export function LimitsView() {
-  const { data, status, error, actions } = useCluster();
-  const { openDialog } = useDialogs();
+  const { data, status, error, actions } = useCluster()
+  const { openDialog } = useDialogs()
 
   const rows = useMemo(
     () =>
       data.limits.map((limit) => ({
         limit,
-        usedConnections: data.connections.filter((connection) => connection.vhost === limit.vhost)
+        usedConnections: data.connections.filter(
+          (connection) => connection.vhost === limit.vhost
+        ).length,
+        usedQueues: data.queues.filter((queue) => queue.vhost === limit.vhost)
           .length,
-        usedQueues: data.queues.filter((queue) => queue.vhost === limit.vhost).length,
       })),
     [data.limits, data.connections, data.queues]
-  );
+  )
 
   const statusFor = (used: number, max: number) => {
-    const usage = pct(used, max);
-    if (usage >= 100) return { label: "At limit", variant: "destructive-light" as const };
-    if (usage >= 80) return { label: "Near limit", variant: "warning-light" as const };
-    return { label: "Within limit", variant: "success-light" as const };
-  };
+    const usage = pct(used, max)
+    if (usage >= 100)
+      return { label: "At limit", variant: "destructive-light" as const }
+    if (usage >= 80)
+      return { label: "Near limit", variant: "warning-light" as const }
+    return { label: "Within limit", variant: "success-light" as const }
+  }
 
   const columns = useMemo<ColumnDef<DataGridFeatures, (typeof rows)[number]>[]>(
     () => [
       {
         id: "vhost",
         header: () => <span>Virtual host</span>,
-        cell: ({ row }) => <span className="data-cell font-medium">{row.original.limit.vhost}</span>,
-        meta: { skeleton: <Skeleton className="h-4 w-25" /> }
+        cell: ({ row }) => (
+          <span className="data-cell font-medium">
+            {row.original.limit.vhost}
+          </span>
+        ),
+        meta: { skeleton: <Skeleton className="h-4 w-25" /> },
       },
       {
         id: "connections",
         header: () => <span>Connections</span>,
         cell: ({ row }) => {
-          const usage = pct(row.original.usedConnections, row.original.limit.maxConnections);
+          const usage = pct(
+            row.original.usedConnections,
+            row.original.limit.maxConnections
+          )
           return (
             <div className="flex w-40 flex-col gap-1">
               <div className="flex items-baseline justify-between gap-2">
@@ -61,22 +76,27 @@ export function LimitsView() {
                     / {fmtInt(row.original.limit.maxConnections)}
                   </span>
                 </span>
-                <span className="text-xs text-muted-foreground">{usage.toFixed(0)}%</span>
+                <span className="text-xs text-muted-foreground">
+                  {usage.toFixed(0)}%
+                </span>
               </div>
               <Progress
                 value={usage}
                 aria-label={`Connection usage for ${row.original.limit.vhost}`}
               />
             </div>
-          );
+          )
         },
-        meta: { skeleton: <Skeleton className="h-4 w-25" /> }
+        meta: { skeleton: <Skeleton className="h-4 w-25" /> },
       },
       {
         id: "queues",
         header: () => <span>Queues</span>,
         cell: ({ row }) => {
-          const usage = pct(row.original.usedQueues, row.original.limit.maxQueues);
+          const usage = pct(
+            row.original.usedQueues,
+            row.original.limit.maxQueues
+          )
           return (
             <div className="flex w-40 flex-col gap-1">
               <div className="flex items-baseline justify-between gap-2">
@@ -86,13 +106,18 @@ export function LimitsView() {
                     / {fmtInt(row.original.limit.maxQueues)}
                   </span>
                 </span>
-                <span className="text-xs text-muted-foreground">{usage.toFixed(0)}%</span>
+                <span className="text-xs text-muted-foreground">
+                  {usage.toFixed(0)}%
+                </span>
               </div>
-              <Progress value={usage} aria-label={`Queue usage for ${row.original.limit.vhost}`} />
+              <Progress
+                value={usage}
+                aria-label={`Queue usage for ${row.original.limit.vhost}`}
+              />
             </div>
-          );
+          )
         },
-        meta: { skeleton: <Skeleton className="h-4 w-25" /> }
+        meta: { skeleton: <Skeleton className="h-4 w-25" /> },
       },
       {
         id: "status",
@@ -101,16 +126,23 @@ export function LimitsView() {
           const connectionStatus = statusFor(
             row.original.usedConnections,
             row.original.limit.maxConnections
-          );
-          const queueStatus = statusFor(row.original.usedQueues, row.original.limit.maxQueues);
-          const severity = { "success-light": 0, "warning-light": 1, "destructive-light": 2 };
+          )
+          const queueStatus = statusFor(
+            row.original.usedQueues,
+            row.original.limit.maxQueues
+          )
+          const severity = {
+            "success-light": 0,
+            "warning-light": 1,
+            "destructive-light": 2,
+          }
           const worst =
             severity[queueStatus.variant] > severity[connectionStatus.variant]
               ? queueStatus
-              : connectionStatus;
-          return <Badge variant={worst.variant}>{worst.label}</Badge>;
+              : connectionStatus
+          return <Badge variant={worst.variant}>{worst.label}</Badge>
         },
-        meta: { skeleton: <Skeleton className="h-4 w-25" /> }
+        meta: { skeleton: <Skeleton className="h-4 w-25" /> },
       },
       {
         id: "actions",
@@ -121,18 +153,23 @@ export function LimitsView() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => openDialog({ type: "edit-limits", vhost: row.original.limit.vhost })}
+              onClick={() =>
+                openDialog({
+                  type: "edit-limits",
+                  vhost: row.original.limit.vhost,
+                })
+              }
             >
               <PencilIcon data-icon="inline-start" aria-hidden="true" />
               Edit
             </Button>
           </div>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-25" /> }
+        meta: { skeleton: <Skeleton className="h-4 w-25" /> },
       },
     ],
     [openDialog]
-  );
+  )
 
   const table = useTable({
     features: dataGridFeatures,
@@ -140,7 +177,7 @@ export function LimitsView() {
     data: rows,
     columns,
     initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
-  });
+  })
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -148,7 +185,10 @@ export function LimitsView() {
         title="Limits"
         description="Connection and queue caps per virtual host."
         actions={
-          <Button type="button" onClick={() => openDialog({ type: "edit-limits" })}>
+          <Button
+            type="button"
+            onClick={() => openDialog({ type: "edit-limits" })}
+          >
             <PlusIcon data-icon="inline-start" aria-hidden="true" />
             Add limits
           </Button>
@@ -167,7 +207,10 @@ export function LimitsView() {
             error={error}
             retry={actions.retry}
             action={
-              <Button type="button" onClick={() => openDialog({ type: "edit-limits" })}>
+              <Button
+                type="button"
+                onClick={() => openDialog({ type: "edit-limits" })}
+              >
                 <PlusIcon data-icon="inline-start" aria-hidden="true" />
                 Add limits
               </Button>
@@ -193,5 +236,5 @@ export function LimitsView() {
         </Frame>
       </DataGrid>
     </div>
-  );
+  )
 }

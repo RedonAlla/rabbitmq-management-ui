@@ -20,7 +20,13 @@ import { useRender } from "@base-ui/react/use-render"
 
 import { cn } from "cn"
 import { Spinner } from "@/components/ui/spinner"
-import { LoaderCircleIcon, MinusIcon, CheckIcon, RotateCwIcon, ChevronRightIcon } from "lucide-react"
+import {
+  LoaderCircleIcon,
+  MinusIcon,
+  CheckIcon,
+  RotateCwIcon,
+  ChevronRightIcon,
+} from "lucide-react"
 
 // Base UI extends its synthetic events with a handler-veto escape hatch.
 type VetoableEvent = { preventBaseUIHandler?: () => void }
@@ -33,8 +39,7 @@ export type CascaderRowEvent = React.MouseEvent<HTMLElement> & VetoableEvent
 // check have to land on the same number, in LOGICAL properties. These eight
 // numbers MIRROR the shared style sheets; keep them in step with
 // `registry/styles/style-*.css`.
-const ROW_INSET_CLASS =
-  "[--cascader-row-inset:6px]"
+const ROW_INSET_CLASS = "[--cascader-row-inset:6px]"
 
 // Both insets equal, for a row with no check. `!` because a consumer may not
 // import the sheets into `layer(base)`, where the class would win on order.
@@ -66,11 +71,9 @@ const ROW_THEME_CLASS =
  * it would have to lose to. Not receiving the token beats overriding it with
  * `!`, which a consumer then has to fight in turn.
  */
-const ROW_GAP_CLASS =
-  "gap-2"
+const ROW_GAP_CLASS = "gap-2"
 
-const ROW_TEXT_CLASS =
-  "text-sm"
+const ROW_TEXT_CLASS = "text-sm"
 
 const ROW_SHELL_CLASS = `${ROW_THEME_CLASS} relative flex w-full cursor-default items-center outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 ${ROW_INSET_CLASS}`
 
@@ -424,7 +427,7 @@ const CascaderItem = React.memo(function CascaderItem({
       className: cn(
         ROW_SHELL_CLASS,
         ROW_FLUSH_CLASS,
-        "text-muted-foreground justify-center gap-1.5 text-xs",
+        "justify-center gap-1.5 text-xs text-muted-foreground",
         !error && !loading && "hover:text-foreground",
         mode === "tree" &&
           "ps-[calc(var(--cascader-row-inset,8px)_+_var(--cascader-indent,0px))]!",
@@ -441,7 +444,7 @@ const CascaderItem = React.memo(function CascaderItem({
         {/* TEXT, not a button: a focusable element inside a `role="option"`
             row is a `nested-interactive` violation. */}
         {error ? (
-          <span className="text-foreground font-medium">{labels.retry}</span>
+          <span className="font-medium text-foreground">{labels.retry}</span>
         ) : null}
       </>
     )
@@ -514,16 +517,22 @@ const CascaderItem = React.memo(function CascaderItem({
   const checkbox = (
     <span
       data-slot="cascader-item-checkbox"
-      className="border-input in-data-[selected]:bg-primary in-data-[selected]:border-primary in-data-[selected]:text-primary-foreground in-data-[indeterminate]:bg-primary in-data-[indeterminate]:border-primary in-data-[indeterminate]:text-primary-foreground flex size-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors"
+      className="flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-input transition-colors in-data-[indeterminate]:border-primary in-data-[indeterminate]:bg-primary in-data-[indeterminate]:text-primary-foreground in-data-[selected]:border-primary in-data-[selected]:bg-primary in-data-[selected]:text-primary-foreground"
     >
       {/* Colour declared ON THE ICON with `!`; see `CHECKBOX_MARK_CLASS`. */}
       {indeterminate ? (
-        <MinusIcon data-slot="cascader-item-dash" className={cn(CHECKBOX_MARK_CLASS, "size-3")} />
+        <MinusIcon
+          data-slot="cascader-item-dash"
+          className={cn(CHECKBOX_MARK_CLASS, "size-3")}
+        />
       ) : (
-        <CheckIcon data-slot="cascader-item-tick" className={cn(
-                              CHECKBOX_MARK_CLASS,
-                              "size-3 opacity-0 in-data-[selected]:opacity-100"
-                            )} />
+        <CheckIcon
+          data-slot="cascader-item-tick"
+          className={cn(
+            CHECKBOX_MARK_CLASS,
+            "size-3 opacity-0 in-data-[selected]:opacity-100"
+          )}
+        />
       )}
     </span>
   )
@@ -533,7 +542,10 @@ const CascaderItem = React.memo(function CascaderItem({
       {multiple ? (
         checkbox
       ) : (
-        <CheckIcon data-slot="cascader-item-check" className={cn("pointer-events-none", INDICATOR_MARK_CLASS)} />
+        <CheckIcon
+          data-slot="cascader-item-check"
+          className={cn("pointer-events-none", INDICATOR_MARK_CLASS)}
+        />
       )}
     </>
   )
@@ -567,15 +579,17 @@ const CascaderItem = React.memo(function CascaderItem({
           ) : childrenError ? (
             <RotateCwIcon className="size-4" />
           ) : (
-            <ChevronRightIcon className={cn(
-                                              "size-4 transition-transform",
-                                              /* Collapsed it points INTO the level, so it mirrors; expanded
+            <ChevronRightIcon
+              className={cn(
+                "size-4 transition-transform",
+                /* Collapsed it points INTO the level, so it mirrors; expanded
                                                  it points DOWN, the same in both writing modes, so the mirror
                                                  has to come off or `scaleX(-1)` composed with `rotate(90deg)`
                                                  lands it pointing up. `rtl:rotate-90` beside `rotate-90` was
                                                  a no-op that only looked like it handled this. */
-                                              expanded ? "rotate-90" : "rtl:-scale-x-100"
-                                            )} />
+                expanded ? "rotate-90" : "rtl:-scale-x-100"
+              )}
+            />
           )}
         </span>
       ) : mode === "tree" ? (
@@ -605,7 +619,7 @@ const CascaderItem = React.memo(function CascaderItem({
       {node.icon ? (
         <span
           data-slot="cascader-item-icon"
-          className="text-muted-foreground flex shrink-0 items-center justify-center"
+          className="flex shrink-0 items-center justify-center text-muted-foreground"
         >
           {node.icon}
         </span>
@@ -620,7 +634,7 @@ const CascaderItem = React.memo(function CascaderItem({
             {node.description ? (
               <span
                 data-slot="cascader-item-description"
-                className="text-muted-foreground w-full truncate text-start text-xs"
+                className="w-full truncate text-start text-xs text-muted-foreground"
               >
                 {node.description}
               </span>
@@ -642,7 +656,7 @@ const CascaderItem = React.memo(function CascaderItem({
         <span
           data-slot="cascader-item-trailing"
           aria-hidden="true"
-          className="text-muted-foreground ms-auto flex shrink-0 items-center gap-1 text-xs tabular-nums"
+          className="ms-auto flex shrink-0 items-center gap-1 text-xs text-muted-foreground tabular-nums"
         >
           {showCount ? (
             <span
@@ -692,7 +706,7 @@ const CascaderItem = React.memo(function CascaderItem({
           /* The count is spoken by the sr-only details span instead. */
           aria-hidden="true"
           className={cn(
-            "text-muted-foreground ms-auto shrink-0 text-xs tabular-nums",
+            "ms-auto shrink-0 text-xs text-muted-foreground tabular-nums",
             showsSelectedCount && "text-primary!"
           )}
         >
@@ -845,7 +859,7 @@ function CascaderItemPath({ node }: { node: CascaderNode }) {
   return (
     <span
       data-slot="cascader-item-path"
-      className="text-muted-foreground flex w-full items-center gap-0.5 truncate text-start text-xs"
+      className="flex w-full items-center gap-0.5 truncate text-start text-xs text-muted-foreground"
     >
       {ancestors.map((ancestor, i) => (
         <React.Fragment key={ancestor.value}>

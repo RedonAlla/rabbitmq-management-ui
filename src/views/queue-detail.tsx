@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import { PageHeader } from "@/components/page-header";
-import { DetailLayout, SectionFrame } from "@/components/detail";
-import { ConfirmDialog } from "@/components/confirm-dialog";
-import { RegionEmpty, RegionError } from "@/components/region-states";
+import { useMemo, useState } from "react"
+import { toast } from "sonner"
+import { PageHeader } from "@/components/page-header"
+import { DetailLayout, SectionFrame } from "@/components/detail"
+import { ConfirmDialog } from "@/components/confirm-dialog"
+import { RegionEmpty, RegionError } from "@/components/region-states"
 import {
   AddBindingDialog,
   MessageRatesChart,
@@ -17,43 +17,43 @@ import {
   QueueLifecyclePanel,
   QueueStoragePanel,
   ReductionsChart,
-} from "@/components/features/queues/details";
-import { KpiSkeleton } from "@/components/kpi-skeleton";
-import { useCluster } from "@/store/cluster";
-import { useRoute, routeHref } from "@/lib/router";
-import { fmtInt } from "@/lib/format";
-import type { QueueRateRange } from "@/lib/rabbit-api";
-import { useQueueDetail } from "@/hooks/use-queue-detail";
-import QueueConsumersTable from "@/views/queues/consumers-table";
-import QueueBindingsFrame from "@/views/queues/bindings-frame";
+} from "@/components/features/queues/details"
+import { KpiSkeleton } from "@/components/kpi-skeleton"
+import { useCluster } from "@/store/cluster"
+import { useRoute, routeHref } from "@/lib/router"
+import { fmtInt } from "@/lib/format"
+import type { QueueRateRange } from "@/lib/rabbit-api"
+import { useQueueDetail } from "@/hooks/use-queue-detail"
+import QueueConsumersTable from "@/views/queues/consumers-table"
+import QueueBindingsFrame from "@/views/queues/bindings-frame"
 import {
   QueueArgumentsFrame,
   QueueGarbageCollectionFrame,
   QueuePolicyFrame,
-} from "@/views/queues/properties";
-import { NotFoundView } from "@/views/not-found";
-import { ConditionalRender } from "@/components/conditional-render";
+} from "@/views/queues/properties"
+import { NotFoundView } from "@/views/not-found"
+import { ConditionalRender } from "@/components/conditional-render"
 
 export function QueueDetailView() {
-  const { route, navigate } = useRoute();
+  const { route, navigate } = useRoute()
   const {
     data,
     status: clusterStatus,
     error: clusterError,
     actions,
-  } = useCluster();
-  const [range, setRange] = useState<QueueRateRange>(600);
-  const [confirm, setConfirm] = useState<"purge" | "delete" | null>(null);
-  const [bindingOpen, setBindingOpen] = useState(false);
+  } = useCluster()
+  const [range, setRange] = useState<QueueRateRange>(600)
+  const [confirm, setConfirm] = useState<"purge" | "delete" | null>(null)
+  const [bindingOpen, setBindingOpen] = useState(false)
 
-  const queue = data.queues.find((entry) => entry.name === route.id);
+  const queue = data.queues.find((entry) => entry.name === route.id)
   const {
     detail,
     loading,
     error,
     status,
     retry: retryDetail,
-  } = useQueueDetail(queue?.vhost, route.id, range);
+  } = useQueueDetail(queue?.vhost, route.id, range)
 
   const bindings = useMemo(
     () =>
@@ -62,11 +62,11 @@ export function QueueDetailView() {
           binding.destination === queue?.name && binding.vhost === queue?.vhost
       ),
     [data.bindings, queue]
-  );
+  )
 
   if (!queue) {
     if (clusterStatus === "loading" && !clusterError) {
-      return <QueueDetailSkeleton title={route.id ?? "Queue"} />;
+      return <QueueDetailSkeleton title={route.id ?? "Queue"} />
     }
     if (clusterError) {
       return (
@@ -80,14 +80,14 @@ export function QueueDetailView() {
             <RegionError message={clusterError} onRetry={actions.retry} />
           </SectionFrame>
         </div>
-      );
+      )
     }
     return (
       <NotFoundView
         title="Queue not found"
         description={`No queue named ${route.id ?? "unknown"} exists on this cluster.`}
       />
-    );
+    )
   }
 
   if (error && !detail) {
@@ -114,47 +114,47 @@ export function QueueDetailView() {
           )}
         </SectionFrame>
       </div>
-    );
+    )
   }
 
   const confirmAction = async () => {
-    const ready = detail?.messagesReady ?? queue.ready;
+    const ready = detail?.messagesReady ?? queue.ready
     if (confirm === "purge") {
       try {
-        await actions.purgeQueue(queue.vhost, queue.name);
+        await actions.purgeQueue(queue.vhost, queue.name)
         toast.success("Queue purged", {
           description: `${fmtInt(ready)} messages removed from ${queue.name}.`,
-        });
-        retryDetail();
+        })
+        retryDetail()
       } catch (cause) {
         toast.error("Queue was not purged", {
           description:
             cause instanceof Error
               ? cause.message
               : "The management API did not respond.",
-        });
+        })
       }
     }
     if (confirm === "delete") {
       try {
-        await actions.deleteQueue(queue.vhost, queue.name);
+        await actions.deleteQueue(queue.vhost, queue.name)
         toast.success("Queue deleted", {
           description: `${queue.name} was removed.`,
-        });
-        navigate(routeHref("queues"));
+        })
+        navigate(routeHref("queues"))
       } catch (cause) {
         toast.error("Queue was not deleted", {
           description:
             cause instanceof Error
               ? cause.message
               : "The management API did not respond.",
-        });
+        })
       }
     }
-    setConfirm(null);
-  };
+    setConfirm(null)
+  }
 
-  const hasDetails = (detail !== null);
+  const hasDetails = detail !== null
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -166,10 +166,7 @@ export function QueueDetailView() {
         onAddBinding={() => setBindingOpen(true)}
       />
 
-      <ConditionalRender
-        condition={hasDetails}
-        default={<KpiSkeleton />}
-      >
+      <ConditionalRender condition={hasDetails} default={<KpiSkeleton />}>
         <QueueKpis detail={detail!} />
       </ConditionalRender>
 
@@ -227,7 +224,7 @@ export function QueueDetailView() {
           <>
             <QueueDetailsPanel detail={detail} />
 
-            <ConditionalRender condition={hasDetails} >
+            <ConditionalRender condition={hasDetails}>
               <QueueArgumentsFrame
                 args={detail?.arguments!}
                 loading={loading}
@@ -240,7 +237,7 @@ export function QueueDetailView() {
             <QueueCountersPanel detail={detail} />
             <QueueStoragePanel detail={detail} />
 
-            <ConditionalRender condition={hasDetails} >
+            <ConditionalRender condition={hasDetails}>
               <QueuePolicyFrame
                 policy={detail?.policy!}
                 operatorPolicy={detail?.operatorPolicy!}
@@ -277,5 +274,5 @@ export function QueueDetailView() {
         onConfirm={confirmAction}
       />
     </div>
-  );
+  )
 }

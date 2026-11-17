@@ -10,11 +10,11 @@ import { fmtAgo } from "@/lib/format"
 import { Badge } from "../../reui/badge"
 
 type Props = {
-  lastUpdated: number;
-  version: string;
-  erlang: string;
-  totalNodes: number;
-  totalConnections: number;
+  lastUpdated: number
+  version: string
+  erlang: string
+  totalNodes: number
+  totalConnections: number
 }
 
 export function NavigationFooter({
@@ -22,9 +22,9 @@ export function NavigationFooter({
   version,
   erlang,
   totalNodes,
-  totalConnections
+  totalConnections,
 }: Props) {
-  const { openDialog } = useDialogs();
+  const { openDialog } = useDialogs()
 
   return (
     <SidebarFooter className="p-2">
@@ -37,7 +37,7 @@ export function NavigationFooter({
           <span className="min-w-0 flex-1 truncate text-xs font-medium">
             Cluster online
           </span>
-          <span className="shrink-0 text-mono text-xs text-muted-foreground">
+          <span className="text-mono shrink-0 text-xs text-muted-foreground">
             {fmtAgo(lastUpdated, new Date().getTime())}
           </span>
         </div>

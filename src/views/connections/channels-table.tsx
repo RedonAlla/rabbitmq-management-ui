@@ -61,7 +61,9 @@ export default function ChannelsTable({
         accessorKey: "consumerCount",
         header: () => <span>Consumers</span>,
         cell: ({ row }) => (
-          <span className="data-cell">{fmtInt(row.original.consumerCount)}</span>
+          <span className="data-cell">
+            {fmtInt(row.original.consumerCount)}
+          </span>
         ),
         meta: numericMeta,
       },

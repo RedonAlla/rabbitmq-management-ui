@@ -112,7 +112,16 @@ export function useConnections(
       })
 
     return () => controller.abort()
-  }, [token, pageIndex, pageSize, search, vhost, sortField, sortReverse, requestKey])
+  }, [
+    token,
+    pageIndex,
+    pageSize,
+    search,
+    vhost,
+    sortField,
+    sortReverse,
+    requestKey,
+  ])
 
   const retry = useCallback(() => {
     setRefreshId((current) => current + 1)

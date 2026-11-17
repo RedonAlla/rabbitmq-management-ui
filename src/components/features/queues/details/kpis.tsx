@@ -3,11 +3,11 @@ import {
   MemoryStickIcon,
   MessageSquareIcon,
   TimerIcon,
-} from "lucide-react";
-import { KpiCard, KpiGrid } from "@/components/kpi";
-import { fmtBytes, fmtInt, fmtRate } from "@/lib/format";
-import type { QueueDetail } from "@/lib/rabbit-api";
-import { chronological, rateValues } from "@/lib/chart-data";
+} from "lucide-react"
+import { KpiCard, KpiGrid } from "@/components/kpi"
+import { fmtBytes, fmtInt, fmtRate } from "@/lib/format"
+import type { QueueDetail } from "@/lib/rabbit-api"
+import { chronological, rateValues } from "@/lib/chart-data"
 
 export function QueueKpis({ detail }: { detail: QueueDetail }) {
   return (
@@ -43,5 +43,5 @@ export function QueueKpis({ detail }: { detail: QueueDetail }) {
         icon={<MemoryStickIcon aria-hidden="true" />}
       />
     </KpiGrid>
-  );
+  )
 }

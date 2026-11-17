@@ -1,8 +1,8 @@
-import { FactPanel, SectionFrame } from "@/components/detail";
-import { StateBadge, TypeBadge } from "@/components/badges";
-import { RegionSkeleton } from "@/components/region-states";
-import { fmtInt } from "@/lib/format";
-import type { QueueDetail } from "@/lib/rabbit-api";
+import { FactPanel, SectionFrame } from "@/components/detail"
+import { StateBadge, TypeBadge } from "@/components/badges"
+import { RegionSkeleton } from "@/components/region-states"
+import { fmtInt } from "@/lib/format"
+import type { QueueDetail } from "@/lib/rabbit-api"
 
 export function QueueDetailsPanel({ detail }: { detail: QueueDetail | null }) {
   if (!detail) {
@@ -10,7 +10,7 @@ export function QueueDetailsPanel({ detail }: { detail: QueueDetail | null }) {
       <SectionFrame title="Details">
         <RegionSkeleton rows={6} />
       </SectionFrame>
-    );
+    )
   }
 
   return (
@@ -54,5 +54,5 @@ export function QueueDetailsPanel({ detail }: { detail: QueueDetail | null }) {
         },
       ]}
     />
-  );
+  )
 }

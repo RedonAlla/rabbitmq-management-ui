@@ -1,13 +1,13 @@
-import { RefreshCwIcon, UsersIcon } from "lucide-react";
-import { Badge } from "@/components/reui/badge";
-import { ConsumerArguments } from "@/components/consumer-arguments";
-import { SectionFrame } from "@/components/detail";
+import { RefreshCwIcon, UsersIcon } from "lucide-react"
+import { Badge } from "@/components/reui/badge"
+import { ConsumerArguments } from "@/components/consumer-arguments"
+import { SectionFrame } from "@/components/detail"
 import {
   RegionEmpty,
   RegionError,
   RegionSkeleton,
-} from "@/components/region-states";
-import { Button } from "@/components/ui/button";
+} from "@/components/region-states"
+import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -15,18 +15,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { fmtDuration, fmtInt } from "@/lib/format";
-import type { QueueConsumer } from "@/lib/rabbit-api";
-import { routeHref } from "@/lib/router";
-import { ConditionalRender } from "@/components/conditional-render";
+} from "@/components/ui/table"
+import { fmtDuration, fmtInt } from "@/lib/format"
+import type { QueueConsumer } from "@/lib/rabbit-api"
+import { routeHref } from "@/lib/router"
+import { ConditionalRender } from "@/components/conditional-render"
 
 type Props = {
-  consumers: QueueConsumer[];
-  loading: boolean;
-  error: string | null;
-  onRetry: () => void;
-};
+  consumers: QueueConsumer[]
+  loading: boolean
+  error: string | null
+  onRetry: () => void
+}
 
 export default function QueueConsumersTable({
   consumers,
@@ -56,7 +56,12 @@ export default function QueueConsumersTable({
             description="Messages accumulate until a consumer subscribes."
             icon={<UsersIcon />}
             action={
-              <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onRetry}
+              >
                 <RefreshCwIcon data-icon="inline-start" aria-hidden="true" />
                 Retry
               </Button>
@@ -103,7 +108,9 @@ export default function QueueConsumersTable({
                 <TableCell>{consumer.ackRequired ? "Yes" : "No"}</TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-1.5">
-                    <Badge variant={consumer.active ? "success-light" : "outline"}>
+                    <Badge
+                      variant={consumer.active ? "success-light" : "outline"}
+                    >
                       {consumer.active ? "Active" : "Inactive"}
                     </Badge>
                     {consumer.exclusive ? (
@@ -133,5 +140,5 @@ export default function QueueConsumersTable({
         </Table>
       </ConditionalRender>
     </SectionFrame>
-  );
+  )
 }

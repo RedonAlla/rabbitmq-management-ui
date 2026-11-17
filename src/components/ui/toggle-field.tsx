@@ -1,13 +1,13 @@
-import { Switch } from "@/components/ui/switch";
+import { Switch } from "@/components/ui/switch"
 
 export default function ToggleField({
   label,
   checked,
   onCheckedChange,
 }: {
-  label: string;
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
+  label: string
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
 }) {
   return (
     <div className="flex items-center justify-between gap-4 rounded-lg border border-input px-2.5 py-1">
@@ -19,5 +19,5 @@ export default function ToggleField({
         aria-label={label}
       />
     </div>
-  );
+  )
 }

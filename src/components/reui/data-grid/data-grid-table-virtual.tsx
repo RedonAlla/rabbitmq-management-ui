@@ -461,7 +461,7 @@ function DataGridTableVirtualStatusRow<TData extends object>({
     <DataGridTableVirtualUtilityRow
       table={table}
       centerCellClassName={cn(
-        "text-muted-foreground py-4 text-center text-sm",
+        "py-4 text-center text-sm text-muted-foreground",
         className
       )}
     >

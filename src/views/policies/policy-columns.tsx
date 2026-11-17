@@ -35,7 +35,7 @@ export function policyColumns(
           </span>
         </div>
       ),
-      meta: { skeleton: <Skeleton className="h-4 w-25" /> }
+      meta: { skeleton: <Skeleton className="h-4 w-25" /> },
     },
     {
       accessorKey: "pattern",
@@ -45,7 +45,7 @@ export function policyColumns(
       cell: ({ row }) => (
         <span className="data-cell text-xs">{row.original.pattern}</span>
       ),
-        meta: { skeleton: <Skeleton className="h-4 w-15" /> }
+      meta: { skeleton: <Skeleton className="h-4 w-15" /> },
     },
     {
       accessorKey: "applyTo",
@@ -55,7 +55,7 @@ export function policyColumns(
       cell: ({ row }) => (
         <span className="text-sm capitalize">{row.original.applyTo}</span>
       ),
-      meta: { skeleton: <Skeleton className="h-4 w-25" /> }
+      meta: { skeleton: <Skeleton className="h-4 w-25" /> },
     },
     {
       id: "definition",
@@ -65,7 +65,7 @@ export function policyColumns(
           {definitionSummary(row.original.definition)}
         </span>
       ),
-      meta: { skeleton: <Skeleton className="h-4 w-15" /> }
+      meta: { skeleton: <Skeleton className="h-4 w-15" /> },
     },
     {
       id: "applied",
@@ -78,7 +78,7 @@ export function policyColumns(
           </Badge>
         )
       },
-      meta: { skeleton: <Skeleton className="h-4 w-15" /> }
+      meta: { skeleton: <Skeleton className="h-4 w-15" /> },
     },
     {
       id: "actions",
@@ -113,7 +113,7 @@ export function policyColumns(
           </DropdownMenu>
         </div>
       ),
-      meta: { skeleton: <Skeleton className="h-4 w-15" /> }
+      meta: { skeleton: <Skeleton className="h-4 w-15" /> },
     },
   ]
 }

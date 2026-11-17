@@ -1,17 +1,17 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import Field from "@/components/ui/field";
-import FormError from "@/components/ui/form-error";
-import { Input } from "@/components/ui/input";
-import JsonSection from "@/components/ui/json-section";
+import { useEffect, useState, type FormEvent } from "react"
+import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import Field from "@/components/ui/field"
+import FormError from "@/components/ui/form-error"
+import { Input } from "@/components/ui/input"
+import JsonSection from "@/components/ui/json-section"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
 import {
   Sheet,
   SheetClose,
@@ -20,62 +20,62 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
-import VhostSelect from "@/components/ui/vhost-select";
-import type { PublishHeaderValue } from "@/lib/rabbit-api";
-import { routeTargets } from "@/lib/topology";
-import { useCluster } from "@/store/cluster";
+} from "@/components/ui/sheet"
+import { Textarea } from "@/components/ui/textarea"
+import VhostSelect from "@/components/ui/vhost-select"
+import type { PublishHeaderValue } from "@/lib/rabbit-api"
+import { routeTargets } from "@/lib/topology"
+import { useCluster } from "@/store/cluster"
 
-const DEFAULT_EXCHANGE = "__default__";
+const DEFAULT_EXCHANGE = "__default__"
 
 function parsePublishHeaders(text: string): {
-  headers: Record<string, PublishHeaderValue>;
-  error: string | null;
+  headers: Record<string, PublishHeaderValue>
+  error: string | null
 } {
-  if (!text.trim()) return { headers: {}, error: null };
-  let parsed: unknown;
+  if (!text.trim()) return { headers: {}, error: null }
+  let parsed: unknown
   try {
-    parsed = JSON.parse(text);
+    parsed = JSON.parse(text)
   } catch {
-    return { headers: {}, error: "Headers must be valid JSON." };
+    return { headers: {}, error: "Headers must be valid JSON." }
   }
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    return { headers: {}, error: "Headers must be a JSON object." };
+    return { headers: {}, error: "Headers must be a JSON object." }
   }
-  const headers: Record<string, PublishHeaderValue> = {};
+  const headers: Record<string, PublishHeaderValue> = {}
   for (const [key, value] of Object.entries(parsed)) {
     if (
       typeof value === "string" ||
       typeof value === "boolean" ||
       (typeof value === "number" && Number.isFinite(value))
     ) {
-      headers[key] = value;
-      continue;
+      headers[key] = value
+      continue
     }
     return {
       headers,
       error: `Header ${key} must be a string, number, or boolean.`,
-    };
+    }
   }
-  return { headers, error: null };
+  return { headers, error: null }
 }
 
 function parsePublishProperties(text: string): {
-  properties: Record<string, unknown>;
-  error: string | null;
+  properties: Record<string, unknown>
+  error: string | null
 } {
-  if (!text.trim()) return { properties: {}, error: null };
-  let parsed: unknown;
+  if (!text.trim()) return { properties: {}, error: null }
+  let parsed: unknown
   try {
-    parsed = JSON.parse(text);
+    parsed = JSON.parse(text)
   } catch {
-    return { properties: {}, error: "Properties must be valid JSON." };
+    return { properties: {}, error: "Properties must be valid JSON." }
   }
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    return { properties: {}, error: "Properties must be a JSON object." };
+    return { properties: {}, error: "Properties must be a JSON object." }
   }
-  return { properties: parsed as Record<string, unknown>, error: null };
+  return { properties: parsed as Record<string, unknown>, error: null }
 }
 
 export default function PublishDrawer({
@@ -84,55 +84,61 @@ export default function PublishDrawer({
   initialExchange,
   initialVhost,
 }: {
-  open: boolean;
-  onClose: () => void;
-  initialExchange?: string;
-  initialVhost?: string;
+  open: boolean
+  onClose: () => void
+  initialExchange?: string
+  initialVhost?: string
 }) {
-  const { data, actions } = useCluster();
-  const [vhost, setVhost] = useState(initialVhost ?? "/");
-  const [exchange, setExchange] = useState(initialExchange ?? DEFAULT_EXCHANGE);
-  const [routingKey, setRoutingKey] = useState("");
-  const [deliveryMode, setDeliveryMode] = useState<"1" | "2">("1");
-  const [payload, setPayload] = useState('{\n  "orderId": "ord_1042",\n  "status": "created"\n}');
-  const [payloadEncoding, setPayloadEncoding] = useState<"string" | "base64">("string");
-  const [properties, setProperties] = useState("");
-  const [propertiesOpen, setPropertiesOpen] = useState(false);
-  const [headers, setHeaders] = useState("");
-  const [headersOpen, setHeadersOpen] = useState(false);
-  const [error, setError] = useState("");
+  const { data, actions } = useCluster()
+  const [vhost, setVhost] = useState(initialVhost ?? "/")
+  const [exchange, setExchange] = useState(initialExchange ?? DEFAULT_EXCHANGE)
+  const [routingKey, setRoutingKey] = useState("")
+  const [deliveryMode, setDeliveryMode] = useState<"1" | "2">("1")
+  const [payload, setPayload] = useState(
+    '{\n  "orderId": "ord_1042",\n  "status": "created"\n}'
+  )
+  const [payloadEncoding, setPayloadEncoding] = useState<"string" | "base64">(
+    "string"
+  )
+  const [properties, setProperties] = useState("")
+  const [propertiesOpen, setPropertiesOpen] = useState(false)
+  const [headers, setHeaders] = useState("")
+  const [headersOpen, setHeadersOpen] = useState(false)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     if (open) {
-      setPropertiesOpen(false);
-      setHeadersOpen(false);
+      setPropertiesOpen(false)
+      setHeadersOpen(false)
     }
-  }, [open]);
+  }, [open])
 
-  const isDefaultExchange = exchange === DEFAULT_EXCHANGE;
-  const resolvedName = isDefaultExchange ? "" : exchange;
+  const isDefaultExchange = exchange === DEFAULT_EXCHANGE
+  const resolvedName = isDefaultExchange ? "" : exchange
   const exchangeRecord = data.exchanges.find(
     (entry) => entry.name === resolvedName && entry.vhost === vhost
-  );
+  )
   const targets = isDefaultExchange
     ? data.queues
-        .filter((queue) => queue.vhost === vhost && queue.name === routingKey.trim())
+        .filter(
+          (queue) => queue.vhost === vhost && queue.name === routingKey.trim()
+        )
         .map((queue) => queue.name)
     : exchangeRecord
       ? routeTargets(exchangeRecord, routingKey, data.bindings, data.queues)
-      : [];
-  const parsedProperties = parsePublishProperties(properties);
-  const parsedHeaders = parsePublishHeaders(headers);
+      : []
+  const parsedProperties = parsePublishProperties(properties)
+  const parsedHeaders = parsePublishHeaders(headers)
 
   const submit = async (event: FormEvent) => {
-    event.preventDefault();
+    event.preventDefault()
     if (parsedProperties.error) {
-      setPropertiesOpen(true);
-      return setError(parsedProperties.error);
+      setPropertiesOpen(true)
+      return setError(parsedProperties.error)
     }
     if (parsedHeaders.error) {
-      setHeadersOpen(true);
-      return setError(parsedHeaders.error);
+      setHeadersOpen(true)
+      return setError(parsedHeaders.error)
     }
     try {
       const routed = await actions.publish({
@@ -146,22 +152,24 @@ export default function PublishDrawer({
           headers: parsedHeaders.headers,
           extra: parsedProperties.properties,
         },
-      });
+      })
       toast.success("Message published", {
         description: routed
           ? targets.length > 0
             ? `Routed to ${targets.join(", ")}`
             : "Routed to a matching destination."
           : "No queue matched the routing key, the message was dropped.",
-      });
-      setError("");
-      onClose();
+      })
+      setError("")
+      onClose()
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "The management API did not respond."
-      );
+        cause instanceof Error
+          ? cause.message
+          : "The management API did not respond."
+      )
     }
-  };
+  }
 
   return (
     <Sheet open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
@@ -172,9 +180,11 @@ export default function PublishDrawer({
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
           <SheetHeader className="gap-2">
             <SheetTitle>Publish message</SheetTitle>
-            <SheetDescription>Send a message through the selected exchange.</SheetDescription>
+            <SheetDescription>
+              Send a message through the selected exchange.
+            </SheetDescription>
           </SheetHeader>
-          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-4 pb-4">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-x-hidden overflow-y-auto px-4 pb-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field
                 label="Virtual host"
@@ -183,8 +193,8 @@ export default function PublishDrawer({
                 <VhostSelect
                   value={vhost}
                   onChange={(next) => {
-                    setVhost(next);
-                    setExchange(DEFAULT_EXCHANGE);
+                    setVhost(next)
+                    setExchange(DEFAULT_EXCHANGE)
                   }}
                 />
               </Field>
@@ -192,7 +202,10 @@ export default function PublishDrawer({
                 label="Exchange"
                 info="The exchange routes the message to queues using the routing key. The default exchange routes to the queue whose name equals the routing key."
               >
-                <Select value={exchange} onValueChange={(next) => setExchange(String(next))}>
+                <Select
+                  value={exchange}
+                  onValueChange={(next) => setExchange(String(next))}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue>
                       {(value) =>
@@ -203,9 +216,13 @@ export default function PublishDrawer({
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={DEFAULT_EXCHANGE}>(default exchange)</SelectItem>
+                    <SelectItem value={DEFAULT_EXCHANGE}>
+                      (default exchange)
+                    </SelectItem>
                     {data.exchanges
-                      .filter((entry) => entry.vhost === vhost && entry.name !== "")
+                      .filter(
+                        (entry) => entry.vhost === vhost && entry.name !== ""
+                      )
                       .map((entry) => (
                         <SelectItem key={entry.name} value={entry.name}>
                           {entry.name}
@@ -264,7 +281,10 @@ export default function PublishDrawer({
                     setPayloadEncoding(String(next) as "string" | "base64")
                   }
                 >
-                  <SelectTrigger id="publish-payload-encoding" className="w-full">
+                  <SelectTrigger
+                    id="publish-payload-encoding"
+                    className="w-full"
+                  >
                     <SelectValue>
                       {(value) => (value === "base64" ? "Base64" : "String")}
                     </SelectValue>
@@ -294,11 +314,13 @@ export default function PublishDrawer({
               info={
                 <div className="flex flex-col gap-2">
                   <p>
-                    You can set other message properties here (delivery mode
-                    and headers are pulled out as the most common cases).
+                    You can set other message properties here (delivery mode and
+                    headers are pulled out as the most common cases).
                   </p>
                   <div className="flex flex-col gap-1">
-                    <p>Invalid properties will be ignored. Valid properties are:</p>
+                    <p>
+                      Invalid properties will be ignored. Valid properties are:
+                    </p>
                     <ul className="flex list-disc flex-col gap-0.5 pl-4">
                       {[
                         "content_type",
@@ -326,13 +348,13 @@ export default function PublishDrawer({
               itemName="property"
               value={properties}
               onChange={(next) => {
-                setProperties(next);
-                setError("");
+                setProperties(next)
+                setError("")
               }}
               open={propertiesOpen}
               onOpenChange={(next) => {
-                setPropertiesOpen(next);
-                setError("");
+                setPropertiesOpen(next)
+                setError("")
               }}
             />
             <JsonSection
@@ -345,23 +367,25 @@ export default function PublishDrawer({
               itemName="header"
               value={headers}
               onChange={(next) => {
-                setHeaders(next);
-                setError("");
+                setHeaders(next)
+                setError("")
               }}
               open={headersOpen}
               onOpenChange={(next) => {
-                setHeadersOpen(next);
-                setError("");
+                setHeadersOpen(next)
+                setError("")
               }}
             />
             <FormError>{error}</FormError>
           </div>
           <SheetFooter className="border-t sm:flex-row sm:justify-end">
-            <SheetClose render={<Button type="button" variant="outline" />}>Cancel</SheetClose>
+            <SheetClose render={<Button type="button" variant="outline" />}>
+              Cancel
+            </SheetClose>
             <Button type="submit">Publish</Button>
           </SheetFooter>
         </form>
       </SheetContent>
     </Sheet>
-  );
+  )
 }

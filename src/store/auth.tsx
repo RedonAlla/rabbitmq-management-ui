@@ -28,7 +28,10 @@ function readStoredUser(): AuthUser | null {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<AuthUser>
-    if (typeof parsed.username !== "string" || typeof parsed.token !== "string") {
+    if (
+      typeof parsed.username !== "string" ||
+      typeof parsed.token !== "string"
+    ) {
       localStorage.removeItem(STORAGE_KEY)
       return null
     }
@@ -43,10 +46,7 @@ function readStoredUser(): AuthUser | null {
   }
 }
 
-async function apiLogin(
-  username: string,
-  password: string
-): Promise<AuthUser> {
+async function apiLogin(username: string, password: string): Promise<AuthUser> {
   const { user, token } = await loginWithPassword(username, password)
   return {
     username: user.name,

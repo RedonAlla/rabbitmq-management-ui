@@ -1,44 +1,48 @@
-import { ConfirmDialog } from "@/components/confirm-dialog";
-import type { Dispatch } from "react";
-import { fmtInt } from "@/lib/format";
-import type { ConfirmState, Kind } from "./queues/types";
-import type { Queue } from "@/data/types";
-import { Case, Switch } from "../conditional-render";
-
+import { ConfirmDialog } from "@/components/confirm-dialog"
+import type { Dispatch } from "react"
+import { fmtInt } from "@/lib/format"
+import type { ConfirmState, Kind } from "./queues/types"
+import type { Queue } from "@/data/types"
+import { Case, Switch } from "../conditional-render"
 
 type Props = {
- confirm: ConfirmState;
- setConfirm: Dispatch<ConfirmState>;
- confirmQueue: () => Promise<void>
+  confirm: ConfirmState
+  setConfirm: Dispatch<ConfirmState>
+  confirmQueue: () => Promise<void>
 }
 
 const titleMapper: Record<Kind, string> = {
-  "purge": "Purge queue?",
-  "delete": "Delete queue?"
+  purge: "Purge queue?",
+  delete: "Delete queue?",
 }
 
 const confirmLabelMapper: Record<Kind, string> = {
-  "purge": "Purge messages",
-  "delete": "Delete queue"
+  purge: "Purge messages",
+  delete: "Delete queue",
 }
 
 const toneMapper: Record<Kind, "default" | "destructive"> = {
-  "purge": "default",
-  "delete": "destructive"
+  purge: "default",
+  delete: "destructive",
 }
 
-function PurgeDescription({ queue }: {queue: Queue}): React.ReactNode {
+function PurgeDescription({ queue }: { queue: Queue }): React.ReactNode {
   return (
     <p>
-      This removes <span className="truncate font-medium">{fmtInt(queue.ready)}</span> ready messages from <span className="truncate text-sm font-medium">{queue.name}</span>. Consumers stay attached.
+      This removes{" "}
+      <span className="truncate font-medium">{fmtInt(queue.ready)}</span> ready
+      messages from{" "}
+      <span className="truncate text-sm font-medium">{queue.name}</span>.
+      Consumers stay attached.
     </p>
   )
 }
 
-function DeleteDescription({ queue }: {queue: Queue}): React.ReactNode {
+function DeleteDescription({ queue }: { queue: Queue }): React.ReactNode {
   return (
     <p>
-      This permanently deletes {queue.name ?? ""} with its bindings and consumers.
+      This permanently deletes {queue.name ?? ""} with its bindings and
+      consumers.
     </p>
   )
 }
@@ -46,8 +50,8 @@ function DeleteDescription({ queue }: {queue: Queue}): React.ReactNode {
 export function QueueConfirmDialog({
   confirm,
   setConfirm,
-  confirmQueue
- }: Props) {
+  confirmQueue,
+}: Props) {
   return (
     <ConfirmDialog
       open={Boolean(confirm)}
@@ -67,5 +71,5 @@ export function QueueConfirmDialog({
       tone={toneMapper[confirm?.kind!]}
       onConfirm={confirmQueue}
     />
-  );
+  )
 }

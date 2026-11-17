@@ -1,13 +1,13 @@
-import { ArrowRightIcon, RefreshCwIcon, UsersIcon } from "lucide-react";
-import { Badge } from "@/components/reui/badge";
-import { ConsumerArguments } from "@/components/consumer-arguments";
-import { SectionFrame } from "@/components/detail";
+import { ArrowRightIcon, RefreshCwIcon, UsersIcon } from "lucide-react"
+import { Badge } from "@/components/reui/badge"
+import { ConsumerArguments } from "@/components/consumer-arguments"
+import { SectionFrame } from "@/components/detail"
 import {
   RegionEmpty,
   RegionError,
   RegionSkeleton,
-} from "@/components/region-states";
-import { Button } from "@/components/ui/button";
+} from "@/components/region-states"
+import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -15,19 +15,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { fmtDuration, fmtInt } from "@/lib/format";
-import type { ChannelConsumer } from "@/lib/rabbit-api";
-import { routeHref } from "@/lib/router";
-import ConsumerActiveColumnHeader from "./consumer-active-column-header";
-import { VhostBadge } from "@/components/badges";
+} from "@/components/ui/table"
+import { fmtDuration, fmtInt } from "@/lib/format"
+import type { ChannelConsumer } from "@/lib/rabbit-api"
+import { routeHref } from "@/lib/router"
+import ConsumerActiveColumnHeader from "./consumer-active-column-header"
+import { VhostBadge } from "@/components/badges"
 
 type Props = {
-  consumers: ChannelConsumer[];
-  loading: boolean;
-  error: string | null;
-  onRetry: () => void;
-};
+  consumers: ChannelConsumer[]
+  loading: boolean
+  error: string | null
+  onRetry: () => void
+}
 
 export default function ConsumersTable({
   consumers,
@@ -66,7 +66,9 @@ export default function ConsumersTable({
               <TableHead>Ack required</TableHead>
               <TableHead>Active</TableHead>
               <TableHead>Prefetch</TableHead>
-              <TableHead><ConsumerActiveColumnHeader /></TableHead>
+              <TableHead>
+                <ConsumerActiveColumnHeader />
+              </TableHead>
               <TableHead>Consumer timeout</TableHead>
               <TableHead>Arguments</TableHead>
             </TableRow>
@@ -96,7 +98,9 @@ export default function ConsumersTable({
                 </TableCell>
                 <TableCell>{consumer.ackRequired ? "Yes" : "No"}</TableCell>
                 <TableCell>
-                  <Badge variant={consumer.active ? "success-light" : "outline"}>
+                  <Badge
+                    variant={consumer.active ? "success-light" : "outline"}
+                  >
                     {consumer.active ? "Active" : "Inactive"}
                   </Badge>
                 </TableCell>
@@ -133,5 +137,5 @@ export default function ConsumersTable({
         </Table>
       )}
     </SectionFrame>
-  );
+  )
 }

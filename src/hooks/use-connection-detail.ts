@@ -81,8 +81,7 @@ export function useConnectionDetail(
     connection,
     loading: Boolean(name) && hasSession && !requestError && !connection,
     error: hasSession
-      ? (requestError ??
-        (name ? null : "No connection was specified."))
+      ? (requestError ?? (name ? null : "No connection was specified."))
       : "Your session has expired. Sign in again.",
     status: requestStatus,
     retry,

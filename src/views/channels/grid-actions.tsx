@@ -1,24 +1,27 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import type { Channel, Queue } from "@/data/types";
-import { MoreHorizontalIcon, XIcon } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import type { Channel, Queue } from "@/data/types"
+import { MoreHorizontalIcon, XIcon } from "lucide-react"
+import type { Dispatch, SetStateAction } from "react"
 
-export type ConfirmState = { kind: "purge" | "delete"; queue: Queue } | null;
+export type ConfirmState = { kind: "purge" | "delete"; queue: Queue } | null
 
 type Props = {
-  row: Channel;
-  setPendingClose: Dispatch<SetStateAction<Channel | null>>;
-};
+  row: Channel
+  setPendingClose: Dispatch<SetStateAction<Channel | null>>
+}
 
 export default function GridActions({ row, setPendingClose }: Props) {
   return (
-    <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
+    <div
+      className="flex justify-end"
+      onClick={(event) => event.stopPropagation()}
+    >
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
@@ -43,5 +46,5 @@ export default function GridActions({ row, setPendingClose }: Props) {
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  );
+  )
 }

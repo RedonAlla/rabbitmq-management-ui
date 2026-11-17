@@ -57,9 +57,7 @@ export type CascaderSearchScope = "level" | "deep" | "global"
  * never satisfy it.
  */
 export type CascaderSelectable<T = unknown> =
-  | "leaf"
-  | "any"
-  | ((node: CascaderNode<T>) => boolean)
+  "leaf" | "any" | ((node: CascaderNode<T>) => boolean)
 
 export type CascaderCollapse = "middle" | "start" | "none"
 
@@ -129,11 +127,7 @@ export interface CascaderLoadState {
 
 /** Why a level was fetched. `resolve`: `resolveValue` hit an unloaded node. */
 export type CascaderLoadReason =
-  | "level"
-  | "more"
-  | "prefetch"
-  | "retry"
-  | "resolve"
+  "level" | "more" | "prefetch" | "retry" | "resolve"
 
 /** Argument handed to `getChildren` and `resolveValue`. */
 export interface CascaderLoadContext {

@@ -1,23 +1,23 @@
-import { RegionError } from "@/components/region-states";
+import { RegionError } from "@/components/region-states"
 import {
   Empty,
   EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
-  EmptyTitle
-} from "@/components/ui/empty";
-import type { ReactNode } from "react";
-import { ConditionalRender } from "../conditional-render";
+  EmptyTitle,
+} from "@/components/ui/empty"
+import type { ReactNode } from "react"
+import { ConditionalRender } from "../conditional-render"
 
 type Props = {
-  error: string | null;
-  retry: () => void;
-  action?: ReactNode;
-  title: string;
-  description: string;
-  icon: ReactNode;
-};
+  error: string | null
+  retry: () => void
+  action?: ReactNode
+  title: string
+  description: string
+  icon: ReactNode
+}
 
 export default function GridEmptyState({
   title,
@@ -25,34 +25,23 @@ export default function GridEmptyState({
   error,
   action,
   retry,
-  icon
+  icon,
 }: Props) {
-
-  if(error != null)
-    return (<RegionError message={error} onRetry={retry} />);
+  if (error != null) return <RegionError message={error} onRetry={retry} />
 
   return (
     <Empty>
-
       <EmptyHeader>
-
-        <EmptyMedia variant="icon">
-          {icon}
-        </EmptyMedia>
+        <EmptyMedia variant="icon">{icon}</EmptyMedia>
 
         <EmptyTitle>{title}</EmptyTitle>
 
-        <EmptyDescription>
-          {description}
-        </EmptyDescription>
-
+        <EmptyDescription>{description}</EmptyDescription>
       </EmptyHeader>
 
       <ConditionalRender condition={action !== undefined}>
-        <EmptyContent>
-            {action}
-        </EmptyContent>
+        <EmptyContent>{action}</EmptyContent>
       </ConditionalRender>
     </Empty>
-  );
+  )
 }

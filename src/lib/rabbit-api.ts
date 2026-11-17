@@ -369,11 +369,10 @@ interface ApiConnection {
   }
 }
 
-interface ApiConnectionDetail
-  extends Omit<
-    ApiConnection,
-    "recv_oct_details" | "send_oct_details" | "client_properties"
-  > {
+interface ApiConnectionDetail extends Omit<
+  ApiConnection,
+  "recv_oct_details" | "send_oct_details" | "client_properties"
+> {
   recv_oct_details: ApiRateDetails
   send_oct_details: ApiRateDetails
   reductions_details?: ApiRateDetails
@@ -684,10 +683,7 @@ export interface RabbitSnapshot {
 export type QueueDeclarationType = QueueType | "default"
 
 export type QueueArgumentValue =
-  | string
-  | number
-  | boolean
-  | Array<string | number | boolean>
+  string | number | boolean | Array<string | number | boolean>
 
 export interface CreateQueueInput {
   name: string
@@ -1558,9 +1554,7 @@ export async function fetchQueues(
   query: QueuesQuery,
   signal?: AbortSignal
 ): Promise<QueuesPage> {
-  const base = query.vhost
-    ? `/api/queues/${enc(query.vhost)}`
-    : "/api/queues"
+  const base = query.vhost ? `/api/queues/${enc(query.vhost)}` : "/api/queues"
   const params = new URLSearchParams({
     page: String(query.page),
     page_size: String(query.pageSize),
@@ -1726,10 +1720,7 @@ export async function closeConnection(
   })
 }
 
-export async function closeChannel(
-  token: string,
-  name: string
-): Promise<void> {
+export async function closeChannel(token: string, name: string): Promise<void> {
   await apiDelete(`/api/channels/${enc(name)}`, token)
 }
 
@@ -1745,14 +1736,21 @@ export async function createQueue(
   const body: Record<string, unknown> = {
     name: input.name,
     vhost: input.vhost,
-    durable: input.type === "classic" || input.type === "default" ? input.durable : true,
+    durable:
+      input.type === "classic" || input.type === "default"
+        ? input.durable
+        : true,
     arguments: args,
   }
   if (input.type !== "default") {
     body.auto_delete = input.type === "classic" ? input.autoDelete : false
   }
 
-  await apiPut(`/api/queues/${enc(input.vhost)}/${enc(input.name)}`, token, body)
+  await apiPut(
+    `/api/queues/${enc(input.vhost)}/${enc(input.name)}`,
+    token,
+    body
+  )
 }
 
 export async function deleteQueue(
@@ -1829,7 +1827,10 @@ export async function publishMessage(
   if (input.properties?.deliveryMode) {
     properties.delivery_mode = input.properties.deliveryMode
   }
-  if (input.properties?.headers && Object.keys(input.properties.headers).length > 0) {
+  if (
+    input.properties?.headers &&
+    Object.keys(input.properties.headers).length > 0
+  ) {
     properties.headers = input.properties.headers
   }
 
@@ -1880,10 +1881,7 @@ export async function createVhost(
   })
 }
 
-export async function deleteVhost(
-  token: string,
-  name: string
-): Promise<void> {
+export async function deleteVhost(token: string, name: string): Promise<void> {
   await apiDelete(`/api/vhosts/${enc(name)}`, token)
 }
 

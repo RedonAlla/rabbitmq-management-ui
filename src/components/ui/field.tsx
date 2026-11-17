@@ -1,7 +1,7 @@
-import type { ReactNode } from "react";
-import { Label } from "@/components/ui/label";
-import InfoTooltip from "@/components/ui/info-tooltip";
-import { cn } from "@/lib/utils";
+import type { ReactNode } from "react"
+import { Label } from "@/components/ui/label"
+import InfoTooltip from "@/components/ui/info-tooltip"
+import { cn } from "@/lib/utils"
 
 export default function Field({
   label,
@@ -10,11 +10,11 @@ export default function Field({
   children,
   className,
 }: {
-  label: string;
-  info?: string;
-  htmlFor?: string;
-  children: ReactNode;
-  className?: string;
+  label: string
+  info?: string
+  htmlFor?: string
+  children: ReactNode
+  className?: string
 }) {
   return (
     <div className={cn("flex min-w-0 flex-col gap-1.5", className)}>
@@ -28,5 +28,5 @@ export default function Field({
       </div>
       {children}
     </div>
-  );
+  )
 }

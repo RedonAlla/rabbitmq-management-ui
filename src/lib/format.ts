@@ -91,7 +91,9 @@ export function fmtDate(timestamp: number): string {
   return dateFmt.format(timestamp)
 }
 
-export function fmtTimestamp(value: number | string | null | undefined): string {
+export function fmtTimestamp(
+  value: number | string | null | undefined
+): string {
   if (value === null || value === undefined || value === "") return "—"
   const timestamp = typeof value === "number" ? value : Date.parse(value)
   if (Number.isNaN(timestamp)) return String(value)
