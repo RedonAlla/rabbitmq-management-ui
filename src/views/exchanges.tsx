@@ -18,7 +18,6 @@ import { filterRows, matchesText } from "@/lib/filtering";
 import type { Exchange, ExchangeType } from "@/data/types";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { DataGrid, dataGridFeatures, type DataGridFeatures } from "@/components/reui/data-grid/data-grid";
-import { Skeleton } from "@/components/ui/skeleton";
 import { fitMeta, numericMeta } from "@/components/table";
 import GridActions from "./exchanges/grid-actions";
 import { Frame, FrameFooter, FrameHeader, FramePanel } from "@/components/reui/frame";

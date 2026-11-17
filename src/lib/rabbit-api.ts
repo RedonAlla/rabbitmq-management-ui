@@ -1737,7 +1737,7 @@ export async function createQueue(
   token: string,
   input: CreateQueueInput
 ): Promise<void> {
-  const args: Record<string, string | number> = { ...input.args }
+  const args: Record<string, QueueArgumentValue> = { ...input.args }
   if (input.type !== "default") {
     args["x-queue-type"] = input.type
   }

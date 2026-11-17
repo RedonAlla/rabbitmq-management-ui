@@ -1,7 +1,3 @@
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuShortcut, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { CircleHelpIcon, RefreshCwIcon } from "lucide-react";
-import { useDialogs } from "@/components/dialogs/dialogs-provider";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { SearchAction } from "./search-action";

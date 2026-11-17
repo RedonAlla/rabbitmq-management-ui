@@ -56,7 +56,7 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
-  const { data, actions } = useCluster();
+  const { data } = useCluster();
   const { navigate } = useRoute();
   const { openDialog } = useDialogs();
   const { theme, setTheme } = useTheme();
