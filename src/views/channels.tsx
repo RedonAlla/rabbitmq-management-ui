@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
 import {
-  useTable,
   type ColumnDef,
   type OnChangeFn,
   type PaginationState,
@@ -18,25 +17,10 @@ import type { Channel } from "@/data/types"
 import { useChannels } from "@/hooks/use-channels"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header"
-import {
-  DataGrid,
-  dataGridFeatures,
-  type DataGridFeatures,
-} from "@/components/reui/data-grid/data-grid"
-import { fitMeta, numericMeta } from "@/components/table"
+import { type DataGridFeatures } from "@/components/reui/data-grid/data-grid"
+import { fitMeta, numericMeta, ServerSideTable } from "@/components/table"
 import GridActions from "./channels/grid-actions"
-import { DEFAULT_PAGES_OPTIONS } from "@/lib/constants"
-import {
-  Frame,
-  FrameFooter,
-  FrameHeader,
-  FramePanel,
-} from "@/components/reui/frame"
-import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
-import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
-import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination"
 import { GitBranch } from "lucide-react"
-import GridEmptyState from "@/components/ui/empty-state"
 import { Button } from "@/components/ui/button"
 import PrefetchColumnHeader from "./channels/prefetch-column-header"
 
@@ -240,21 +224,6 @@ export function ChannelsView() {
     []
   )
 
-  const table = useTable({
-    features: dataGridFeatures,
-    defaultColumn: { size: 120, minSize: 80 },
-    data: channels,
-    columns,
-    manualPagination: true,
-    manualSorting: true,
-    autoResetPageIndex: false,
-    pageCount,
-    rowCount: filteredCount,
-    state: { pagination, sorting },
-    onPaginationChange: handlePaginationChange,
-    onSortingChange: handleSortingChange,
-  })
-
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader
@@ -263,57 +232,40 @@ export function ChannelsView() {
         actions={<Badge variant="outline">{fmtInt(totalCount)} channels</Badge>}
       />
 
-      <DataGrid
-        table={table}
-        recordCount={filteredCount}
+      <ServerSideTable
         isLoading={loading}
-        onRowClick={(channel: Channel) =>
-          navigate(routeHref("channel", channel.id))
-        }
-        emptyMessage={
-          <GridEmptyState
-            icon={<GitBranch />}
-            error={error}
-            title="No channels match"
-            description="No channel matches this search. Clear the filters to see every open channel."
-            retry={retry}
-            action={
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => clearFilters()}
-              >
-                Clear filters
-              </Button>
-            }
+        data={channels}
+        columns={columns}
+        totalCount={filteredCount}
+        pageCount={pageCount}
+        state={{ pagination, sorting }}
+        emptyState={{
+          icon: <GitBranch />,
+          title: "No channels match",
+          description:
+            "No channel matches this search. Clear the filters to see every open channel.",
+          action: (
+            <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+              Clear filters
+            </Button>
+          ),
+        }}
+        error={{
+          message: error,
+          retry,
+        }}
+        actions={
+          <FilterBar
+            search={search}
+            onSearch={handleSearch}
+            placeholder="Search channels by name"
+            className="justify-end"
           />
         }
-        tableLayout={{
-          dense: true,
-          headerBorder: true,
-          width: "auto",
-        }}
-        tableClassNames={{ base: "min-w-[1100px]" }}
-      >
-        <Frame spacing="sm" className="min-w-0">
-          <FrameHeader>
-            <FilterBar
-              search={search}
-              onSearch={handleSearch}
-              placeholder="Search channels by name"
-              className="justify-end"
-            />
-          </FrameHeader>
-          <FramePanel>
-            <DataGridScrollArea>
-              <DataGridTable />
-            </DataGridScrollArea>
-          </FramePanel>
-          <FrameFooter>
-            <DataGridPagination sizes={DEFAULT_PAGES_OPTIONS} />
-          </FrameFooter>
-        </Frame>
-      </DataGrid>
+        onRowClick={(row: Channel) => navigate(routeHref("channel", row.id))}
+        onPaginationChange={handlePaginationChange}
+        onSortingChange={handleSortingChange}
+      />
 
       <ConfirmDialog
         open={Boolean(pendingClose)}

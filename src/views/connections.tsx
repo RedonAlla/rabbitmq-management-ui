@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
 import {
-  useTable,
   type ColumnDef,
   type OnChangeFn,
   type PaginationState,
@@ -18,25 +17,10 @@ import type { Connection } from "@/data/types"
 import { useConnections } from "@/hooks/use-connections"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header"
-import {
-  DataGrid,
-  dataGridFeatures,
-  type DataGridFeatures,
-} from "@/components/reui/data-grid/data-grid"
+import { type DataGridFeatures } from "@/components/reui/data-grid/data-grid"
 import GridActions from "./connections/grid-actions"
-import { fitMeta, numericMeta } from "@/components/table"
-import { DEFAULT_PAGES_OPTIONS } from "@/lib/constants"
-import {
-  Frame,
-  FrameFooter,
-  FrameHeader,
-  FramePanel,
-} from "@/components/reui/frame"
-import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
-import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
-import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination"
+import { fitMeta, numericMeta, ServerSideTable } from "@/components/table"
 import { Plug } from "lucide-react"
-import GridEmptyState from "@/components/ui/empty-state"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -259,21 +243,6 @@ export function ConnectionsView() {
     return list
   }, [])
 
-  const table = useTable({
-    features: dataGridFeatures,
-    defaultColumn: { size: 120, minSize: 80 },
-    data: connections,
-    columns,
-    manualPagination: true,
-    manualSorting: true,
-    autoResetPageIndex: false,
-    pageCount,
-    rowCount: filteredCount,
-    state: { pagination, sorting },
-    onPaginationChange: handlePaginationChange,
-    onSortingChange: handleSortingChange,
-  })
-
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader
@@ -284,57 +253,42 @@ export function ConnectionsView() {
         }
       />
 
-      <DataGrid
-        table={table}
-        recordCount={filteredCount}
+      <ServerSideTable
         isLoading={loading}
-        onRowClick={(connection: Connection) =>
-          navigate(routeHref("connection", connection.id))
-        }
-        emptyMessage={
-          <GridEmptyState
-            icon={<Plug />}
-            error={error}
-            retry={retry}
-            action={
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => clearFilters()}
-              >
-                Clear filters
-              </Button>
-            }
-            title="No connections match"
-            description="No client matches this search. Clear the filters to see every open socket."
+        data={connections}
+        columns={columns}
+        totalCount={filteredCount}
+        pageCount={pageCount}
+        state={{ pagination, sorting }}
+        emptyState={{
+          icon: <Plug />,
+          title: "No connections match",
+          description:
+            "No client matches this search. Clear the filters to see every open socket.",
+          action: (
+            <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+              Clear filters
+            </Button>
+          ),
+        }}
+        error={{
+          message: error,
+          retry,
+        }}
+        actions={
+          <FilterBar
+            search={search}
+            onSearch={handleSearch}
+            placeholder="Search connections by name"
+            className="justify-end"
           />
         }
-        tableLayout={{
-          dense: true,
-          headerBorder: true,
-          width: "auto",
-        }}
-        tableClassNames={{ base: "min-w-[1100px]" }}
-      >
-        <Frame spacing="sm" className="min-w-0">
-          <FrameHeader>
-            <FilterBar
-              search={search}
-              onSearch={handleSearch}
-              placeholder="Search connections by name"
-              className="justify-end"
-            />
-          </FrameHeader>
-          <FramePanel>
-            <DataGridScrollArea>
-              <DataGridTable />
-            </DataGridScrollArea>
-          </FramePanel>
-          <FrameFooter>
-            <DataGridPagination sizes={DEFAULT_PAGES_OPTIONS} />
-          </FrameFooter>
-        </Frame>
-      </DataGrid>
+        onRowClick={(row: Connection) =>
+          navigate(routeHref("connection", row.id))
+        }
+        onPaginationChange={handlePaginationChange}
+        onSortingChange={handleSortingChange}
+      />
 
       <ConfirmDialog
         open={Boolean(pendingClose)}

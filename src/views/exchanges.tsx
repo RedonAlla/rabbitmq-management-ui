@@ -1,13 +1,21 @@
 import { useCallback, useMemo, useState } from "react"
 import { PlusIcon, SendIcon, Waypoints } from "lucide-react"
 import { toast } from "sonner"
-import { useTable, type ColumnDef } from "@tanstack/react-table"
+import {
+  type ColumnDef,
+  type OnChangeFn,
+  type PaginationState,
+  type SortingState,
+} from "@tanstack/react-table"
 import { Badge } from "@/components/reui/badge"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/page-header"
 import { FilterBar } from "@/components/filters-bar"
 import { Filters } from "@/components/reui/filters/filters"
-import { createFilterQuery } from "@/components/reui/filters/filters-query"
+import {
+  createFilterQuery,
+  flattenFilterConditions,
+} from "@/components/reui/filters/filters-query"
 import type {
   FilterField,
   FilterQuery,
@@ -17,59 +25,53 @@ import { useDialogs } from "@/components/dialogs/dialogs-provider"
 import { useCluster } from "@/store/cluster"
 import { useRoute, routeHref } from "@/lib/router"
 import { fmtInt, fmtRate } from "@/lib/format"
-import { filterRows, matchesText } from "@/lib/filtering"
-import type { Exchange, ExchangeType } from "@/data/types"
+import type { Exchange } from "@/data/types"
+import { useExchanges } from "@/hooks/use-exchanges"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header"
-import {
-  DataGrid,
-  dataGridFeatures,
-  type DataGridFeatures,
-} from "@/components/reui/data-grid/data-grid"
+import { type DataGridFeatures } from "@/components/reui/data-grid/data-grid"
 import { fitMeta, numericMeta, ServerSideTable } from "@/components/table"
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants"
 import { GridActions } from "../components/features/exchanges/list"
-import {
-  Frame,
-  FrameFooter,
-  FrameHeader,
-  FramePanel,
-} from "@/components/reui/frame"
-import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination"
-import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants"
-import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
-import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
-import GridEmptyState from "@/components/ui/empty-state"
-
-const EXCHANGE_TYPE_OPTIONS: { value: ExchangeType; label: string }[] = [
-  { value: "direct", label: "Direct" },
-  { value: "fanout", label: "Fanout" },
-  { value: "topic", label: "Topic" },
-  { value: "headers", label: "Headers" },
-  { value: "x-local-random", label: "x-local-random" },
-  { value: "x-modulus-hash", label: "x-modulus-hash" },
-]
 
 export function ExchangesView() {
-  const { data, status, error, actions } = useCluster()
+  const { data, actions } = useCluster()
   const { openDialog } = useDialogs()
   const { navigate } = useRoute()
   const [search, setSearch] = useState("")
+  const debouncedSearch = useDebouncedValue(search, 300)
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: DEFAULT_PAGE_SIZE,
+  })
+  const [sorting, setSorting] = useState<SortingState>([])
   const [query, setQuery] = useState<FilterQuery>(() => createFilterQuery())
   const [pendingDelete, setPendingDelete] = useState<Exchange | null>(null)
 
-  const exchanges = useMemo(
-    () =>
-      filterRows(
-        data.exchanges.filter((exchange) =>
-          matchesText(exchange.name || "default", search)
-        ),
-        query,
-        {
-          vhost: (exchange) => exchange.vhost,
-          type: (exchange) => exchange.type,
-        }
-      ),
-    [data.exchanges, search, query]
-  )
+  const conditions = useMemo(() => flattenFilterConditions(query), [query])
+
+  const vhostFilter = useMemo(() => {
+    const condition = conditions.find(
+      (entry) => entry.field === "vhost" && !entry.negated
+    )
+    const value = condition?.values[0]
+    return typeof value === "string" && value ? value : undefined
+  }, [conditions])
+
+  const {
+    exchanges,
+    filteredCount,
+    pageCount,
+    loading,
+    error,
+    retry,
+  } = useExchanges({
+    pageIndex: pagination.pageIndex,
+    pageSize: pagination.pageSize,
+    search: debouncedSearch,
+    vhost: vhostFilter,
+    sorting,
+  })
 
   const bindingCount = useCallback(
     (exchange: Exchange) =>
@@ -78,6 +80,52 @@ export function ExchangesView() {
           binding.source === exchange.name && binding.vhost === exchange.vhost
       ).length,
     [data.bindings]
+  )
+
+  const resetPage = useCallback(() => {
+    setPagination((previous) =>
+      previous.pageIndex === 0 ? previous : { ...previous, pageIndex: 0 }
+    )
+  }, [])
+
+  const clearFilters = () => {
+    setSearch("")
+    setQuery(createFilterQuery())
+    resetPage()
+  }
+
+  const handleSearch = (value: string) => {
+    setSearch(value)
+    resetPage()
+  }
+
+  const handleQueryChange = useCallback(
+    (next: FilterQuery) => {
+      setQuery(next)
+      resetPage()
+    },
+    [resetPage]
+  )
+
+  const handleSortingChange = useCallback<OnChangeFn<SortingState>>(
+    (updater) => {
+      setSorting(updater)
+      resetPage()
+    },
+    [resetPage]
+  )
+
+  const handlePaginationChange = useCallback<OnChangeFn<PaginationState>>(
+    (updater) => {
+      setPagination((previous) => {
+        const next = typeof updater === "function" ? updater(previous) : updater
+        if (next.pageSize !== previous.pageSize) {
+          return { pageIndex: 0, pageSize: next.pageSize }
+        }
+        return next
+      })
+    },
+    []
   )
 
   const filterFields = useMemo<FilterField[]>(
@@ -90,12 +138,6 @@ export function ExchangesView() {
           value: entry.name,
           label: entry.name,
         })),
-      },
-      {
-        id: "type",
-        label: "Type",
-        type: "select",
-        options: EXCHANGE_TYPE_OPTIONS,
       },
     ],
     [data.vhosts]
@@ -135,6 +177,7 @@ export function ExchangesView() {
             {fmtInt(bindingCount(row.original))}
           </span>
         ),
+        enableSorting: false,
         meta: numericMeta,
       },
       {
@@ -217,15 +260,11 @@ export function ExchangesView() {
             openDialog={openDialog}
           />
         ),
+        meta: fitMeta,
       },
     ],
     [bindingCount, openDialog]
   )
-
-  const clearFilters = () => {
-    setSearch("")
-    setQuery(createFilterQuery())
-  }
 
   async function handleConfirm() {
     if (!pendingDelete) return
@@ -245,14 +284,6 @@ export function ExchangesView() {
       })
     }
   }
-
-  const table = useTable({
-    features: dataGridFeatures,
-    defaultColumn: { size: 120, minSize: 80 },
-    data: exchanges,
-    columns,
-    initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
-  })
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -280,64 +311,48 @@ export function ExchangesView() {
         }
       />
 
-      <DataGrid
-        table={table}
-        recordCount={exchanges.length}
-        isLoading={status === "loading"}
-        onRowClick={(row: Exchange) =>
-          navigate(routeHref("exchange", row.name))
-        }
-        emptyMessage={
-          <GridEmptyState
-            icon={<Waypoints />}
-            title="No exchanges match"
-            description="No exchange matches this search. Clear the filters to see all declared exchanges."
-            error={error}
-            retry={actions.retry}
-            action={
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => clearFilters()}
-              >
-                Clear filters
-              </Button>
-            }
-          />
-        }
-        tableLayout={{
-          dense: true,
-          width: "auto",
+      <ServerSideTable
+        isLoading={loading}
+        data={exchanges}
+        columns={columns}
+        totalCount={filteredCount}
+        pageCount={pageCount}
+        state={{ pagination, sorting }}
+        emptyState={{
+          icon: <Waypoints />,
+          title: "No exchanges match",
+          description:
+            "Adjust the search or clear the filters to see every declared exchange.",
+          action: (
+            <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+              Clear filters
+            </Button>
+          ),
         }}
-        tableClassNames={{ base: "min-w-[1100px]" }}
-      >
-        <Frame spacing="sm" className="min-w-0">
-          <FrameHeader>
-            <FilterBar
-              search={search}
-              onSearch={setSearch}
-              placeholder="Search queues…"
-              className="justify-end"
-            >
-              <Filters
-                fields={filterFields}
-                query={query}
-                onQueryChange={setQuery}
-                size="sm"
-                showClear
-              />
-            </FilterBar>
-          </FrameHeader>
-          <FramePanel>
-            <DataGridScrollArea>
-              <DataGridTable />
-            </DataGridScrollArea>
-          </FramePanel>
-          <FrameFooter>
-            <DataGridPagination sizes={DEFAULT_PAGES_OPTIONS} />
-          </FrameFooter>
-        </Frame>
-      </DataGrid>
+        error={{
+          message: error,
+          retry,
+        }}
+        actions={
+          <FilterBar
+            search={search}
+            onSearch={handleSearch}
+            placeholder="Search exchanges by name"
+            className="justify-end"
+          >
+            <Filters
+              fields={filterFields}
+              query={query}
+              onQueryChange={handleQueryChange}
+              size="sm"
+              showClear
+            />
+          </FilterBar>
+        }
+        onRowClick={(row: Exchange) => navigate(routeHref("exchange", row.name))}
+        onPaginationChange={handlePaginationChange}
+        onSortingChange={handleSortingChange}
+      />
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}

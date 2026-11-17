@@ -663,6 +663,34 @@ export interface ConnectionsQuery {
   sortReverse?: boolean
 }
 
+interface ApiExchangesResponse {
+  total_count: number
+  item_count: number
+  filtered_count: number
+  page: number
+  page_size: number
+  page_count: number
+  items: ApiExchange[]
+}
+
+export interface ExchangesPage {
+  items: Exchange[]
+  totalCount: number
+  filteredCount: number
+  page: number
+  pageSize: number
+  pageCount: number
+}
+
+export interface ExchangesQuery {
+  page: number
+  pageSize: number
+  name?: string
+  vhost?: string
+  sort?: string
+  sortReverse?: boolean
+}
+
 export interface RabbitSnapshot {
   cluster: ClusterInfo
   nodes: NodeInfo[]
@@ -1576,6 +1604,43 @@ export async function fetchChannels(
 
   return {
     items: mapChannels(page.items),
+    totalCount: page.total_count,
+    filteredCount: page.filtered_count,
+    page: page.page,
+    pageSize: page.page_size,
+    pageCount: page.page_count,
+  }
+}
+
+export async function fetchExchanges(
+  token: string,
+  query: ExchangesQuery,
+  signal?: AbortSignal
+): Promise<ExchangesPage> {
+  const base = query.vhost
+    ? `/api/exchanges/${enc(query.vhost)}`
+    : "/api/exchanges"
+  const params = new URLSearchParams({
+    page: String(query.page),
+    page_size: String(query.pageSize),
+    name: query.name ?? "",
+    use_regex: "false",
+    pagination: "true",
+  })
+
+  if (query.sort) {
+    params.set("sort", query.sort)
+    params.set("sort_reverse", query.sortReverse ? "true" : "false")
+  }
+
+  const page = await apiGet<ApiExchangesResponse>(
+    `${base}?${params.toString()}`,
+    token,
+    signal
+  )
+
+  return {
+    items: mapExchanges(page.items),
     totalCount: page.total_count,
     filteredCount: page.filtered_count,
     page: page.page,

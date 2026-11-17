@@ -298,6 +298,63 @@ function queuePage(url, forcedVhost) {
   }
 }
 
+function exchangePage(url, forcedVhost) {
+  const params = url.searchParams
+  const page = Math.max(1, Number(params.get("page") ?? 1) || 1)
+  const pageSize = Math.max(0, Number(params.get("page_size") ?? 100) || 0)
+  const name = params.get("name") ?? ""
+  const useRegex = params.get("use_regex") === "true"
+  const vhost = forcedVhost ?? params.get("vhost") ?? ""
+  const sort = params.get("sort") ?? ""
+  const reverse = params.get("sort_reverse") === "true"
+
+  let items = vhost
+    ? state.exchanges.filter((exchange) => exchange.vhost === vhost)
+    : state.exchanges
+  const totalCount = items.length
+
+  if (name) {
+    const needle = name.toLowerCase()
+    let pattern = null
+    if (useRegex) {
+      try {
+        pattern = new RegExp(name, "i")
+      } catch {
+        pattern = null
+      }
+    }
+    items = items.filter((exchange) =>
+      pattern ? pattern.test(exchange.name) : exchange.name.toLowerCase().includes(needle)
+    )
+  }
+
+  if (sort) {
+    items = [...items].sort((a, b) => {
+      const left = sortValue(a, sort)
+      const right = sortValue(b, sort)
+      if (typeof left === "number" && typeof right === "number") return left - right
+      return String(left).localeCompare(String(right))
+    })
+    if (reverse) items.reverse()
+  }
+
+  const filteredCount = items.length
+  const effectiveSize = pageSize === 0 ? filteredCount || 1 : pageSize
+  const pageCount = Math.max(1, Math.ceil(filteredCount / effectiveSize))
+  const current = Math.min(page, pageCount)
+  const start = (current - 1) * effectiveSize
+
+  return {
+    total_count: totalCount,
+    item_count: items.slice(start, start + effectiveSize).length,
+    filtered_count: filteredCount,
+    page: current,
+    page_size: effectiveSize,
+    page_count: pageCount,
+    items: items.slice(start, start + effectiveSize),
+  }
+}
+
 function rateDetails(counter, rate, ageSeconds, incrSeconds) {
   const count = Math.max(2, Math.round(ageSeconds / incrSeconds))
   const samples = []
@@ -942,9 +999,24 @@ export async function handleMockRequest(req, res) {
     }
 
     if (resource === "exchanges") {
+      const paginated =
+        url.searchParams.get("pagination") === "true" ||
+        url.searchParams.has("page")
       if (!rest.length && method === "GET") {
+        if (paginated) {
+          sendJson(res, 200, exchangePage(url))
+          return
+        }
         const vhost = url.searchParams.get("vhost")
         sendJson(res, 200, vhost ? state.exchanges.filter((entry) => entry.vhost === vhost) : state.exchanges)
+        return
+      }
+      if (rest.length === 1 && method === "GET") {
+        if (paginated) {
+          sendJson(res, 200, exchangePage(url, rest[0]))
+          return
+        }
+        sendJson(res, 200, state.exchanges.filter((entry) => entry.vhost === rest[0]))
         return
       }
       const [vhost, name] = rest
