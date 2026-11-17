@@ -212,12 +212,28 @@ export function QueueDetailView() {
               onRetry={retryDetail}
             />
 
-            <QueueGarbageCollectionFrame
-              collection={detail?.garbageCollection ?? null}
-              loading={loading}
-              error={error}
-              onRetry={retryDetail}
-            />
+            <div className="grid grid-cols-2 gap-3">
+              <QueueGarbageCollectionFrame
+                collection={detail?.garbageCollection ?? null}
+                loading={loading}
+                error={error}
+                onRetry={retryDetail}
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <QueueStoragePanel detail={detail} />
+                <ConditionalRender condition={hasDetails}>
+                  <QueuePolicyFrame
+                    policy={detail?.policy!}
+                    operatorPolicy={detail?.operatorPolicy!}
+                    definition={detail?.effectivePolicyDefinition!}
+                    loading={loading}
+                    error={error}
+                    onRetry={retryDetail}
+                  />
+                </ConditionalRender>
+              </div>
+            </div>
           </>
         }
         side={
@@ -235,18 +251,6 @@ export function QueueDetailView() {
 
             <QueueLifecyclePanel detail={detail} />
             <QueueCountersPanel detail={detail} />
-            <QueueStoragePanel detail={detail} />
-
-            <ConditionalRender condition={hasDetails}>
-              <QueuePolicyFrame
-                policy={detail?.policy!}
-                operatorPolicy={detail?.operatorPolicy!}
-                definition={detail?.effectivePolicyDefinition!}
-                loading={loading}
-                error={error}
-                onRetry={retryDetail}
-              />
-            </ConditionalRender>
           </>
         }
       />
