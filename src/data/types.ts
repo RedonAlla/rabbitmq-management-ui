@@ -39,6 +39,8 @@ export interface Exchange {
   internal: boolean
   publishRate: number
   deliverRate: number
+  publishIn: number
+  publishOut: number
   args: Record<string, string | number>
 }
 

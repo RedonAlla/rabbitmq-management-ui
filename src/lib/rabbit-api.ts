@@ -222,8 +222,10 @@ interface ApiExchange {
   internal: boolean
   arguments?: Record<string, unknown>
   message_stats?: {
-    publish_details?: { rate: number }
-    deliver_details?: { rate: number }
+    publish_in?: number
+    publish_in_details?: { rate: number }
+    publish_out?: number
+    publish_out_details?: { rate: number }
   }
 }
 
@@ -924,8 +926,10 @@ function mapExchanges(exchanges: ApiExchange[]): Exchange[] {
     durable: exchange.durable,
     autoDelete: exchange.auto_delete,
     internal: exchange.internal,
-    publishRate: exchange.message_stats?.publish_details?.rate ?? 0,
-    deliverRate: exchange.message_stats?.deliver_details?.rate ?? 0,
+    publishRate: exchange.message_stats?.publish_in_details?.rate ?? 0,
+    deliverRate: exchange.message_stats?.publish_out_details?.rate ?? 0,
+    publishIn: exchange.message_stats?.publish_in ?? 0,
+    publishOut: exchange.message_stats?.publish_out ?? 0,
     args: plainArguments(exchange.arguments),
   }))
 }

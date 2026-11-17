@@ -775,10 +775,10 @@ function exchange({ name, vhost = "/", type = "direct", durable = true, autoDele
     internal,
     arguments: args,
     message_stats: {
-      publish: 0,
-      publish_details: { rate: publishRate },
-      deliver: 0,
-      deliver_details: { rate: deliverRate },
+      publish_in: Math.round(publishRate * 3600),
+      publish_in_details: { rate: publishRate },
+      publish_out: Math.round(deliverRate * 3600),
+      publish_out_details: { rate: deliverRate },
     },
   }
 }

@@ -154,9 +154,19 @@ export function ExchangesView() {
         meta: fitMeta,
       },
       {
+        accessorKey: "publishIn",
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Published in" />
+        ),
+        cell: ({ row }) => (
+          <span className="data-cell">{fmtInt(row.original.publishIn)}</span>
+        ),
+        meta: numericMeta,
+      },
+      {
         accessorKey: "publishRate",
         header: ({ column }) => (
-          <DataGridColumnHeader column={column} title="Publish" />
+          <DataGridColumnHeader column={column} title="In rate" />
         ),
         cell: ({ row }) => (
           <span className="data-cell">{fmtRate(row.original.publishRate)}</span>
@@ -164,9 +174,19 @@ export function ExchangesView() {
         meta: numericMeta,
       },
       {
+        accessorKey: "publishOut",
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Published out" />
+        ),
+        cell: ({ row }) => (
+          <span className="data-cell">{fmtInt(row.original.publishOut)}</span>
+        ),
+        meta: numericMeta,
+      },
+      {
         accessorKey: "deliverRate",
         header: ({ column }) => (
-          <DataGridColumnHeader column={column} title="Deliver" />
+          <DataGridColumnHeader column={column} title="Out rate" />
         ),
         cell: ({ row }) => (
           <span className="data-cell">{fmtRate(row.original.deliverRate)}</span>
@@ -268,7 +288,7 @@ export function ExchangesView() {
           dense: true,
           width: "auto",
         }}
-        tableClassNames={{ base: "min-w-[900px]" }}
+        tableClassNames={{ base: "min-w-[1100px]" }}
       >
         <Frame spacing="sm" className="min-w-0">
           <FrameHeader>

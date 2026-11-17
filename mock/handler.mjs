@@ -659,7 +659,12 @@ function mergeDefinitions(document) {
       auto_delete: entry.auto_delete ?? false,
       internal: entry.internal ?? false,
       arguments: entry.arguments ?? {},
-      message_stats: { publish_details: { rate: 0 }, deliver_details: { rate: 0 } },
+      message_stats: {
+        publish_in: 0,
+        publish_in_details: { rate: 0 },
+        publish_out: 0,
+        publish_out_details: { rate: 0 },
+      },
     })
   )
   replaceBy(
@@ -968,7 +973,12 @@ export async function handleMockRequest(req, res) {
             auto_delete: body.auto_delete ?? false,
             internal: body.internal ?? false,
             arguments: body.arguments ?? {},
-            message_stats: { publish_details: { rate: 0 }, deliver_details: { rate: 0 } },
+            message_stats: {
+              publish_in: 0,
+              publish_in_details: { rate: 0 },
+              publish_out: 0,
+              publish_out_details: { rate: 0 },
+            },
           })
         }
         sendEmpty(res, 201)
