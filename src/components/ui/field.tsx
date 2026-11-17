@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import { Label } from "@/components/ui/label"
 import InfoTooltip from "@/components/ui/info-tooltip"
 import { cn } from "@/lib/utils"
+import { ConditionalRender } from "../conditional-render"
 
 export default function Field({
   label,
@@ -20,11 +21,11 @@ export default function Field({
     <div className={cn("flex min-w-0 flex-col gap-1.5", className)}>
       <div className="flex items-center gap-1">
         <Label htmlFor={htmlFor}>{label}</Label>
-        {info ? (
+        <ConditionalRender condition={info !== undefined}>
           <InfoTooltip label={`About ${label.toLowerCase()}`}>
             {info}
           </InfoTooltip>
-        ) : null}
+        </ConditionalRender>
       </div>
       {children}
     </div>

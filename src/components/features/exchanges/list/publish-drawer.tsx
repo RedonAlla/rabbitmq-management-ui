@@ -28,6 +28,7 @@ import { routeTargets } from "@/lib/topology"
 import { useCluster } from "@/store/cluster"
 
 const DEFAULT_EXCHANGE = "__default__"
+const PAYLOAD_PLACEHOLDER = "{\n  \"orderId\": \"ord_1042\",\n  \"status\": \"created\"\n}";
 
 function parsePublishHeaders(text: string): {
   headers: Record<string, PublishHeaderValue>
@@ -78,7 +79,7 @@ function parsePublishProperties(text: string): {
   return { properties: parsed as Record<string, unknown>, error: null }
 }
 
-export default function PublishDrawer({
+export function PublishDrawer({
   open,
   onClose,
   initialExchange,
@@ -94,12 +95,8 @@ export default function PublishDrawer({
   const [exchange, setExchange] = useState(initialExchange ?? DEFAULT_EXCHANGE)
   const [routingKey, setRoutingKey] = useState("")
   const [deliveryMode, setDeliveryMode] = useState<"1" | "2">("1")
-  const [payload, setPayload] = useState(
-    '{\n  "orderId": "ord_1042",\n  "status": "created"\n}'
-  )
-  const [payloadEncoding, setPayloadEncoding] = useState<"string" | "base64">(
-    "string"
-  )
+  const [payload, setPayload] = useState('')
+  const [payloadEncoding, setPayloadEncoding] = useState<"string" | "base64">("string")
   const [properties, setProperties] = useState("")
   const [propertiesOpen, setPropertiesOpen] = useState(false)
   const [headers, setHeaders] = useState("")
@@ -304,6 +301,7 @@ export default function PublishDrawer({
               <Textarea
                 id="publish-payload"
                 value={payload}
+                placeholder={PAYLOAD_PLACEHOLDER}
                 onChange={(event) => setPayload(event.target.value)}
                 className="min-h-28 font-mono text-xs"
               />

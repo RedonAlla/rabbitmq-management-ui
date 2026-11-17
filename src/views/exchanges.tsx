@@ -25,8 +25,8 @@ import {
   dataGridFeatures,
   type DataGridFeatures,
 } from "@/components/reui/data-grid/data-grid"
-import { fitMeta, numericMeta } from "@/components/table"
-import GridActions from "./exchanges/grid-actions"
+import { fitMeta, numericMeta, ServerSideTable } from "@/components/table"
+import { GridActions } from "../components/features/exchanges/list"
 import {
   Frame,
   FrameFooter,
@@ -227,6 +227,25 @@ export function ExchangesView() {
     setQuery(createFilterQuery())
   }
 
+  async function handleConfirm() {
+    if (!pendingDelete) return
+    const exchange = pendingDelete
+    setPendingDelete(null)
+    try {
+      await actions.deleteExchange(exchange.vhost, exchange.name)
+      toast.success("Exchange deleted", {
+        description: `${exchange.name} was removed.`,
+      })
+    } catch (cause) {
+      toast.error("Exchange was not deleted", {
+        description:
+          cause instanceof Error
+            ? cause.message
+            : "The management API did not respond.",
+      })
+    }
+  }
+
   const table = useTable({
     features: dataGridFeatures,
     defaultColumn: { size: 120, minSize: 80 },
@@ -327,24 +346,7 @@ export function ExchangesView() {
         description={`This removes ${pendingDelete?.name ?? ""} and every binding that leaves it. Bound queues keep their messages.`}
         confirmLabel="Delete exchange"
         tone="destructive"
-        onConfirm={async () => {
-          if (!pendingDelete) return
-          const exchange = pendingDelete
-          setPendingDelete(null)
-          try {
-            await actions.deleteExchange(exchange.vhost, exchange.name)
-            toast.success("Exchange deleted", {
-              description: `${exchange.name} was removed.`,
-            })
-          } catch (cause) {
-            toast.error("Exchange was not deleted", {
-              description:
-                cause instanceof Error
-                  ? cause.message
-                  : "The management API did not respond.",
-            })
-          }
-        }}
+        onConfirm={handleConfirm}
       />
     </div>
   )

@@ -34,9 +34,9 @@ import {
 import { useCluster } from "@/store/cluster"
 import ExchangeArgumentsEditor, {
   type ExchangeArgumentMode,
-} from "@/views/exchanges/exchange-arguments-editor"
+} from "./exchange-arguments-editor"
 
-export default function AddExchangeDrawer({
+export function AddExchangeDrawer({
   open,
   onClose,
 }: {
@@ -55,6 +55,7 @@ export default function AddExchangeDrawer({
     useState<ExchangeArgumentMode>("inputs")
   const [argumentPairs, setArgumentPairs] = useState("")
   const [argumentJson, setArgumentJson] = useState("")
+  const [presetsOpen, setPresetsOpen] = useState(false)
   const [error, setError] = useState("")
   const nextArgumentId = useRef(0)
 
@@ -124,6 +125,43 @@ export default function AddExchangeDrawer({
 
   const changeArgumentPairs = (value: string) => {
     setArgumentPairs(value)
+    setError("")
+  }
+
+  const addAlternateExchange = () => {
+    const nextId = () => (nextArgumentId.current += 1)
+    let base = argumentRows
+    if (argumentMode === "pairs") {
+      const invalidLine = argumentPairs
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .find((line) => line.length > 0 && line.indexOf(":") <= 0)
+      if (invalidLine !== undefined) {
+        setError("Use one key:value pair per line.")
+        return
+      }
+      base = parsePairText(argumentPairs, nextId)
+    } else if (argumentMode === "json") {
+      const parsed = parseArgumentsJson(argumentJson)
+      if (parsed.error) {
+        setError(parsed.error)
+        return
+      }
+      base = parseJsonToRows(argumentJson, nextId)
+    }
+    if (base.some((row) => row.key.trim() === "alternate-exchange")) {
+      setPresetsOpen(false)
+      setError("")
+      return
+    }
+    const rows: ArgumentRow[] = [
+      ...base,
+      { id: nextId(), key: "alternate-exchange", type: "string", value: "" },
+    ]
+    setArgumentRows(rows)
+    if (argumentMode === "pairs") setArgumentPairs(rowsToPairText(rows))
+    if (argumentMode === "json") setArgumentJson(rowsToJsonText(rows))
+    setPresetsOpen(false)
     setError("")
   }
 
@@ -320,6 +358,9 @@ export default function AddExchangeDrawer({
             <ExchangeArgumentsEditor
               mode={argumentMode}
               onModeChange={changeArgumentMode}
+              onAddAlternateExchange={addAlternateExchange}
+              presetsOpen={presetsOpen}
+              onPresetsOpenChange={setPresetsOpen}
               rows={argumentRows}
               onAddRow={addArgumentRow}
               onUpdateRow={updateArgumentRow}

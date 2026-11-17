@@ -6,8 +6,10 @@ import {
   type ReactNode,
 } from "react"
 import ShortcutsDialog from "@/components/layout/shortcuts-dialog"
-import AddExchangeDrawer from "@/views/exchanges/add-exchange-drawer"
-import PublishDrawer from "@/views/exchanges/publish-drawer"
+import {
+  AddExchangeDrawer,
+  PublishDrawer
+} from "@/components/features/exchanges/list"
 import EditLimitsDialog from "@/views/limits/edit-limits-dialog"
 import AddPolicyDialog from "@/views/policies/add-policy-dialog"
 import { AddQueueDrawer } from "@/components/features/queues/list"

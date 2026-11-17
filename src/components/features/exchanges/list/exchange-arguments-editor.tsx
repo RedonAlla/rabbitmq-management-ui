@@ -1,7 +1,20 @@
-import { PlusIcon, XIcon } from "lucide-react"
+import {
+  ArrowUpRightIcon,
+  ListPlusIcon,
+  PlusIcon,
+  XIcon,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Field from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import {
   Select,
   SelectContent,
@@ -52,6 +65,9 @@ const ARGUMENT_INFO: Record<ArgumentMode, string> = {
 export default function ExchangeArgumentsEditor({
   mode,
   onModeChange,
+  onAddAlternateExchange,
+  presetsOpen,
+  onPresetsOpenChange,
   rows,
   onAddRow,
   onUpdateRow,
@@ -63,6 +79,9 @@ export default function ExchangeArgumentsEditor({
 }: {
   mode: ExchangeArgumentMode
   onModeChange: (mode: ExchangeArgumentMode) => void
+  onAddAlternateExchange: () => void
+  presetsOpen: boolean
+  onPresetsOpenChange: (open: boolean) => void
   rows: ArgumentRow[]
   onAddRow: () => void
   onUpdateRow: (id: number, patch: Partial<Omit<ArgumentRow, "id">>) => void
@@ -80,11 +99,56 @@ export default function ExchangeArgumentsEditor({
           onModeChange(String(next) as ExchangeArgumentMode)
         }
       >
-        <TabsList>
-          <TabsTrigger value="inputs">Inputs</TabsTrigger>
-          <TabsTrigger value="pairs">Key / value</TabsTrigger>
-          <TabsTrigger value="json">JSON</TabsTrigger>
-        </TabsList>
+        <div className="flex flex-wrap items-center justify-between gap-1">
+          <TabsList>
+            <TabsTrigger value="inputs">Inputs</TabsTrigger>
+            <TabsTrigger value="pairs">Key / value</TabsTrigger>
+            <TabsTrigger value="json">JSON</TabsTrigger>
+          </TabsList>
+          <Popover open={presetsOpen} onOpenChange={onPresetsOpenChange}>
+            <PopoverTrigger
+              render={<Button type="button" variant="outline" size="sm" />}
+            >
+              <ListPlusIcon data-icon="inline-start" aria-hidden="true" />
+              Presets
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80">
+              <PopoverHeader>
+                <PopoverTitle>Exchange arguments</PopoverTitle>
+                <PopoverDescription>
+                  Add a preset argument to the declaration.
+                </PopoverDescription>
+              </PopoverHeader>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium">Alternate exchange</span>
+                <span className="text-xs text-muted-foreground">
+                  If messages to this exchange cannot otherwise be routed, send
+                  them to the alternate exchange named here.
+                </span>
+                <a
+                  href="https://www.rabbitmq.com/docs/ae"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex w-fit items-center gap-1 text-xs underline underline-offset-2 transition-colors hover:text-foreground"
+                >
+                  (Sets the &quot;alternate-exchange&quot; argument.)
+                  <ArrowUpRightIcon
+                    className="size-3"
+                    aria-hidden="true"
+                  />
+                </a>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                className="w-full"
+                onClick={onAddAlternateExchange}
+              >
+                Add argument
+              </Button>
+            </PopoverContent>
+          </Popover>
+        </div>
         <TabsContent value="inputs" className="flex flex-col gap-2">
           {rows.map((row) => (
             <div
