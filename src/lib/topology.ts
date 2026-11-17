@@ -47,7 +47,14 @@ export function routeTargets(
   )
 
   const matched = candidates.filter((binding) => {
-    if (exchange.type === "fanout" || exchange.type === "headers") return true
+    if (
+      exchange.type === "fanout" ||
+      exchange.type === "headers" ||
+      exchange.type === "x-local-random" ||
+      exchange.type === "x-modulus-hash"
+    ) {
+      return true
+    }
     if (exchange.type === "direct") return binding.routingKey === routingKey
     return matchTopic(binding.routingKey, routingKey)
   })

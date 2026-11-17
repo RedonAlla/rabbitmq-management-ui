@@ -24,13 +24,13 @@ import { useRoute, routeHref } from "@/lib/router"
 import { fmtInt } from "@/lib/format"
 import type { QueueRateRange } from "@/lib/rabbit-api"
 import { useQueueDetail } from "@/hooks/use-queue-detail"
-import QueueConsumersTable from "@/views/queues/consumers-table"
-import QueueBindingsFrame from "@/views/queues/bindings-frame"
 import {
+  QueueConsumersTable,
+  QueueBindingsFrame,
   QueueArgumentsFrame,
   QueueGarbageCollectionFrame,
   QueuePolicyFrame,
-} from "@/views/queues/properties"
+} from "@/components/features/queues/details"
 import { NotFoundView } from "@/views/not-found"
 import { ConditionalRender } from "@/components/conditional-render"
 

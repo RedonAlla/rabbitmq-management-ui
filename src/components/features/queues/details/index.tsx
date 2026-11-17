@@ -9,3 +9,10 @@ export { QueueLifecyclePanel } from "./lifecycle-panel"
 export { QueueCountersPanel } from "./counters-panel"
 export { QueueStoragePanel } from "./storage-panel"
 export { QueueDetailSkeleton } from "./skeletons"
+export { QueueConsumersTable } from './consumers-table'
+export { QueueBindingsFrame } from './bindings-frame'
+export {
+  QueueArgumentsFrame,
+  QueuePolicyFrame,
+  QueueGarbageCollectionFrame
+} from './properties-frame'

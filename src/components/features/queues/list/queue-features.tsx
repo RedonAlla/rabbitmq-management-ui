@@ -136,7 +136,7 @@ function FeatureItem({ feature }: { feature: Feature }) {
   )
 }
 
-export default function QueueFeatures({ queue }: { queue: Queue }) {
+export function QueueFeatures({ queue }: { queue: Queue }) {
   const features = queueFeatures(queue)
 
   if (!features.length) {

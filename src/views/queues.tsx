@@ -30,12 +30,14 @@ import { useQueues } from "@/hooks/use-queues"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header"
 import { type DataGridFeatures } from "@/components/reui/data-grid/data-grid"
-import GridActions from "./queues/grid-actions"
-import QueueFeatures from "./queues/queue-features"
+import {
+  GridActions,
+  QueueFeatures
+} from "@/components/features/queues/list"
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants"
 import { ServerSideTable, fitMeta, numericMeta } from "@/components/table"
 import type { ConfirmState } from "@/components/features/queues/types"
-import { QueueConfirmDialog } from "@/components/features/confirm-dialog"
+import { QueueConfirmDialog } from "@/components/features/queues/confirm-dialog"
 
 export function QueuesView() {
   const { data } = useCluster()

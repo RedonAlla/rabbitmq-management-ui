@@ -74,7 +74,7 @@ function BindingsItem({
   )
 }
 
-export default function QueueBindingsFrame({ bindings, onAddBinding }: Props) {
+export function QueueBindingsFrame({ bindings, onAddBinding }: Props) {
   const { actions } = useCluster()
   const [target, setTarget] = useState<Binding | null>(null)
 

@@ -311,7 +311,11 @@ export function ExchangeDetailView() {
                       className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
                     >
                       <dt className="text-xs text-muted-foreground">{key}</dt>
-                      <dd className="data-cell">{String(value)}</dd>
+                      <dd className="data-cell">
+                        {Array.isArray(value)
+                          ? JSON.stringify(value)
+                          : String(value)}
+                      </dd>
                     </div>
                   ))}
                 </dl>

@@ -28,7 +28,7 @@ type Props = {
   onRetry: () => void
 }
 
-export default function QueueConsumersTable({
+export function QueueConsumersTable({
   consumers,
   loading,
   error,

@@ -25,8 +25,8 @@ import VhostSelect from "@/components/ui/vhost-select"
 import type { QueueArgumentValue, QueueDeclarationType } from "@/lib/rabbit-api"
 import { cn } from "@/lib/utils"
 import { useCluster } from "@/store/cluster"
-import { ARGUMENT_PRESETS } from "@/views/queues/queue-argument-presets"
-import QueueArgumentsEditor from "@/views/queues/queue-arguments-editor"
+import { ARGUMENT_PRESETS } from "./queue-argument-presets"
+import QueueArgumentsEditor from "./queue-arguments-editor"
 import {
   inferArgumentFields,
   parseArgumentsJson,
@@ -34,7 +34,7 @@ import {
   rowsToJsonText,
   type ArgumentMode,
   type ArgumentRow,
-} from "@/views/queues/queue-arguments"
+} from "./queue-arguments"
 import { ConditionalRender } from "@/components/conditional-render"
 
 const QUEUE_TYPE_OPTIONS: { value: QueueDeclarationType; label: string }[] = [
@@ -44,7 +44,7 @@ const QUEUE_TYPE_OPTIONS: { value: QueueDeclarationType; label: string }[] = [
   { value: "stream", label: "Stream" },
 ]
 
-export default function AddQueueDrawer({
+export function AddQueueDrawer({
   open,
   onClose,
   onCreated,
@@ -319,10 +319,8 @@ export default function AddQueueDrawer({
                 </Select>
               </Field>
             </div>
-            {showDurable || showAutoDelete ? (
-              <div
-                className={cn("grid gap-2", showAutoDelete && "sm:grid-cols-2")}
-              >
+            <ConditionalRender condition={showDurable || showAutoDelete}>
+              <div className={cn("grid gap-2", showAutoDelete && "sm:grid-cols-2")}>
                 <ConditionalRender condition={showDurable}>
                   <ToggleField
                     label="Durable"
@@ -339,7 +337,7 @@ export default function AddQueueDrawer({
                   />
                 </ConditionalRender>
               </div>
-            ) : null}
+            </ConditionalRender>
             <QueueArgumentsEditor
               type={type}
               mode={argumentMode}

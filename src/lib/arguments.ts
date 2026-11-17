@@ -1,5 +1,10 @@
 import { parsePairValue } from "@/lib/parse-value"
-import type { QueueArgumentValue } from "@/lib/rabbit-api"
+
+export type ArgumentValue =
+  | string
+  | number
+  | boolean
+  | Array<string | number | boolean>
 
 export type ArgumentType = "string" | "number" | "boolean" | "list"
 
@@ -11,14 +16,6 @@ export type ArgumentRow = {
 }
 
 export type ArgumentMode = "inputs" | "pairs" | "json"
-
-export type ArgumentPreset = {
-  id: string
-  label: string
-  notes: string
-  doc?: { href: string; label: string }
-  args: { key: string; type: ArgumentType; value: string }[]
-}
 
 function pairTextToRow(raw: string): Pick<ArgumentRow, "type" | "value"> {
   const value = parsePairValue(raw)
@@ -45,8 +42,8 @@ export function inferArgumentFields(
 
 export function rowsToArgumentObject(
   rows: ArgumentRow[]
-): Record<string, QueueArgumentValue> {
-  const args: Record<string, QueueArgumentValue> = {}
+): Record<string, ArgumentValue> {
+  const args: Record<string, ArgumentValue> = {}
   for (const row of rows) {
     const key = row.key.trim()
     if (!key) continue
@@ -77,7 +74,38 @@ export function rowsToJsonText(rows: ArgumentRow[]): string {
   return JSON.stringify(rowsToArgumentObject(rows), null, 2)
 }
 
-function jsonValueToRow(
+export function rowsToPairText(rows: ArgumentRow[]): string {
+  return rows
+    .filter((row) => row.key.trim().length > 0)
+    .map((row) => {
+      const value = row.type === "list" ? `[${row.value}]` : row.value
+      return `${row.key.trim()}:${value}`
+    })
+    .join("\n")
+}
+
+export function parsePairText(
+  text: string,
+  nextId: () => number
+): ArgumentRow[] {
+  const rows: ArgumentRow[] = []
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    const colon = trimmed.indexOf(":")
+    if (colon <= 0) continue
+    const key = trimmed.slice(0, colon).trim()
+    if (!key) continue
+    rows.push({
+      id: nextId(),
+      key,
+      ...inferArgumentFields(trimmed.slice(colon + 1).trim()),
+    })
+  }
+  return rows
+}
+
+export function jsonValueToRow(
   value: unknown
 ): Pick<ArgumentRow, "type" | "value"> | null {
   if (typeof value === "boolean") {
@@ -105,7 +133,8 @@ function jsonValueToRow(
 
 export function parseJsonToRows(
   text: string,
-  nextId: () => number
+  nextId: () => number,
+  reservedKeys: string[] = []
 ): ArgumentRow[] {
   if (!text.trim()) return []
   try {
@@ -119,7 +148,7 @@ export function parseJsonToRows(
     }
     const rows: ArgumentRow[] = []
     for (const [key, value] of Object.entries(parsed)) {
-      if (!key || key === "x-queue-type") continue
+      if (!key || reservedKeys.includes(key)) continue
       const row = jsonValueToRow(value)
       if (row) rows.push({ id: nextId(), key, ...row })
     }
@@ -129,8 +158,11 @@ export function parseJsonToRows(
   }
 }
 
-export function parseArgumentsJson(text: string): {
-  args: Record<string, QueueArgumentValue>
+export function parseArgumentsJson(
+  text: string,
+  reservedKeys: string[] = []
+): {
+  args: Record<string, ArgumentValue>
   error: string | null
 } {
   if (!text.trim()) return { args: {}, error: null }
@@ -143,10 +175,10 @@ export function parseArgumentsJson(text: string): {
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
     return { args: {}, error: "Arguments must be a JSON object." }
   }
-  const args: Record<string, QueueArgumentValue> = {}
+  const args: Record<string, ArgumentValue> = {}
   for (const [key, value] of Object.entries(parsed)) {
-    if (key === "x-queue-type") {
-      return { args, error: "x-queue-type is set by the queue type selector." }
+    if (reservedKeys.includes(key)) {
+      return { args, error: `${key} is set by the queue type selector.` }
     }
     if (
       typeof value === "string" ||

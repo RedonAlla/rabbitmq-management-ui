@@ -23,12 +23,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import type { QueueDeclarationType } from "@/lib/rabbit-api"
 import { cn } from "@/lib/utils"
-import { ARGUMENT_PRESETS } from "@/views/queues/queue-argument-presets"
+import { ARGUMENT_PRESETS } from "./queue-argument-presets"
 import type {
   ArgumentMode,
   ArgumentRow,
   ArgumentType,
-} from "@/views/queues/queue-arguments"
+} from "./queue-arguments"
 
 const ARGUMENT_TYPE_OPTIONS: { value: ArgumentType; label: string }[] = [
   { value: "string", label: "String" },
@@ -44,6 +44,12 @@ const ARGUMENT_VALUE_PLACEHOLDER: Record<
   string: "value",
   number: "0",
   list: "a, b, c",
+}
+
+const modeInfoMapper: Record<ArgumentMode, string> = {
+  "inputs": "Optional key/value pairs with a type. List values are comma-separated.",
+  "pairs": "One key/value pair per row. true/false, numbers, and [JSON arrays] are typed automatically; quote a value to keep it a string.",
+  "json": "A JSON object of arguments. Values may be strings, numbers, booleans, or arrays; x-queue-type is added from the queue type selector."
 }
 
 const ARGUMENT_JSON_PLACEHOLDER = '{\n  "x-max-length": 50000\n}'
@@ -84,15 +90,7 @@ export default function QueueArgumentsEditor({
   return (
     <Field
       label="Arguments"
-      info={
-        mode === "pairs"
-          ? "One key/value pair per row. true/false, numbers, and [JSON arrays] are typed automatically; quote a value to keep it a string."
-          : mode === "json"
-            ? "A JSON object of arguments. Values may be strings, numbers, booleans, or arrays; x-queue-type is added from the queue type selector."
-            : type === "default"
-              ? "Optional key/value pairs with a type. List values are comma-separated."
-              : "Optional key/value pairs with a type. List values are comma-separated; x-queue-type is added from the queue type selector."
-      }
+      info={modeInfoMapper[mode]}
     >
       <Tabs
         value={mode}

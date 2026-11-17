@@ -1,9 +1,9 @@
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import type { Dispatch } from "react"
 import { fmtInt } from "@/lib/format"
-import type { ConfirmState, Kind } from "./queues/types"
+import type { ConfirmState, Kind } from "./types"
 import type { Queue } from "@/data/types"
-import { Case, Switch } from "../conditional-render"
+import { Case, Switch } from "@/components/conditional-render"
 
 type Props = {
   confirm: ConfirmState

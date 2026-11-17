@@ -6,11 +6,11 @@ import {
   type ReactNode,
 } from "react"
 import ShortcutsDialog from "@/components/layout/shortcuts-dialog"
-import AddExchangeDialog from "@/views/exchanges/add-exchange-dialog"
+import AddExchangeDrawer from "@/views/exchanges/add-exchange-drawer"
 import PublishDrawer from "@/views/exchanges/publish-drawer"
 import EditLimitsDialog from "@/views/limits/edit-limits-dialog"
 import AddPolicyDialog from "@/views/policies/add-policy-dialog"
-import AddQueueDrawer from "@/views/queues/add-queue-drawer"
+import { AddQueueDrawer } from "@/components/features/queues/list"
 import AddUserDialog from "@/views/user/add-user-dialog"
 import AddVhostDialog from "@/views/vhosts/add-vhost-dialog"
 
@@ -50,7 +50,7 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
         onClose={closeDialog}
         onCreated={dialog?.type === "add-queue" ? dialog.onCreated : undefined}
       />
-      <AddExchangeDialog
+      <AddExchangeDrawer
         open={dialog?.type === "add-exchange"}
         onClose={closeDialog}
       />

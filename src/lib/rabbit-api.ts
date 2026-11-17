@@ -7,6 +7,7 @@ import type {
   DeprecatedFeature,
   DeprecationPhase,
   Exchange,
+  ExchangeArgumentValue,
   ExchangeType,
   FeatureFlag,
   NodeInfo,
@@ -703,7 +704,7 @@ export interface CreateExchangeInput {
   durable: boolean
   autoDelete: boolean
   internal: boolean
-  args?: Record<string, string | number>
+  args?: Record<string, ExchangeArgumentValue>
 }
 
 export interface CreateBindingInput {
@@ -848,7 +849,15 @@ function queueType(queue: ApiQueue): QueueType {
 }
 
 function exchangeType(type: string): ExchangeType {
-  if (type === "fanout" || type === "topic" || type === "headers") return type
+  if (
+    type === "fanout" ||
+    type === "topic" ||
+    type === "headers" ||
+    type === "x-local-random" ||
+    type === "x-modulus-hash"
+  ) {
+    return type
+  }
   return "direct"
 }
 
@@ -859,6 +868,28 @@ function plainArguments(
   for (const [key, value] of Object.entries(args ?? {})) {
     if (typeof value === "string" || typeof value === "number") {
       mapped[key] = value
+    }
+  }
+  return mapped
+}
+
+function plainExchangeArguments(
+  args: Record<string, unknown> | undefined
+): Record<string, ExchangeArgumentValue> {
+  const mapped: Record<string, ExchangeArgumentValue> = {}
+  for (const [key, value] of Object.entries(args ?? {})) {
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      mapped[key] = value
+    } else if (
+      Array.isArray(value) &&
+      value.every(
+        (item) =>
+          typeof item === "string" ||
+          typeof item === "number" ||
+          typeof item === "boolean"
+      )
+    ) {
+      mapped[key] = value as Array<string | number | boolean>
     }
   }
   return mapped
@@ -930,7 +961,7 @@ function mapExchanges(exchanges: ApiExchange[]): Exchange[] {
     deliverRate: exchange.message_stats?.publish_out_details?.rate ?? 0,
     publishIn: exchange.message_stats?.publish_in ?? 0,
     publishOut: exchange.message_stats?.publish_out ?? 0,
-    args: plainArguments(exchange.arguments),
+    args: plainExchangeArguments(exchange.arguments),
   }))
 }
 

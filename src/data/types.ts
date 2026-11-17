@@ -1,6 +1,18 @@
 export type QueueType = "classic" | "quorum" | "stream"
 export type QueueState = "running" | "idle" | "degraded"
-export type ExchangeType = "direct" | "fanout" | "topic" | "headers"
+export type ExchangeType =
+  | "direct"
+  | "fanout"
+  | "topic"
+  | "headers"
+  | "x-local-random"
+  | "x-modulus-hash"
+
+export type ExchangeArgumentValue =
+  | string
+  | number
+  | boolean
+  | Array<string | number | boolean>
 export type Stability = "stable" | "experimental"
 
 export interface Vhost {
@@ -41,7 +53,7 @@ export interface Exchange {
   deliverRate: number
   publishIn: number
   publishOut: number
-  args: Record<string, string | number>
+  args: Record<string, ExchangeArgumentValue>
 }
 
 export type BindingArgumentValue =

@@ -23,7 +23,7 @@ type Props = {
   openDialog: (request: DialogRequest) => void
 }
 
-export default function GridActions({
+export function GridActions({
   rowData,
   setConfirm,
   openDialog,

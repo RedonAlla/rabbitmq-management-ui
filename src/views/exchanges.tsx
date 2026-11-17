@@ -44,6 +44,8 @@ const EXCHANGE_TYPE_OPTIONS: { value: ExchangeType; label: string }[] = [
   { value: "fanout", label: "Fanout" },
   { value: "topic", label: "Topic" },
   { value: "headers", label: "Headers" },
+  { value: "x-local-random", label: "x-local-random" },
+  { value: "x-modulus-hash", label: "x-modulus-hash" },
 ]
 
 export function ExchangesView() {

@@ -148,7 +148,11 @@ function normalizeTags(value: unknown): string[] {
 
 function normalizeExchangeType(value: unknown): ExchangeType {
   const type = asString(value).toLowerCase()
-  return type === "fanout" || type === "topic" || type === "headers"
+  return type === "fanout" ||
+    type === "topic" ||
+    type === "headers" ||
+    type === "x-local-random" ||
+    type === "x-modulus-hash"
     ? type
     : "direct"
 }
