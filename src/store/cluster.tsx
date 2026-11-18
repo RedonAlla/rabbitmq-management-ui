@@ -184,6 +184,9 @@ export interface ClusterActions {
   closeChannel: (name: string) => Promise<void>
   addUser: (input: rabbit.CreateUserInput) => Promise<void>
   updateUser: (input: rabbit.UpdateUserInput) => Promise<void>
+  updateUserPermission: (
+    input: rabbit.UpdateUserPermissionInput
+  ) => Promise<void>
   deleteUser: (username: string) => Promise<void>
   addVhost: (input: rabbit.CreateVhostInput) => Promise<void>
   deleteVhost: (name: string) => Promise<void>
@@ -301,6 +304,8 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
         run((current) => rabbit.closeChannel(current, name)),
       addUser: (input) => run((current) => rabbit.createUser(current, input)),
       updateUser: (input) => run((current) => rabbit.updateUser(current, input)),
+      updateUserPermission: (input) =>
+        run((current) => rabbit.updateUserPermission(current, input)),
       deleteUser: (username) =>
         run((current) => rabbit.deleteUser(current, username)),
       addVhost: (input) => run((current) => rabbit.createVhost(current, input)),

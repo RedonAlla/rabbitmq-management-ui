@@ -1328,6 +1328,28 @@ export async function handleMockRequest(req, res) {
       }
       const name = rest[0]
       const entry = state.users.find((candidate) => candidate.name === name)
+      if (rest.length === 2 && method === "GET") {
+        if (rest[1] === "permissions") {
+          sendJson(
+            res,
+            200,
+            state.permissions
+              .filter((permission) => permission.user === name)
+              .map((permission) => ({
+                user: permission.user,
+                vhost: permission.vhost,
+                configure: permission.configure,
+                write: permission.write,
+                read: permission.read,
+              }))
+          )
+          return
+        }
+        if (rest[1] === "topic-permissions") {
+          sendJson(res, 200, [])
+          return
+        }
+      }
       if (rest.length === 1 && method === "GET") {
         if (!entry) return sendError(res, 404, "not_found", `user '${name}' not found`)
         sendJson(res, 200, entry)

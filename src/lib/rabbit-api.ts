@@ -303,12 +303,21 @@ interface ApiUser {
   password_hash?: string
   hashing_algorithm?: string
   has_password?: boolean
+  limits?: Record<string, Record<string, number>>
 }
 
 interface ApiPermission {
   user: string
   vhost: string
   configure: string
+  write: string
+  read: string
+}
+
+interface ApiTopicPermission {
+  user: string
+  vhost: string
+  exchange: string
   write: string
   read: string
 }
@@ -738,6 +747,38 @@ export interface UsersQuery {
   sortReverse?: boolean
 }
 
+export interface UserPermission {
+  vhost: string
+  configure: string
+  write: string
+  read: string
+}
+
+export interface UserTopicPermission {
+  vhost: string
+  exchange: string
+  write: string
+  read: string
+}
+
+export interface UpdateUserPermissionInput {
+  username: string
+  vhost: string
+  configure: string
+  write: string
+  read: string
+}
+
+export interface UserDetail {
+  name: string
+  hashingAlgorithm: string
+  hasPassword: boolean
+  tags: string[]
+  limits: Record<string, Record<string, number>>
+  permissions: UserPermission[]
+  topicPermissions: UserTopicPermission[]
+}
+
 export interface RabbitSnapshot {
   cluster: ClusterInfo
   nodes: NodeInfo[]
@@ -1134,6 +1175,15 @@ function mapChannels(channels: ApiChannel[]): Channel[] {
   }))
 }
 
+function parseUserTags(tags: string | string[]): string[] {
+  return Array.isArray(tags)
+    ? tags
+    : String(tags ?? "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+}
+
 function mapUsers(users: ApiUser[], permissions: ApiPermission[]): User[] {
   const vhostsByUser = new Map<string, string[]>()
   for (const permission of permissions) {
@@ -1144,12 +1194,7 @@ function mapUsers(users: ApiUser[], permissions: ApiPermission[]): User[] {
 
   return users.map((user) => ({
     username: user.name,
-    tags: Array.isArray(user.tags)
-      ? user.tags
-      : String(user.tags ?? "")
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter(Boolean),
+    tags: parseUserTags(user.tags),
     vhosts: vhostsByUser.get(user.name) ?? [],
     hasPassword: Boolean(user.has_password),
   }))
@@ -1785,6 +1830,40 @@ export async function fetchUsers(
   }
 }
 
+export async function fetchUserDetail(
+  token: string,
+  username: string,
+  signal?: AbortSignal
+): Promise<UserDetail> {
+  const base = `/api/users/${enc(username)}`
+  const [user, permissions, topicPermissions] = await Promise.all([
+    apiGet<ApiUser>(base, token, signal),
+    apiGet<ApiPermission[]>(`${base}/permissions`, token, signal),
+    apiGet<ApiTopicPermission[]>(`${base}/topic-permissions`, token, signal),
+  ])
+
+  return {
+    name: user.name,
+    hashingAlgorithm:
+      user.hashing_algorithm ?? "rabbit_password_hashing_sha256",
+    hasPassword: Boolean(user.has_password),
+    tags: parseUserTags(user.tags),
+    limits: user.limits ?? {},
+    permissions: permissions.map((permission) => ({
+      vhost: permission.vhost,
+      configure: permission.configure,
+      write: permission.write,
+      read: permission.read,
+    })),
+    topicPermissions: topicPermissions.map((permission) => ({
+      vhost: permission.vhost,
+      exchange: permission.exchange,
+      write: permission.write,
+      read: permission.read,
+    })),
+  }
+}
+
 export type ConnectionRateRange = 60 | 600 | 3600
 
 const EXCHANGE_RATE_INCR: Record<ExchangeRateRange, number> = {
@@ -2104,6 +2183,21 @@ export async function updateUser(
     ...(input.password === undefined ? {} : { password: input.password }),
     tags: input.tags.join(","),
   })
+}
+
+export async function updateUserPermission(
+  token: string,
+  input: UpdateUserPermissionInput
+): Promise<void> {
+  await apiPut(
+    `/api/permissions/${enc(input.vhost)}/${enc(input.username)}`,
+    token,
+    {
+      configure: input.configure,
+      write: input.write,
+      read: input.read,
+    }
+  )
 }
 
 export async function deleteUser(

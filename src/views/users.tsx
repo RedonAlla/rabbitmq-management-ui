@@ -15,6 +15,7 @@ import { FilterBar } from "@/components/filters-bar"
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import { useDialogs } from "@/components/dialogs/dialogs-provider"
 import { useCluster } from "@/store/cluster"
+import { useRoute, routeHref } from "@/lib/router"
 import { initials } from "@/lib/format"
 import type { User } from "@/data/types"
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header"
@@ -38,6 +39,7 @@ import { ConditionalRender } from "@/components/conditional-render"
 export function UsersView() {
   const { data, actions } = useCluster()
   const { openDialog } = useDialogs()
+  const { navigate } = useRoute()
   const [search, setSearch] = useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
   const [pagination, setPagination] = useState<PaginationState>({
@@ -276,6 +278,7 @@ export function UsersView() {
             />
           </FilterBar>
         }
+        onRowClick={(row: User) => navigate(routeHref("user", row.username))}
         onPaginationChange={handlePaginationChange}
         onSortingChange={handleSortingChange}
       />

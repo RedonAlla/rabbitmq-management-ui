@@ -13,6 +13,7 @@ import { ConnectionDetailView } from "@/views/connection-detail"
 import { ChannelsView } from "@/views/channels"
 import { ChannelDetailView } from "@/views/channel-detail"
 import { UsersView } from "@/views/users"
+import { UserDetailView } from "@/views/user-detail"
 import { VhostsView } from "@/views/vhosts"
 import { PoliciesView } from "@/views/policies"
 import { LimitsView } from "@/views/limits"
@@ -35,6 +36,7 @@ const VIEW_TITLES: Record<string, string> = {
   channels: "Channels",
   channel: "Channel",
   users: "Users",
+  user: "User",
   vhosts: "Virtual hosts",
   policies: "Policies",
   limits: "Limits",
@@ -68,6 +70,8 @@ function RoutedView() {
       return <ChannelDetailView />
     case "users":
       return <UsersView />
+    case "user":
+      return <UserDetailView />
     case "vhosts":
       return <VhostsView />
     case "policies":
