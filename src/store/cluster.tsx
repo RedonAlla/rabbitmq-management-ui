@@ -24,7 +24,7 @@ import {
 import * as rabbit from "@/lib/rabbit-api"
 import { useAuth } from "@/store/auth"
 
-const DEFAULT_REFRESH_SECONDS = 5
+const DEFAULT_REFRESH_SECONDS = 30
 const SAMPLE_RETENTION_MS = 24 * 60 * 60 * 1000
 
 export type RefreshInterval = 5 | 15 | 30
