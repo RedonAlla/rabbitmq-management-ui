@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog"
 import { RegionEmpty, RegionError } from "@/components/region-states"
 import {
   AddUserPermissionDialog,
+  AddUserTopicPermissionDialog,
   EditUserPermissionDialog,
   UserBackButton,
   UserDetailHeader,
@@ -19,7 +20,7 @@ import {
 } from "@/components/features/users/details"
 import { useCluster } from "@/store/cluster"
 import { useRoute, routeHref } from "@/lib/router"
-import type { UserPermission } from "@/lib/rabbit-api"
+import type { UserPermission, UserTopicPermission } from "@/lib/rabbit-api"
 import { useUserDetail } from "@/hooks/use-user-detail"
 
 export function UserDetailView() {
@@ -30,6 +31,9 @@ export function UserDetailView() {
   const [editingPermission, setEditingPermission] =
     useState<UserPermission | null>(null)
   const [addingPermission, setAddingPermission] = useState(false)
+  const [addingTopicPermission, setAddingTopicPermission] = useState(false)
+  const [removingTopicPermission, setRemovingTopicPermission] =
+    useState<UserTopicPermission | null>(null)
   const [removingPermission, setRemovingPermission] =
     useState<UserPermission | null>(null)
   const username = route.id ?? "unknown"
@@ -92,6 +96,8 @@ export function UserDetailView() {
             />
             <UserTopicPermissionsFrame
               permissions={detail.topicPermissions}
+              onAdd={() => setAddingTopicPermission(true)}
+              onRemove={setRemovingTopicPermission}
             />
           </>
         }
@@ -118,6 +124,46 @@ export function UserDetailView() {
           (permission) => permission.vhost
         )}
         onClose={() => setAddingPermission(false)}
+      />
+
+      <AddUserTopicPermissionDialog
+        open={addingTopicPermission}
+        username={detail.name}
+        existing={detail.topicPermissions}
+        onClose={() => setAddingTopicPermission(false)}
+      />
+
+      <ConfirmDialog
+        open={removingTopicPermission !== null}
+        onOpenChange={(open) => {
+          if (!open) setRemovingTopicPermission(null)
+        }}
+        title="Remove topic permission?"
+        description={`${detail.name} can no longer publish to or consume from ${removingTopicPermission?.exchange ?? "this exchange"} on ${removingTopicPermission?.vhost ?? "this virtual host"}. Other exchanges are not affected.`}
+        confirmLabel="Remove topic permission"
+        tone="destructive"
+        onConfirm={async () => {
+          const target = removingTopicPermission
+          setRemovingTopicPermission(null)
+          if (!target) return
+          try {
+            await actions.deleteUserTopicPermission(
+              target.vhost,
+              detail.name,
+              target.exchange
+            )
+            toast.success("Topic permission removed", {
+              description: `${detail.name} no longer has access to ${target.exchange} on ${target.vhost}.`,
+            })
+          } catch (cause) {
+            toast.error("Topic permission was not removed", {
+              description:
+                cause instanceof Error
+                  ? cause.message
+                  : "The management API did not respond.",
+            })
+          }
+        }}
       />
 
       <ConfirmDialog

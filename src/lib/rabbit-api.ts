@@ -769,6 +769,14 @@ export interface UpdateUserPermissionInput {
   read: string
 }
 
+export interface UpdateUserTopicPermissionInput {
+  username: string
+  vhost: string
+  exchange: string
+  write: string
+  read: string
+}
+
 export interface UserDetail {
   name: string
   hashingAlgorithm: string
@@ -2207,6 +2215,33 @@ export async function deleteUserPermission(
 ): Promise<void> {
   await apiDelete(
     `/api/permissions/${enc(vhost)}/${enc(username)}`,
+    token
+  )
+}
+
+export async function updateUserTopicPermission(
+  token: string,
+  input: UpdateUserTopicPermissionInput
+): Promise<void> {
+  await apiPut(
+    `/api/topic-permissions/${enc(input.vhost)}/${enc(input.username)}`,
+    token,
+    {
+      exchange: input.exchange,
+      write: input.write,
+      read: input.read,
+    }
+  )
+}
+
+export async function deleteUserTopicPermission(
+  token: string,
+  vhost: string,
+  username: string,
+  exchange: string
+): Promise<void> {
+  await apiDelete(
+    `/api/topic-permissions/${enc(vhost)}/${enc(username)}/${enc(exchange)}`,
     token
   )
 }

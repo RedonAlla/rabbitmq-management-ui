@@ -587,6 +587,11 @@ export function createState() {
     permission("deploy-bot", "staging"),
   ]
 
+  const topicPermissions = [
+    topicPermission("app_worker", "/", "orders"),
+    topicPermission("analytics_etl", "analytics", "analytics.ingest"),
+  ]
+
   const policies = [
     policy("orders-dlx", "/", "^orders\\.", "queues", 2, {
       "dead-letter-exchange": "dead-letter",
@@ -706,6 +711,7 @@ export function createState() {
     connections,
     users,
     permissions,
+    topicPermissions,
     policies,
     operatorPolicies,
     vhostLimits,
@@ -801,6 +807,10 @@ function channel(number, prefetch, unacked, state, publishRate, deliverRate, con
 
 function permission(user, vhost) {
   return { user, vhost, configure: ".*", write: ".*", read: ".*" }
+}
+
+function topicPermission(user, vhost, exchange) {
+  return { user, vhost, exchange, write: ".*", read: ".*" }
 }
 
 function policy(name, vhost, pattern, applyTo, priority, definition) {

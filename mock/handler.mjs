@@ -639,6 +639,7 @@ function definitionsDocument() {
       default_queue_type: vhost.default_queue_type ?? "classic",
     })),
     permissions: state.permissions,
+    topic_permissions: state.topicPermissions,
     parameters: [],
     global_parameters: [],
     policies: state.policies,
@@ -699,6 +700,18 @@ function mergeDefinitions(document) {
       user: entry.user,
       vhost: entry.vhost,
       configure: entry.configure ?? ".*",
+      write: entry.write ?? ".*",
+      read: entry.read ?? ".*",
+    })
+  )
+  replaceBy(
+    state.topicPermissions,
+    document.topic_permissions,
+    (entry) => `${entry.vhost}\u0000${entry.user}\u0000${entry.exchange}`,
+    (entry) => ({
+      user: entry.user,
+      vhost: entry.vhost,
+      exchange: entry.exchange,
       write: entry.write ?? ".*",
       read: entry.read ?? ".*",
     })
@@ -954,6 +967,7 @@ export async function handleMockRequest(req, res) {
         }
         state.vhosts = state.vhosts.filter((entry) => entry.name !== name)
         state.permissions = state.permissions.filter((entry) => entry.vhost !== name)
+        state.topicPermissions = state.topicPermissions.filter((entry) => entry.vhost !== name)
         state.policies = state.policies.filter((entry) => entry.vhost !== name)
         state.operatorPolicies = state.operatorPolicies.filter((entry) => entry.vhost !== name)
         state.vhostLimits = state.vhostLimits.filter((entry) => entry.vhost !== name)
@@ -1346,7 +1360,19 @@ export async function handleMockRequest(req, res) {
           return
         }
         if (rest[1] === "topic-permissions") {
-          sendJson(res, 200, [])
+          sendJson(
+            res,
+            200,
+            state.topicPermissions
+              .filter((permission) => permission.user === name)
+              .map((permission) => ({
+                user: permission.user,
+                vhost: permission.vhost,
+                exchange: permission.exchange,
+                write: permission.write,
+                read: permission.read,
+              }))
+          )
           return
         }
       }
@@ -1381,6 +1407,7 @@ export async function handleMockRequest(req, res) {
         if (!entry) return sendError(res, 404, "not_found", `user '${name}' not found`)
         state.users = state.users.filter((candidate) => candidate.name !== name)
         state.permissions = state.permissions.filter((permission) => permission.user !== name)
+        state.topicPermissions = state.topicPermissions.filter((permission) => permission.user !== name)
         sendEmpty(res, 204)
         return
       }
@@ -1413,6 +1440,48 @@ export async function handleMockRequest(req, res) {
       if (rest.length === 2 && method === "DELETE") {
         state.permissions = state.permissions.filter(
           (entry) => !(entry.vhost === vhost && entry.user === name)
+        )
+        sendEmpty(res, 204)
+        return
+      }
+    }
+
+    if (resource === "topic-permissions") {
+      const [vhost, name] = rest
+      if (rest.length === 2 && method === "PUT") {
+        const body = await readJson(req)
+        const exchangeName = String(body.exchange ?? "")
+        const exchange = state.exchanges.find(
+          (entry) => entry.vhost === vhost && entry.name === exchangeName
+        )
+        if (!exchange) {
+          return sendError(res, 400, "bad_request", `exchange '${exchangeName}' not found`)
+        }
+        if (exchange.type !== "topic") {
+          return sendError(res, 400, "bad_request", `exchange '${exchangeName}' is not a topic exchange`)
+        }
+        const existing = state.topicPermissions.find(
+          (entry) =>
+            entry.vhost === vhost &&
+            entry.user === name &&
+            entry.exchange === exchangeName
+        )
+        const next = {
+          user: name,
+          vhost,
+          exchange: exchangeName,
+          write: body.write ?? ".*",
+          read: body.read ?? ".*",
+        }
+        if (existing) Object.assign(existing, next)
+        else state.topicPermissions.push(next)
+        sendEmpty(res, 201)
+        return
+      }
+      if (rest.length === 3 && method === "DELETE") {
+        state.topicPermissions = state.topicPermissions.filter(
+          (entry) =>
+            !(entry.vhost === vhost && entry.user === name && entry.exchange === rest[2])
         )
         sendEmpty(res, 204)
         return
