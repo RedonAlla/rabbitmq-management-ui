@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { ConditionalRender } from "@/components/conditional-render"
 import Field from "@/components/ui/field"
 import FormError from "@/components/ui/form-error"
 import { Input } from "@/components/ui/input"
@@ -14,6 +15,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import ToggleField from "@/components/ui/toggle-field"
 import { cn } from "@/lib/utils"
 import { useCluster } from "@/store/cluster"
 
@@ -40,7 +42,7 @@ const USER_TAGS = [
   },
 ]
 
-export default function AddUserDialog({
+export function AddUserDialog({
   open,
   onClose,
 }: {
@@ -50,6 +52,8 @@ export default function AddUserDialog({
   const { data, actions } = useCluster()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [noPassword, setNoPassword] = useState(false)
   const [tag, setTag] = useState("management")
   const [error, setError] = useState("")
 
@@ -62,23 +66,32 @@ export default function AddUserDialog({
     if (data.users.some((user) => user.username === clean))
       return setError(`${clean} already exists.`)
 
-    if (password.trim().length < 4)
-      return setError("Use a password of at least 4 characters.")
+    if (!noPassword) {
+      if (password.trim().length < 4)
+        return setError("Use a password of at least 4 characters.")
+
+      if (password !== confirmPassword)
+        return setError("Passwords do not match.")
+    }
 
     try {
       await actions.addUser({
         username: clean,
-        password,
+        password: noPassword ? undefined : password,
         tags: [tag],
         vhosts: ["/"],
       })
 
       toast.success("User created", {
-        description: `${clean} has the ${tag} tag.`,
+        description: noPassword
+          ? `${clean} has the ${tag} tag and no password.`
+          : `${clean} has the ${tag} tag.`,
       })
 
       setUsername("")
       setPassword("")
+      setConfirmPassword("")
+      setNoPassword(false)
       setTag("management")
       setError("")
       onClose()
@@ -114,15 +127,45 @@ export default function AddUserDialog({
                 autoFocus
               />
             </Field>
-            <Field label="Password" htmlFor="user-password">
-              <Input
-                id="user-password"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="••••••••"
-              />
-            </Field>
+            <ToggleField
+              label="Create without password"
+              info="Create the user now and set a password later. The user cannot sign in until a password is set."
+              checked={noPassword}
+              onCheckedChange={(checked) => {
+                setNoPassword(checked)
+                setError("")
+                if (checked) {
+                  setPassword("")
+                  setConfirmPassword("")
+                }
+              }}
+            />
+            <ConditionalRender condition={!noPassword}>
+              <Field label="Password" htmlFor="user-password">
+                <Input
+                  id="user-password"
+                  type="password"
+                  value={password}
+                  onChange={(event) => {
+                    setPassword(event.target.value)
+                    setError("")
+                  }}
+                  placeholder="••••••••"
+                />
+              </Field>
+              <Field label="Confirm password" htmlFor="user-confirm-password">
+                <Input
+                  id="user-confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => {
+                    setConfirmPassword(event.target.value)
+                    setError("")
+                  }}
+                  placeholder="••••••••"
+                />
+              </Field>
+            </ConditionalRender>
             <Field label="Tags">
               <div className="flex flex-col gap-2">
                 {USER_TAGS.map((option) => {

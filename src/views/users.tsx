@@ -20,7 +20,7 @@ import {
   type DataGridFeatures,
 } from "@/components/reui/data-grid/data-grid"
 import { Skeleton } from "@/components/ui/skeleton"
-import GridActions from "./user/grid-actions"
+import { GridActions } from "@/components/features/users/list"
 import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants"
 import {
   Frame,

@@ -772,7 +772,7 @@ export interface DeleteBindingInput {
 
 export interface CreateUserInput {
   username: string
-  password: string
+  password?: string
   tags: string[]
   vhosts: string[]
 }
@@ -2016,7 +2016,7 @@ export async function createUser(
   input: CreateUserInput
 ): Promise<void> {
   await apiPut(`/api/users/${enc(input.username)}`, token, {
-    password: input.password,
+    ...(input.password === undefined ? {} : { password: input.password }),
     tags: input.tags.join(","),
   })
   for (const vhost of input.vhosts) {

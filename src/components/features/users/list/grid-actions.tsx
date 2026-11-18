@@ -16,7 +16,7 @@ type Props = {
   setPendingDelete: Dispatch<SetStateAction<User | null>>
 }
 
-export default function GridActions({ row, setPendingDelete }: Props) {
+export function GridActions({ row, setPendingDelete }: Props) {
   return (
     <div
       className="flex justify-end"
