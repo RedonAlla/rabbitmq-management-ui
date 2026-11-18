@@ -202,12 +202,16 @@ export function UsersView() {
         id: "actions",
         header: () => <span className="sr-only">Actions</span>,
         cell: ({ row }) => (
-          <GridActions row={row.original} setPendingDelete={setPendingDelete} />
+          <GridActions
+            row={row.original}
+            setPendingDelete={setPendingDelete}
+            openDialog={openDialog}
+          />
         ),
         meta: fitMeta,
       },
     ],
-    []
+    [openDialog]
   )
 
   return (

@@ -2092,6 +2092,22 @@ export async function createUser(
   }
 }
 
+export interface UpdateUserInput {
+  username: string
+  password?: string
+  tags: string[]
+}
+
+export async function updateUser(
+  token: string,
+  input: UpdateUserInput
+): Promise<void> {
+  await apiPut(`/api/users/${enc(input.username)}`, token, {
+    ...(input.password === undefined ? {} : { password: input.password }),
+    tags: input.tags.join(","),
+  })
+}
+
 export async function deleteUser(
   token: string,
   username: string

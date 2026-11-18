@@ -183,6 +183,7 @@ export interface ClusterActions {
   deleteBinding: (input: rabbit.DeleteBindingInput) => Promise<void>
   closeChannel: (name: string) => Promise<void>
   addUser: (input: rabbit.CreateUserInput) => Promise<void>
+  updateUser: (input: rabbit.UpdateUserInput) => Promise<void>
   deleteUser: (username: string) => Promise<void>
   addVhost: (input: rabbit.CreateVhostInput) => Promise<void>
   deleteVhost: (name: string) => Promise<void>
@@ -299,6 +300,7 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
       closeChannel: (name) =>
         run((current) => rabbit.closeChannel(current, name)),
       addUser: (input) => run((current) => rabbit.createUser(current, input)),
+      updateUser: (input) => run((current) => rabbit.updateUser(current, input)),
       deleteUser: (username) =>
         run((current) => rabbit.deleteUser(current, username)),
       addVhost: (input) => run((current) => rabbit.createVhost(current, input)),

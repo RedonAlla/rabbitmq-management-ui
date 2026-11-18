@@ -13,13 +13,15 @@ import {
 import EditLimitsDialog from "@/views/limits/edit-limits-dialog"
 import AddPolicyDialog from "@/views/policies/add-policy-dialog"
 import { AddQueueDrawer } from "@/components/features/queues/list"
-import { AddUserDialog } from "@/components/features/users/list"
+import { AddUserDialog, EditUserDialog } from "@/components/features/users/list"
 import AddVhostDialog from "@/views/vhosts/add-vhost-dialog"
+import type { User } from "@/data/types"
 
 export type DialogRequest =
   | { type: "add-queue"; onCreated?: () => void }
   | { type: "add-exchange" }
   | { type: "add-user" }
+  | { type: "edit-user"; user: User }
   | { type: "add-vhost" }
   | { type: "add-policy" }
   | { type: "add-operator-policy" }
@@ -57,6 +59,12 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
         onClose={closeDialog}
       />
       <AddUserDialog open={dialog?.type === "add-user"} onClose={closeDialog} />
+      <EditUserDialog
+        key={dialog?.type === "edit-user" ? dialog.user.username : "edit-user"}
+        open={dialog?.type === "edit-user"}
+        user={dialog?.type === "edit-user" ? dialog.user : null}
+        onClose={closeDialog}
+      />
       <AddVhostDialog
         open={dialog?.type === "add-vhost"}
         onClose={closeDialog}

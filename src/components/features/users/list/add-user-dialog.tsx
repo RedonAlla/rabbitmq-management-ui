@@ -18,29 +18,7 @@ import {
 import ToggleField from "@/components/ui/toggle-field"
 import { cn } from "@/lib/utils"
 import { useCluster } from "@/store/cluster"
-
-const USER_TAGS = [
-  {
-    name: "administrator",
-    description:
-      "User can do everything monitoring can do, manage users, vhosts and permissions, close other user's connections, and manage policies and parameters for all vhosts.",
-  },
-  {
-    name: "management",
-    description:
-      "Sign in to the management UI and view resources in assigned virtual hosts.",
-  },
-  {
-    name: "policymaker",
-    description:
-      "User can access the management plugin and manage policies and parameters for the vhosts they have access to.",
-  },
-  {
-    name: "monitoring",
-    description:
-      "User can access the management plugin and see all connections and channels as well as node-related information.",
-  },
-]
+import { USER_TAGS } from "./user-tags"
 
 export function AddUserDialog({
   open,
