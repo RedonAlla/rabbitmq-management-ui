@@ -689,6 +689,7 @@ function mergeDefinitions(document) {
     tags: Array.isArray(entry.tags) ? entry.tags.join(",") : String(entry.tags ?? ""),
     password_hash: entry.password_hash ?? "rabbit_password_hashing_sha256",
     hashing_algorithm: entry.hashing_algorithm ?? "rabbit_password_hashing_sha256",
+    has_password: entry.password_hash !== undefined,
   }))
   replaceBy(
     state.permissions,
@@ -1338,12 +1339,14 @@ export async function handleMockRequest(req, res) {
         if (entry) {
           entry.tags = tags
           entry.password_hash = body.password_hash ?? entry.password_hash
+          if (body.password) entry.has_password = true
         } else {
           state.users.push({
             name,
             tags,
             password_hash: body.password_hash ?? "rabbit_password_hashing_sha256",
             hashing_algorithm: "rabbit_password_hashing_sha256",
+            has_password: Boolean(body.password),
           })
         }
         if (body.password && CREDENTIALS.get(name) === undefined) {

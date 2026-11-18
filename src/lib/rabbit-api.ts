@@ -300,8 +300,9 @@ interface ApiChannelMessageStats {
 interface ApiUser {
   name: string
   tags: string | string[]
-  password_hash: string
+  password_hash?: string
   hashing_algorithm?: string
+  has_password?: boolean
 }
 
 interface ApiPermission {
@@ -1150,10 +1151,7 @@ function mapUsers(users: ApiUser[], permissions: ApiPermission[]): User[] {
           .map((tag) => tag.trim())
           .filter(Boolean),
     vhosts: vhostsByUser.get(user.name) ?? [],
-    hash:
-      user.password_hash ||
-      user.hashing_algorithm ||
-      "rabbit_password_hashing_sha256",
+    hasPassword: Boolean(user.has_password),
   }))
 }
 

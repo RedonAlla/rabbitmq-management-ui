@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { ConditionalRender } from "@/components/conditional-render"
 import Field from "@/components/ui/field"
 import FormError from "@/components/ui/form-error"
@@ -16,10 +15,9 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import ToggleField from "@/components/ui/toggle-field"
-import { cn } from "@/lib/utils"
 import { useCluster } from "@/store/cluster"
 import type { User } from "@/data/types"
-import { USER_TAGS } from "./user-tags"
+import { UserTagsList } from "./user-tags-item"
 
 export function EditUserDialog({
   open,
@@ -141,36 +139,7 @@ export function EditUserDialog({
               </Field>
             </ConditionalRender>
             <Field label="Tags">
-              <div className="flex flex-col gap-2">
-                {USER_TAGS.map((option) => {
-                  const selected = tag === option.name
-                  return (
-                    <label
-                      key={option.name}
-                      className={cn(
-                        "flex cursor-pointer items-start gap-3 rounded-lg border px-2.5 py-1 transition-colors",
-                        selected
-                          ? "border-primary bg-primary/5"
-                          : "border-input hover:bg-accent/50"
-                      )}
-                    >
-                      <Checkbox
-                        checked={selected}
-                        onCheckedChange={() => setTag(option.name)}
-                        className="mt-0.5"
-                      />
-                      <span className="flex min-w-0 flex-col gap-0.5">
-                        <span className="text-sm font-medium">
-                          {option.name}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {option.description}
-                        </span>
-                      </span>
-                    </label>
-                  )
-                })}
-              </div>
+              <UserTagsList setTag={setTag} tag={tag} />
             </Field>
             <FormError>{error}</FormError>
           </div>

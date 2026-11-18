@@ -13,7 +13,7 @@ import {
 import EditLimitsDialog from "@/views/limits/edit-limits-dialog"
 import AddPolicyDialog from "@/views/policies/add-policy-dialog"
 import { AddQueueDrawer } from "@/components/features/queues/list"
-import { AddUserDialog, EditUserDialog } from "@/components/features/users/list"
+import { AddUserDialog, EditUserDialog } from "@/components/features/users"
 import AddVhostDialog from "@/views/vhosts/add-vhost-dialog"
 import type { User } from "@/data/types"
 

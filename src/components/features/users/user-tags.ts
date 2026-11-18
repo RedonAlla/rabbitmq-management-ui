@@ -1,4 +1,9 @@
-export const USER_TAGS = [
+export type TagProps = {
+  name: string,
+  description: string
+}
+
+export const USER_TAGS: TagProps[] = [
   {
     name: "administrator",
     description:

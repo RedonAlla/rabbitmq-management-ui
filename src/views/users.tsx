@@ -21,7 +21,7 @@ import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-colu
 import { type DataGridFeatures } from "@/components/reui/data-grid/data-grid"
 import { useUsers } from "@/hooks/use-users"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
-import { GridActions } from "@/components/features/users/list"
+import { GridActions } from "@/components/features/users"
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants"
 import { fitMeta, ServerSideTable } from "@/components/table"
 import { Filters } from "@/components/reui/filters/filters"
@@ -188,13 +188,14 @@ export function UsersView() {
         meta: fitMeta,
       },
       {
-        accessorKey: "hash",
-        header: () => <span>Password hash</span>,
-        cell: ({ row }) => (
-          <span className="data-cell text-xs text-muted-foreground">
-            {row.original.hash}
-          </span>
-        ),
+        accessorKey: "hasPassword",
+        header: () => <span>Has password</span>,
+        cell: ({ row }) =>
+          row.original.hasPassword ? (
+            <Badge variant="success-light">Yes</Badge>
+          ) : (
+            <Badge variant="outline">No</Badge>
+          ),
         enableSorting: false,
         meta: fitMeta,
       },

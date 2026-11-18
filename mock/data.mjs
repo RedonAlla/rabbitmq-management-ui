@@ -565,13 +565,13 @@ export function createState() {
   }
 
   const users = [
-    { name: "admin", tags: "administrator", password_hash: "rabbit_password_hashing_sha256", hashing_algorithm: "rabbit_password_hashing_sha256" },
-    { name: "guest", tags: "administrator", password_hash: "rabbit_password_hashing_sha256", hashing_algorithm: "rabbit_password_hashing_sha256" },
-    { name: "app_worker", tags: "management,policymaker", password_hash: "rabbit_password_hashing_sha256", hashing_algorithm: "rabbit_password_hashing_sha256" },
-    { name: "billing_svc", tags: "management", password_hash: "rabbit_password_hashing_sha256", hashing_algorithm: "rabbit_password_hashing_sha256" },
-    { name: "analytics_etl", tags: "management", password_hash: "rabbit_password_hashing_sha256", hashing_algorithm: "rabbit_password_hashing_sha256" },
-    { name: "monitoring", tags: "monitoring", password_hash: "rabbit_password_hashing_sha256", hashing_algorithm: "rabbit_password_hashing_sha256" },
-    { name: "deploy-bot", tags: "management,policymaker", password_hash: "rabbit_password_hashing_sha256", hashing_algorithm: "rabbit_password_hashing_sha256" },
+    { name: "admin", tags: "administrator", password_hash: "rabbit_password_hashing_sha256", hashing_algorithm: "rabbit_password_hashing_sha256", has_password: true },
+    { name: "guest", tags: "administrator", password_hash: "rabbit_password_hashing_sha256", hashing_algorithm: "rabbit_password_hashing_sha256", has_password: true },
+    { name: "app_worker", tags: "management,policymaker", password_hash: "rabbit_password_hashing_sha256", hashing_algorithm: "rabbit_password_hashing_sha256", has_password: true },
+    { name: "billing_svc", tags: "management", password_hash: "rabbit_password_hashing_sha256", hashing_algorithm: "rabbit_password_hashing_sha256", has_password: true },
+    { name: "analytics_etl", tags: "management", password_hash: "rabbit_password_hashing_sha256", hashing_algorithm: "rabbit_password_hashing_sha256", has_password: true },
+    { name: "monitoring", tags: "monitoring", password_hash: "rabbit_password_hashing_sha256", hashing_algorithm: "rabbit_password_hashing_sha256", has_password: true },
+    { name: "deploy-bot", tags: "management,policymaker", password_hash: "rabbit_password_hashing_sha256", hashing_algorithm: "rabbit_password_hashing_sha256", has_password: true },
   ]
 
   const permissions = [

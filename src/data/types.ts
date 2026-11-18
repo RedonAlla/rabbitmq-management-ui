@@ -125,7 +125,7 @@ export interface User {
   username: string
   tags: string[]
   vhosts: string[]
-  hash: string
+  hasPassword: boolean
 }
 
 export interface Policy {
