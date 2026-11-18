@@ -28,10 +28,11 @@ import { useCluster } from "@/store/cluster"
 import { ARGUMENT_PRESETS } from "./queue-argument-presets"
 import QueueArgumentsEditor from "./queue-arguments-editor"
 import {
-  inferArgumentFields,
   parseArgumentsJson,
   parseJsonToRows,
+  parseQueuePairText,
   rowsToJsonText,
+  rowsToQueuePairText,
   type ArgumentMode,
   type ArgumentRow,
 } from "./queue-arguments"
@@ -59,7 +60,10 @@ export function AddQueueDrawer({
   const [type, setType] = useState<QueueDeclarationType>("default")
   const [durable, setDurable] = useState(true)
   const [autoDelete, setAutoDelete] = useState(false)
-  const [argumentRows, setArgumentRows] = useState<ArgumentRow[]>([])
+  const [argumentRows, setArgumentRows] = useState<ArgumentRow[]>([
+    { id: 0, key: "", type: "string", value: "" },
+  ])
+  const [argumentPairs, setArgumentPairs] = useState("")
   const [argumentMode, setArgumentMode] = useState<ArgumentMode>("inputs")
   const [argumentJson, setArgumentJson] = useState("")
   const [presetOpen, setPresetOpen] = useState(false)
@@ -67,15 +71,16 @@ export function AddQueueDrawer({
   const [error, setError] = useState("")
   const nextArgumentId = useRef(0)
 
+  const emptyRow = (): ArgumentRow => {
+    const id = (nextArgumentId.current += 1)
+    return { id, key: "", type: "string", value: "" }
+  }
+
   const showDurable = type === "default" || type === "classic"
   const showAutoDelete = type === "classic"
 
   const addArgumentRow = () => {
-    const id = (nextArgumentId.current += 1)
-    setArgumentRows((rows) => [
-      ...rows,
-      { id, key: "", type: "string", value: "" },
-    ])
+    setArgumentRows((rows) => [...rows, emptyRow()])
     setError("")
   }
 
@@ -109,14 +114,6 @@ export function AddQueueDrawer({
     setError("")
   }
 
-  const updateArgumentValue = (id: number, value: string) => {
-    const inferred = inferArgumentFields(value)
-    setArgumentRows((rows) =>
-      rows.map((row) => (row.id === id ? { ...row, ...inferred } : row))
-    )
-    setError("")
-  }
-
   const removeArgumentRow = (id: number) => {
     setArgumentRows((rows) => rows.filter((row) => row.id !== id))
     setError("")
@@ -124,14 +121,27 @@ export function AddQueueDrawer({
 
   const changeArgumentMode = (mode: ArgumentMode) => {
     if (mode === argumentMode) return
-    setError("")
-    if (mode === "json") {
-      setArgumentJson(rowsToJsonText(argumentRows))
-    } else if (argumentMode === "json") {
-      const nextId = () => (nextArgumentId.current += 1)
-      setArgumentRows(parseJsonToRows(argumentJson, nextId))
+    const nextId = () => (nextArgumentId.current += 1)
+    const baseRows =
+      argumentMode === "pairs"
+        ? parseQueuePairText(argumentPairs, nextId)
+        : argumentMode === "json"
+          ? parseJsonToRows(argumentJson, nextId)
+          : argumentRows
+    if (mode === "pairs") {
+      setArgumentPairs(rowsToQueuePairText(baseRows))
+    } else if (mode === "json") {
+      setArgumentJson(rowsToJsonText(baseRows))
+    } else {
+      setArgumentRows(baseRows.length > 0 ? baseRows : [emptyRow()])
     }
+    setError("")
     setArgumentMode(mode)
+  }
+
+  const changeArgumentPairs = (value: string) => {
+    setArgumentPairs(value)
+    setError("")
   }
 
   const changeArgumentJson = (value: string) => {
@@ -154,7 +164,9 @@ export function AddQueueDrawer({
     const base =
       argumentMode === "json"
         ? parseJsonToRows(argumentJson, nextId)
-        : argumentRows
+        : argumentMode === "pairs"
+          ? parseQueuePairText(argumentPairs, nextId)
+          : argumentRows
     const seen = new Set(
       base.map((row) => row.key.trim()).filter((key) => key.length > 0)
     )
@@ -174,6 +186,7 @@ export function AddQueueDrawer({
     const rows = [...base, ...added]
     setArgumentRows(rows)
     if (argumentMode === "json") setArgumentJson(rowsToJsonText(rows))
+    if (argumentMode === "pairs") setArgumentPairs(rowsToQueuePairText(rows))
     setPresetSelection([])
     setPresetOpen(false)
     setError("")
@@ -185,7 +198,8 @@ export function AddQueueDrawer({
     setType("default")
     setDurable(true)
     setAutoDelete(false)
-    setArgumentRows([])
+    setArgumentRows([emptyRow()])
+    setArgumentPairs("")
     setArgumentMode("inputs")
     setArgumentJson("")
     setPresetOpen(false)
@@ -208,7 +222,21 @@ export function AddQueueDrawer({
       if (parsed.error) return setError(parsed.error)
       Object.assign(args, parsed.args)
     } else {
-      for (const row of argumentRows) {
+      let rows = argumentRows
+      if (argumentMode === "pairs") {
+        const invalidLine = argumentPairs
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .find((line) => line.length > 0 && line.indexOf(":") <= 0)
+        if (invalidLine !== undefined) {
+          return setError("Use one key:value pair per line.")
+        }
+        rows = parseQueuePairText(
+          argumentPairs,
+          () => (nextArgumentId.current += 1)
+        )
+      }
+      for (const row of rows) {
         const key = row.key.trim()
         if (!key) {
           if (row.value.trim())
@@ -320,7 +348,9 @@ export function AddQueueDrawer({
               </Field>
             </div>
             <ConditionalRender condition={showDurable || showAutoDelete}>
-              <div className={cn("grid gap-2", showAutoDelete && "sm:grid-cols-2")}>
+              <div
+                className={cn("grid gap-2", showAutoDelete && "sm:grid-cols-2")}
+              >
                 <ConditionalRender condition={showDurable}>
                   <ToggleField
                     label="Durable"
@@ -345,8 +375,9 @@ export function AddQueueDrawer({
               rows={argumentRows}
               onAddRow={addArgumentRow}
               onUpdateRow={updateArgumentRow}
-              onUpdateValue={updateArgumentValue}
               onRemoveRow={removeArgumentRow}
+              pairs={argumentPairs}
+              onPairsChange={changeArgumentPairs}
               json={argumentJson}
               onJsonChange={changeArgumentJson}
               presetsOpen={presetOpen}

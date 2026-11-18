@@ -24,11 +24,7 @@ import { Textarea } from "@/components/ui/textarea"
 import type { QueueDeclarationType } from "@/lib/rabbit-api"
 import { cn } from "@/lib/utils"
 import { ARGUMENT_PRESETS } from "./queue-argument-presets"
-import type {
-  ArgumentMode,
-  ArgumentRow,
-  ArgumentType,
-} from "./queue-arguments"
+import type { ArgumentMode, ArgumentRow, ArgumentType } from "./queue-arguments"
 
 const ARGUMENT_TYPE_OPTIONS: { value: ArgumentType; label: string }[] = [
   { value: "string", label: "String" },
@@ -47,10 +43,15 @@ const ARGUMENT_VALUE_PLACEHOLDER: Record<
 }
 
 const modeInfoMapper: Record<ArgumentMode, string> = {
-  "inputs": "Optional key/value pairs with a type. List values are comma-separated.",
-  "pairs": "One key/value pair per row. true/false, numbers, and [JSON arrays] are typed automatically; quote a value to keep it a string.",
-  "json": "A JSON object of arguments. Values may be strings, numbers, booleans, or arrays; x-queue-type is added from the queue type selector."
+  inputs:
+    "Optional key/value pairs with a type. List values are comma-separated.",
+  pairs:
+    "One key:value pair per line. true/false and numbers are typed automatically, comma-separated values become lists; quote a value to keep it a string.",
+  json: "A JSON object of arguments. Values may be strings, numbers, booleans, or arrays; x-queue-type is added from the queue type selector.",
 }
+
+const ARGUMENT_PAIRS_PLACEHOLDER =
+  "arg-key-string:arg-value\narg-key-number:12\narg-key-list:val 1, val 2, val 3\narg-key-bool:true"
 
 const ARGUMENT_JSON_PLACEHOLDER = '{\n  "x-max-length": 50000\n}'
 
@@ -61,8 +62,9 @@ export default function QueueArgumentsEditor({
   rows,
   onAddRow,
   onUpdateRow,
-  onUpdateValue,
   onRemoveRow,
+  pairs,
+  onPairsChange,
   json,
   onJsonChange,
   presetsOpen,
@@ -77,8 +79,9 @@ export default function QueueArgumentsEditor({
   rows: ArgumentRow[]
   onAddRow: () => void
   onUpdateRow: (id: number, patch: Partial<Omit<ArgumentRow, "id">>) => void
-  onUpdateValue: (id: number, value: string) => void
   onRemoveRow: (id: number) => void
+  pairs: string
+  onPairsChange: (value: string) => void
   json: string
   onJsonChange: (value: string) => void
   presetsOpen: boolean
@@ -88,10 +91,7 @@ export default function QueueArgumentsEditor({
   onApplyPresets: () => void
 }) {
   return (
-    <Field
-      label="Arguments"
-      info={modeInfoMapper[mode]}
-    >
+    <Field label="Arguments" info={modeInfoMapper[mode]}>
       <Tabs
         value={mode}
         onValueChange={(next) => onModeChange(String(next) as ArgumentMode)}
@@ -283,49 +283,15 @@ export default function QueueArgumentsEditor({
             Add argument
           </Button>
         </TabsContent>
-        <TabsContent value="pairs" className="flex flex-col gap-2">
-          {rows.map((row) => (
-            <div
-              key={row.id}
-              className="flex flex-col gap-2 sm:flex-row sm:items-center"
-            >
-              <Input
-                aria-label="Argument key"
-                placeholder="x-max-length"
-                value={row.key}
-                className="min-w-0 flex-1 font-mono"
-                onChange={(event) =>
-                  onUpdateRow(row.id, { key: event.target.value })
-                }
-              />
-              <Input
-                aria-label="Argument value"
-                placeholder="value"
-                value={row.value}
-                className="min-w-0 flex-1 font-mono"
-                onChange={(event) => onUpdateValue(row.id, event.target.value)}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Remove argument"
-                onClick={() => onRemoveRow(row.id)}
-              >
-                <XIcon aria-hidden="true" />
-              </Button>
-            </div>
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="self-start"
-            onClick={onAddRow}
-          >
-            <PlusIcon data-icon="inline-start" aria-hidden="true" />
-            Add argument
-          </Button>
+        <TabsContent value="pairs">
+          <Textarea
+            aria-label="Arguments as key:value lines"
+            placeholder={ARGUMENT_PAIRS_PLACEHOLDER}
+            value={pairs}
+            className="font-mono"
+            rows={5}
+            onChange={(event) => onPairsChange(event.target.value)}
+          />
         </TabsContent>
         <TabsContent value="json">
           <Textarea

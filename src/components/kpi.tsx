@@ -4,6 +4,7 @@ import { Badge } from "@/components/reui/badge"
 import { Frame, FramePanel } from "@/components/reui/frame"
 import { IconTile } from "@/components/reui/icon-tile"
 import { cn } from "@/lib/utils"
+import { ConditionalRender } from "./conditional-render"
 
 interface SparklineProps {
   values: number[]
@@ -110,7 +111,7 @@ export function KpiCard({
               {value}
             </span>
           </div>
-          {icon ? (
+          <ConditionalRender condition={icon !== null}>
             <IconTile
               variant="outline"
               size="sm"
@@ -119,18 +120,22 @@ export function KpiCard({
             >
               {icon}
             </IconTile>
-          ) : null}
+          </ConditionalRender>
         </div>
         <div className="flex min-w-0 items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
-            {typeof trend === "number" ? <TrendBadge trend={trend} /> : null}
-            {detail ? (
+            <ConditionalRender condition={typeof trend === "number"}>
+              <TrendBadge trend={trend!} />
+            </ConditionalRender>
+            <ConditionalRender condition={detail !== null}>
               <span className="truncate text-xs text-muted-foreground">
                 {detail}
               </span>
-            ) : null}
+            </ConditionalRender>
           </div>
-          {spark ? <Sparkline values={spark} tone={tone} /> : null}
+           <ConditionalRender condition={spark !== null}>
+            <Sparkline values={spark!} tone={tone} />
+           </ConditionalRender>
         </div>
       </FramePanel>
     </Frame>
