@@ -11,10 +11,12 @@ export default function VhostSelect({
   value,
   onChange,
   id,
+  exclude = [],
 }: {
   value: string
   onChange: (value: string) => void
   id?: string
+  exclude?: string[]
 }) {
   const { data } = useCluster()
   return (
@@ -23,11 +25,13 @@ export default function VhostSelect({
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {data.vhosts.map((vhost) => (
-          <SelectItem key={vhost.name} value={vhost.name}>
-            {vhost.name}
-          </SelectItem>
-        ))}
+        {data.vhosts
+          .filter((vhost) => !exclude.includes(vhost.name))
+          .map((vhost) => (
+            <SelectItem key={vhost.name} value={vhost.name}>
+              {vhost.name}
+            </SelectItem>
+          ))}
       </SelectContent>
     </Select>
   )

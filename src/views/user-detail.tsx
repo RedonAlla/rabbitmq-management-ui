@@ -7,6 +7,7 @@ import { DetailLayout, SectionFrame } from "@/components/detail"
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import { RegionEmpty, RegionError } from "@/components/region-states"
 import {
+  AddUserPermissionDialog,
   EditUserPermissionDialog,
   UserBackButton,
   UserDetailHeader,
@@ -27,6 +28,9 @@ export function UserDetailView() {
   const { detail, loading, error, status, retry } = useUserDetail(route.id)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [editingPermission, setEditingPermission] =
+    useState<UserPermission | null>(null)
+  const [addingPermission, setAddingPermission] = useState(false)
+  const [removingPermission, setRemovingPermission] =
     useState<UserPermission | null>(null)
   const username = route.id ?? "unknown"
 
@@ -83,6 +87,8 @@ export function UserDetailView() {
             <UserPermissionsFrame
               permissions={detail.permissions}
               onEdit={setEditingPermission}
+              onAdd={() => setAddingPermission(true)}
+              onRemove={setRemovingPermission}
             />
             <UserTopicPermissionsFrame
               permissions={detail.topicPermissions}
@@ -103,6 +109,44 @@ export function UserDetailView() {
         username={detail.name}
         permission={editingPermission}
         onClose={() => setEditingPermission(null)}
+      />
+
+      <AddUserPermissionDialog
+        open={addingPermission}
+        username={detail.name}
+        existingVhosts={detail.permissions.map(
+          (permission) => permission.vhost
+        )}
+        onClose={() => setAddingPermission(false)}
+      />
+
+      <ConfirmDialog
+        open={removingPermission !== null}
+        onOpenChange={(open) => {
+          if (!open) setRemovingPermission(null)
+        }}
+        title="Remove permission?"
+        description={`${detail.name} immediately loses access to ${removingPermission?.vhost ?? "this virtual host"}. Connections and other virtual hosts are not affected.`}
+        confirmLabel="Remove permission"
+        tone="destructive"
+        onConfirm={async () => {
+          const target = removingPermission
+          setRemovingPermission(null)
+          if (!target) return
+          try {
+            await actions.deleteUserPermission(target.vhost, detail.name)
+            toast.success("Permission removed", {
+              description: `${detail.name} no longer has access to ${target.vhost}.`,
+            })
+          } catch (cause) {
+            toast.error("Permission was not removed", {
+              description:
+                cause instanceof Error
+                  ? cause.message
+                  : "The management API did not respond.",
+            })
+          }
+        }}
       />
 
       <ConfirmDialog

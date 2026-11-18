@@ -2200,6 +2200,17 @@ export async function updateUserPermission(
   )
 }
 
+export async function deleteUserPermission(
+  token: string,
+  vhost: string,
+  username: string
+): Promise<void> {
+  await apiDelete(
+    `/api/permissions/${enc(vhost)}/${enc(username)}`,
+    token
+  )
+}
+
 export async function deleteUser(
   token: string,
   username: string
