@@ -19,7 +19,7 @@ const toneClass = {
 }
 
 export function Sparkline({ values, tone = "primary" }: SparklineProps) {
-  if (values.length < 2) return null
+  if (values === undefined || values?.length < 2) return null
   const width = 84
   const height = 24
   const min = Math.min(...values)
