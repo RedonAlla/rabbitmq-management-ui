@@ -218,7 +218,11 @@ export function UsersView() {
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader
         title="Users"
-        description="Cluster users, their tags and virtual host permissions."
+        description="
+        Cluster users, their tags and virtual host permissions.
+        Only users within the internal RabbitMQ database are shown here.
+        Other users (e.g. those authenticated over LDAP) will not appear.
+        "
         actions={
           <Button
             type="button"
