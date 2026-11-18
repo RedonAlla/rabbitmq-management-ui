@@ -123,13 +123,17 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             {exchanges.map((exchange) => (
               <CommandItem
                 key={`${exchange.vhost}/${exchange.name}`}
-                value={`exchange ${exchange.name} ${exchange.vhost}`}
+                value={`exchange ${exchange.name || "amq.default"} ${exchange.vhost}`}
                 onSelect={() =>
-                  run(() => navigate(routeHref("exchange", exchange.name)))
+                  run(() =>
+                    navigate(
+                      routeHref("exchange", exchange.name || "amq.default")
+                    )
+                  )
                 }
               >
                 <WaypointsIcon aria-hidden="true" />
-                <span className="truncate">{exchange.name}</span>
+                <span className="truncate">{exchange.name || "(default)"}</span>
                 <span className="ml-auto text-xs text-muted-foreground">
                   {exchange.type}
                 </span>

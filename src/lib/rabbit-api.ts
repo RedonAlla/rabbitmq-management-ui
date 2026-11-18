@@ -222,11 +222,12 @@ interface ApiExchange {
   auto_delete: boolean
   internal: boolean
   arguments?: Record<string, unknown>
+  user_who_performed_action?: string
   message_stats?: {
     publish_in?: number
-    publish_in_details?: { rate: number }
+    publish_in_details?: ApiRateDetails
     publish_out?: number
-    publish_out_details?: { rate: number }
+    publish_out_details?: ApiRateDetails
   }
 }
 
@@ -578,6 +579,24 @@ export interface QueueDetail {
   rates: Record<QueueRateKey, QueueRate>
   consumerDetails: QueueConsumer[]
   garbageCollection: QueueGarbageCollection | null
+}
+
+export type ExchangeRateRange = 60 | 600 | 3600
+
+export type ExchangeRateKey = "publishIn" | "publishOut"
+
+export interface ExchangeDetail {
+  name: string
+  vhost: string
+  type: ExchangeType
+  durable: boolean
+  autoDelete: boolean
+  internal: boolean
+  userWhoPerformedAction: string | null
+  arguments: Record<string, ExchangeArgumentValue>
+  publishIn: number
+  publishOut: number
+  rates: Record<ExchangeRateKey, ConnectionRate>
 }
 
 interface ApiConnectionsResponse {
@@ -991,6 +1010,26 @@ function mapExchanges(exchanges: ApiExchange[]): Exchange[] {
     publishOut: exchange.message_stats?.publish_out ?? 0,
     args: plainExchangeArguments(exchange.arguments),
   }))
+}
+
+function mapExchangeDetail(detail: ApiExchange): ExchangeDetail {
+  const stats = detail.message_stats ?? {}
+  return {
+    name: detail.name,
+    vhost: detail.vhost,
+    type: exchangeType(detail.type),
+    durable: detail.durable,
+    autoDelete: detail.auto_delete,
+    internal: detail.internal,
+    userWhoPerformedAction: detail.user_who_performed_action ?? null,
+    arguments: plainExchangeArguments(detail.arguments),
+    publishIn: stats.publish_in ?? 0,
+    publishOut: stats.publish_out ?? 0,
+    rates: {
+      publishIn: mapRate(stats.publish_in_details),
+      publishOut: mapRate(stats.publish_out_details),
+    },
+  }
 }
 
 function mapBindings(bindings: ApiBinding[]): Binding[] {
@@ -1685,6 +1724,31 @@ export async function fetchQueues(
 }
 
 export type ConnectionRateRange = 60 | 600 | 3600
+
+const EXCHANGE_RATE_INCR: Record<ExchangeRateRange, number> = {
+  60: 5,
+  600: 5,
+  3600: 60,
+}
+
+export async function fetchExchangeDetail(
+  token: string,
+  vhost: string,
+  name: string,
+  range: ExchangeRateRange = 60,
+  signal?: AbortSignal
+): Promise<ExchangeDetail> {
+  const params = new URLSearchParams({
+    msg_rates_age: String(range),
+    msg_rates_incr: String(EXCHANGE_RATE_INCR[range]),
+  })
+  const detail = await apiGet<ApiExchange>(
+    `/api/exchanges/${enc(vhost)}/${enc(name || "amq.default")}?${params.toString()}`,
+    token,
+    signal
+  )
+  return mapExchangeDetail(detail)
+}
 
 const CONNECTION_RATE_INCR: Record<ConnectionRateRange, number> = {
   60: 5,

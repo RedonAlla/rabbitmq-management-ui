@@ -536,6 +536,38 @@ function queueDetail(queue, url) {
   }
 }
 
+function exchangeDetail(exchange, url) {
+  const params = url.searchParams
+  const age = Math.max(60, Number(params.get("msg_rates_age") ?? 600) || 600)
+  const incr = Math.max(5, Number(params.get("msg_rates_incr") ?? 5) || 5)
+  const stats = exchange.message_stats ?? {}
+  const inRate = stats.publish_in_details?.rate ?? 0
+  const outRate = stats.publish_out_details?.rate ?? 0
+
+  return {
+    ...exchange,
+    user_who_performed_action: "rmq-internal",
+    incoming: [],
+    outgoing: [],
+    message_stats: {
+      publish_in: stats.publish_in ?? 0,
+      publish_in_details: rateDetails(
+        stats.publish_in ?? Math.round(inRate * 86_400),
+        inRate,
+        age,
+        incr
+      ),
+      publish_out: stats.publish_out ?? 0,
+      publish_out_details: rateDetails(
+        stats.publish_out ?? Math.round(outRate * 86_400),
+        outRate,
+        age,
+        incr
+      ),
+    },
+  }
+}
+
 function recalcConsumers() {
   for (const channel of state.channels) {
     channel.consumer_count = state.consumers.filter(
@@ -1024,8 +1056,12 @@ export async function handleMockRequest(req, res) {
         (entry) => entry.vhost === vhost && entry.name === name
       )
       if (rest.length === 2 && method === "GET") {
-        if (!exchange) return sendError(res, 404, "not_found", `exchange '${name}' in vhost '${vhost}' not found`)
-        sendJson(res, 200, exchange)
+        const detailName = name === "amq.default" ? "" : name
+        const target = state.exchanges.find(
+          (entry) => entry.vhost === vhost && entry.name === detailName
+        )
+        if (!target) return sendError(res, 404, "not_found", `exchange '${name}' in vhost '${vhost}' not found`)
+        sendJson(res, 200, exchangeDetail(target, url))
         return
       }
       if (rest.length === 2 && method === "PUT") {

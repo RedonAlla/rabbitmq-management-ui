@@ -36,7 +36,7 @@ export function FilterBar({
         className
       )}
     >
-      <InputGroup className="w-full sm:max-w-xs">
+      <InputGroup className="w-full sm:max-w-xs bg-background">
         <InputGroupAddon>
           <SearchIcon aria-hidden="true" />
         </InputGroupAddon>

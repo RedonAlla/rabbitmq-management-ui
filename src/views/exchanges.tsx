@@ -349,7 +349,9 @@ export function ExchangesView() {
             />
           </FilterBar>
         }
-        onRowClick={(row: Exchange) => navigate(routeHref("exchange", row.name))}
+        onRowClick={(row: Exchange) =>
+          navigate(routeHref("exchange", row.name || "amq.default"))
+        }
         onPaginationChange={handlePaginationChange}
         onSortingChange={handleSortingChange}
       />
