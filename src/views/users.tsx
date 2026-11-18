@@ -33,6 +33,7 @@ import type {
   FilterField,
   FilterQuery,
 } from "@/components/reui/filters/filters-types"
+import { ConditionalRender } from "@/components/conditional-render"
 
 export function UsersView() {
   const { data, actions } = useCluster()
@@ -190,12 +191,14 @@ export function UsersView() {
       {
         accessorKey: "hasPassword",
         header: () => <span>Has password</span>,
-        cell: ({ row }) =>
-          row.original.hasPassword ? (
+        cell: ({ row }) => (
+          <ConditionalRender
+            condition={row.original.hasPassword}
+            default={<Badge variant="outline">No</Badge>}
+          >
             <Badge variant="success-light">Yes</Badge>
-          ) : (
-            <Badge variant="outline">No</Badge>
-          ),
+          </ConditionalRender>
+        ),
         enableSorting: false,
         meta: fitMeta,
       },
