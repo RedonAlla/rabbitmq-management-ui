@@ -710,6 +710,33 @@ export interface ExchangesQuery {
   sortReverse?: boolean
 }
 
+interface ApiUsersResponse {
+  total_count: number
+  item_count: number
+  filtered_count: number
+  page: number
+  page_size: number
+  page_count: number
+  items: ApiUser[]
+}
+
+export interface UsersPage {
+  items: User[]
+  totalCount: number
+  filteredCount: number
+  page: number
+  pageSize: number
+  pageCount: number
+}
+
+export interface UsersQuery {
+  page: number
+  pageSize: number
+  name?: string
+  sort?: string
+  sortReverse?: boolean
+}
+
 export interface RabbitSnapshot {
   cluster: ClusterInfo
   nodes: NodeInfo[]
@@ -1715,6 +1742,43 @@ export async function fetchQueues(
 
   return {
     items: mapQueues(page.items),
+    totalCount: page.total_count,
+    filteredCount: page.filtered_count,
+    page: page.page,
+    pageSize: page.page_size,
+    pageCount: page.page_count,
+  }
+}
+
+export async function fetchUsers(
+  token: string,
+  query: UsersQuery,
+  signal?: AbortSignal
+): Promise<UsersPage> {
+  const params = new URLSearchParams({
+    page: String(query.page),
+    page_size: String(query.pageSize),
+    name: query.name ?? "",
+    use_regex: "false",
+    pagination: "true",
+  })
+
+  if (query.sort) {
+    params.set("sort", query.sort)
+    params.set("sort_reverse", query.sortReverse ? "true" : "false")
+  }
+
+  const [page, permissions] = await Promise.all([
+    apiGet<ApiUsersResponse>(
+      `/api/users?${params.toString()}`,
+      token,
+      signal
+    ),
+    apiGet<ApiPermission[]>("/api/permissions", token, signal),
+  ])
+
+  return {
+    items: mapUsers(page.items, permissions),
     totalCount: page.total_count,
     filteredCount: page.filtered_count,
     page: page.page,

@@ -1,7 +1,12 @@
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { PlusIcon, Users } from "lucide-react"
 import { toast } from "sonner"
-import { useTable, type ColumnDef } from "@tanstack/react-table"
+import {
+  type ColumnDef,
+  type OnChangeFn,
+  type PaginationState,
+  type SortingState,
+} from "@tanstack/react-table"
 import { Badge } from "@/components/reui/badge"
 import { IconTile } from "@/components/reui/icon-tile"
 import { Button } from "@/components/ui/button"
@@ -11,99 +16,106 @@ import { ConfirmDialog } from "@/components/confirm-dialog"
 import { useDialogs } from "@/components/dialogs/dialogs-provider"
 import { useCluster } from "@/store/cluster"
 import { initials } from "@/lib/format"
-import { matchesText } from "@/lib/filtering"
 import type { User } from "@/data/types"
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header"
-import {
-  DataGrid,
-  dataGridFeatures,
-  type DataGridFeatures,
-} from "@/components/reui/data-grid/data-grid"
-import { Skeleton } from "@/components/ui/skeleton"
+import { type DataGridFeatures } from "@/components/reui/data-grid/data-grid"
+import { useUsers } from "@/hooks/use-users"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { GridActions } from "@/components/features/users/list"
-import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants"
-import {
-  Frame,
-  FrameFooter,
-  FrameHeader,
-  FramePanel,
-} from "@/components/reui/frame"
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants"
+import { fitMeta, ServerSideTable } from "@/components/table"
 import { Filters } from "@/components/reui/filters/filters"
 import {
   createFilterQuery,
   flattenFilterConditions,
-  type FilterCondition,
 } from "@/components/reui/filters/filters-query"
 import type {
   FilterField,
   FilterQuery,
 } from "@/components/reui/filters/filters-types"
-import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
-import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
-import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination"
-import GridEmptyState from "@/components/ui/empty-state"
-
-function matchesValues(values: string[], condition: FilterCondition): boolean {
-  const selected = condition.values.map(String)
-  const pending = selected.length === 0
-  const wildcard = values.includes("*")
-  let matches: boolean
-
-  switch (condition.operator) {
-    case "empty":
-      matches = values.length === 0
-      break
-    case "not_empty":
-      matches = values.length > 0
-      break
-    case "is":
-    case "is_any_of":
-    case "has_any_of":
-      matches =
-        pending || wildcard || values.some((value) => selected.includes(value))
-      break
-    case "is_not":
-    case "is_none_of":
-    case "has_none_of":
-      matches =
-        pending ||
-        !(wildcard || values.some((value) => selected.includes(value)))
-      break
-    case "has_all_of":
-      matches =
-        pending || wildcard || selected.every((value) => values.includes(value))
-      break
-    default:
-      matches = true
-  }
-
-  return condition.negated ? !matches : matches
-}
 
 export function UsersView() {
-  const { data, status, error, actions } = useCluster()
+  const { data, actions } = useCluster()
   const { openDialog } = useDialogs()
   const [search, setSearch] = useState("")
+  const debouncedSearch = useDebouncedValue(search, 300)
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: DEFAULT_PAGE_SIZE,
+  })
+  const [sorting, setSorting] = useState<SortingState>([])
   const [query, setQuery] = useState<FilterQuery>(() => createFilterQuery())
   const [pendingDelete, setPendingDelete] = useState<User | null>(null)
 
   const conditions = useMemo(() => flattenFilterConditions(query), [query])
 
-  const users = useMemo(
-    () =>
-      data.users.filter(
-        (user) =>
-          (matchesText(user.username, search) ||
-            matchesText(user.tags.join(" "), search)) &&
-          conditions.every((condition) => {
-            if (condition.field === "username")
-              return matchesValues([user.username], condition)
-            if (condition.field === "vhost")
-              return matchesValues(user.vhosts, condition)
-            return true
-          })
-      ),
-    [conditions, data.users, search]
+  const usernameFilter = useMemo(() => {
+    const condition = conditions.find(
+      (entry) => entry.field === "username" && !entry.negated
+    )
+    const value = condition?.values[0]
+    return typeof value === "string" && value ? value : undefined
+  }, [conditions])
+
+  const {
+    users,
+    filteredCount,
+    pageCount,
+    loading,
+    error,
+    retry,
+  } = useUsers({
+    pageIndex: pagination.pageIndex,
+    pageSize: pagination.pageSize,
+    search: debouncedSearch,
+    username: usernameFilter,
+    sorting,
+  })
+
+  const resetPage = useCallback(() => {
+    setPagination((previous) =>
+      previous.pageIndex === 0 ? previous : { ...previous, pageIndex: 0 }
+    )
+  }, [])
+
+  const clearFilters = () => {
+    setSearch("")
+    setQuery(createFilterQuery())
+    resetPage()
+  }
+
+  const handleSearch = (value: string) => {
+    setSearch(value)
+    resetPage()
+  }
+
+  const handleQueryChange = useCallback(
+    (next: FilterQuery) => {
+      setQuery(next)
+      resetPage()
+    },
+    [resetPage]
+  )
+
+  const handleSortingChange = useCallback<OnChangeFn<SortingState>>(
+    (updater) => {
+      setSorting(updater)
+      resetPage()
+    },
+    [resetPage]
+  )
+
+  const handlePaginationChange = useCallback<OnChangeFn<PaginationState>>(
+    (updater) => {
+      setPagination((previous) => {
+        const next = typeof updater === "function" ? updater(previous) : updater
+        if (next.pageSize !== previous.pageSize) {
+          return { pageIndex: 0, pageSize: next.pageSize }
+        }
+        return next
+      })
+    },
+    []
   )
 
   const filterFields = useMemo<FilterField[]>(
@@ -117,23 +129,9 @@ export function UsersView() {
           label: user.username,
         })),
       },
-      {
-        id: "vhost",
-        label: "Virtual host",
-        type: "multiselect",
-        options: data.vhosts.map((entry) => ({
-          value: entry.name,
-          label: entry.name,
-        })),
-      },
     ],
-    [data.users, data.vhosts]
+    [data.users]
   )
-
-  const clearFilters = () => {
-    setSearch("")
-    setQuery(createFilterQuery())
-  }
 
   const columns = useMemo<ColumnDef<DataGridFeatures, User>[]>(
     () => [
@@ -157,13 +155,11 @@ export function UsersView() {
             ) : null}
           </div>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-20" /> },
+        meta: fitMeta,
       },
       {
         accessorKey: "tags",
-        header: ({ column }) => (
-          <DataGridColumnHeader column={column} title="Tags" />
-        ),
+        header: () => <span>Tags</span>,
         cell: ({ row }) => (
           <div className="flex flex-wrap gap-1">
             {row.original.tags.map((tag) => (
@@ -173,13 +169,12 @@ export function UsersView() {
             ))}
           </div>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-20" /> },
+        enableSorting: false,
+        meta: fitMeta,
       },
       {
         accessorKey: "vhosts",
-        header: ({ column }) => (
-          <DataGridColumnHeader column={column} title="Virtual hosts" />
-        ),
+        header: () => <span>Virtual hosts</span>,
         cell: ({ row }) => (
           <div className="flex flex-wrap gap-1">
             {row.original.vhosts.map((vhost) => (
@@ -189,19 +184,19 @@ export function UsersView() {
             ))}
           </div>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-20" /> },
+        enableSorting: false,
+        meta: fitMeta,
       },
       {
         accessorKey: "hash",
-        header: ({ column }) => (
-          <DataGridColumnHeader column={column} title="Password hash" />
-        ),
+        header: () => <span>Password hash</span>,
         cell: ({ row }) => (
           <span className="data-cell text-xs text-muted-foreground">
             {row.original.hash}
           </span>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-20" /> },
+        enableSorting: false,
+        meta: fitMeta,
       },
       {
         id: "actions",
@@ -209,19 +204,11 @@ export function UsersView() {
         cell: ({ row }) => (
           <GridActions row={row.original} setPendingDelete={setPendingDelete} />
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-20" /> },
+        meta: fitMeta,
       },
     ],
     []
   )
-
-  const table = useTable({
-    features: dataGridFeatures,
-    defaultColumn: { size: 120, minSize: 80 },
-    data: users,
-    columns,
-    initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
-  })
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -239,62 +226,47 @@ export function UsersView() {
         }
       />
 
-      <DataGrid
-        table={table}
-        recordCount={users.length}
-        isLoading={status === "loading"}
-        emptyMessage={
-          <GridEmptyState
-            icon={<Users />}
-            error={error}
-            retry={actions.retry}
-            action={
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => clearFilters()}
-              >
-                Clear filters
-              </Button>
-            }
-            title="No users match"
-            description="No users matches this search."
-          />
-        }
-        tableLayout={{
-          dense: true,
-          headerBorder: true,
-          width: "auto",
+      <ServerSideTable
+        isLoading={loading}
+        data={users}
+        columns={columns}
+        totalCount={filteredCount}
+        pageCount={pageCount}
+        state={{ pagination, sorting }}
+        emptyState={{
+          icon: <Users />,
+          title: "No users match",
+          description:
+            "Adjust the search or clear the filters to see every cluster user.",
+          action: (
+            <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+              Clear filters
+            </Button>
+          ),
         }}
-        tableClassNames={{ base: "min-w-[900px]" }}
-      >
-        <Frame spacing="sm" className="min-w-0">
-          <FrameHeader>
-            <FilterBar
-              search={search}
-              onSearch={setSearch}
-              placeholder="Search users or tags…"
-              className="justify-end"
-            >
-              <Filters
-                fields={filterFields}
-                query={query}
-                onQueryChange={setQuery}
-                size="sm"
-                showClear
-              />
-            </FilterBar>
-          </FrameHeader>
-          <FramePanel>
-            <DataGridScrollArea>
-              <DataGridTable />
-            </DataGridScrollArea>
-          </FramePanel>
-          <FrameFooter>
-            <DataGridPagination sizes={DEFAULT_PAGES_OPTIONS} />
-          </FrameFooter>
-        </Frame>
-      </DataGrid>
+        error={{
+          message: error,
+          retry,
+        }}
+        actions={
+          <FilterBar
+            search={search}
+            onSearch={handleSearch}
+            placeholder="Search users by name"
+            className="justify-end"
+          >
+            <Filters
+              fields={filterFields}
+              query={query}
+              onQueryChange={handleQueryChange}
+              size="sm"
+              showClear
+            />
+          </FilterBar>
+        }
+        onPaginationChange={handlePaginationChange}
+        onSortingChange={handleSortingChange}
+      />
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}
