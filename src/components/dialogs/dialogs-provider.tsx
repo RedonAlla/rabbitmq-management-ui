@@ -15,7 +15,7 @@ import AddPolicyDialog from "@/views/policies/add-policy-dialog"
 import { AddQueueDrawer } from "@/components/features/queues/list"
 import { AddUserDialog, EditUserDialog } from "@/components/features/users"
 import { AddVhostDrawer } from "@/components/features/vhosts/add-vhost-drawer"
-import type { User } from "@/data/types"
+import type { User, Vhost } from "@/data/types"
 
 export type DialogRequest =
   | { type: "add-queue"; onCreated?: () => void }
@@ -23,6 +23,7 @@ export type DialogRequest =
   | { type: "add-user" }
   | { type: "edit-user"; user: User }
   | { type: "add-vhost" }
+  | { type: "edit-vhost"; vhost: Vhost }
   | { type: "add-policy" }
   | { type: "add-operator-policy" }
   | { type: "edit-limits"; vhost?: string }
@@ -66,7 +67,13 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
         onClose={closeDialog}
       />
       <AddVhostDrawer
-        open={dialog?.type === "add-vhost"}
+        key={
+          dialog?.type === "edit-vhost"
+            ? `edit-${dialog.vhost.name}`
+            : "add-vhost"
+        }
+        open={dialog?.type === "add-vhost" || dialog?.type === "edit-vhost"}
+        vhost={dialog?.type === "edit-vhost" ? dialog.vhost : null}
         onClose={closeDialog}
       />
       <AddPolicyDialog

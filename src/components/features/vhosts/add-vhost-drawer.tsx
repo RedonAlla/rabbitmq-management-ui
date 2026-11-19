@@ -5,6 +5,7 @@ import Field from "@/components/ui/field"
 import FormError from "@/components/ui/form-error"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import ToggleField from "@/components/ui/toggle-field"
 import {
   Select,
   SelectContent,
@@ -22,6 +23,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { useCluster } from "@/store/cluster"
+import type { Vhost } from "@/data/types"
 import type { CreateVhostInput } from "@/lib/rabbit-api"
 
 const QUEUE_TYPE_OPTIONS = [
@@ -33,42 +35,58 @@ const QUEUE_TYPE_OPTIONS = [
 
 export function AddVhostDrawer({
   open,
+  vhost = null,
   onClose,
 }: {
   open: boolean
+  vhost?: Vhost | null
   onClose: () => void
 }) {
   const { data, actions } = useCluster()
-  const [name, setName] = useState("")
-  const [description, setDescription] = useState("")
-  const [tags, setTags] = useState("")
-  const [queueType, setQueueType] = useState<string>("default")
+  const editing = Boolean(vhost)
+  const [name, setName] = useState(vhost?.name ?? "")
+  const [description, setDescription] = useState(vhost?.description ?? "")
+  const [tags, setTags] = useState(vhost?.tags.join(", ") ?? "")
+  const [queueType, setQueueType] = useState<string>(
+    vhost?.defaultQueueType ?? "default"
+  )
+  const [tracing, setTracing] = useState(vhost?.tracing ?? false)
   const [error, setError] = useState("")
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     const clean = name.trim()
-    if (!clean) return setError("Enter a virtual host name.")
-    if (data.vhosts.some((vhost) => vhost.name === clean)) {
-      return setError(`${clean} already exists.`)
+    if (!editing) {
+      if (!clean) return setError("Enter a virtual host name.")
+      if (data.vhosts.some((entry) => entry.name === clean)) {
+        return setError(`${clean} already exists.`)
+      }
     }
     try {
       await actions.addVhost({
         name: clean,
-        description: description.trim() || "Custom virtual host",
+        description: editing
+          ? description.trim()
+          : description.trim() || "Custom virtual host",
         tags: tags.trim(),
         defaultQueueType:
           queueType === "default"
             ? ""
             : (queueType as CreateVhostInput["defaultQueueType"]),
+        tracing,
       })
-      toast.success("Virtual host created", {
-        description: `${clean} is ready for topology.`,
+      toast.success(editing ? "Virtual host updated" : "Virtual host created", {
+        description: editing
+          ? `${clean} was updated.`
+          : `${clean} is ready for topology.`,
       })
-      setName("")
-      setDescription("")
-      setTags("")
-      setQueueType("default")
+      if (!editing) {
+        setName("")
+        setDescription("")
+        setTags("")
+        setQueueType("default")
+        setTracing(false)
+      }
       setError("")
       onClose()
     } catch (cause) {
@@ -88,13 +106,23 @@ export function AddVhostDrawer({
       >
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
           <SheetHeader className="gap-2">
-            <SheetTitle>Add virtual host</SheetTitle>
+            <SheetTitle>
+              {editing ? "Edit virtual host" : "Add virtual host"}
+            </SheetTitle>
             <SheetDescription>
-              Isolate queues, exchanges and permissions.
+              {editing
+                ? "Update its description, tags and queue defaults."
+                : "Isolate queues, exchanges and permissions."}
             </SheetDescription>
           </SheetHeader>
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-x-hidden overflow-y-auto px-4 pb-4">
-            <Field label="Name" htmlFor="vhost-name">
+            <Field
+              label="Name"
+              htmlFor="vhost-name"
+              info={
+                editing ? "Virtual host names cannot be renamed." : undefined
+              }
+            >
               <Input
                 id="vhost-name"
                 value={name}
@@ -103,7 +131,8 @@ export function AddVhostDrawer({
                   setError("")
                 }}
                 placeholder="production-eu"
-                autoFocus
+                disabled={editing}
+                autoFocus={!editing}
               />
             </Field>
             <Field label="Description" htmlFor="vhost-description">
@@ -140,13 +169,21 @@ export function AddVhostDrawer({
                 </SelectContent>
               </Select>
             </Field>
+            <ToggleField
+              label="Tracing"
+              info="Log every message published to this virtual host to the trace log."
+              checked={tracing}
+              onCheckedChange={setTracing}
+            />
             <FormError>{error}</FormError>
           </div>
           <SheetFooter className="border-t sm:flex-row sm:justify-end">
             <SheetClose render={<Button type="button" variant="outline" />}>
               Cancel
             </SheetClose>
-            <Button type="submit">Create virtual host</Button>
+            <Button type="submit">
+              {editing ? "Save changes" : "Create virtual host"}
+            </Button>
           </SheetFooter>
         </form>
       </SheetContent>

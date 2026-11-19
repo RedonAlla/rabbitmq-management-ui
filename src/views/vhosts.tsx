@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react"
 import {
   BoxesIcon,
   MoreHorizontalIcon,
+  PencilIcon,
   PlusIcon,
   Trash2Icon,
 } from "lucide-react"
@@ -18,6 +19,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { PageHeader } from "@/components/page-header"
@@ -259,6 +261,15 @@ export function VhostsView() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem
+                  onClick={() =>
+                    openDialog({ type: "edit-vhost", vhost: row.original })
+                  }
+                >
+                  <PencilIcon aria-hidden="true" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
                   variant="destructive"
                   disabled={row.original.name === "/"}
                   onClick={() => setPendingDelete(row.original)}
@@ -273,7 +284,7 @@ export function VhostsView() {
         meta: fitMeta,
       },
     ],
-    []
+    [openDialog]
   )
 
   const confirmDelete = async () => {

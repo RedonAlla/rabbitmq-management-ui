@@ -880,6 +880,7 @@ export interface CreateVhostInput {
   description: string
   tags: string
   defaultQueueType: "" | "classic" | "quorum" | "stream"
+  tracing: boolean
 }
 
 export type PublishHeaderValue = string | number | boolean
@@ -2339,6 +2340,7 @@ export async function createVhost(
     name: input.name,
     description: input.description,
     tags: input.tags,
+    tracing: input.tracing,
     ...(input.defaultQueueType
       ? { default_queue_type: input.defaultQueueType }
       : {}),
