@@ -757,6 +757,14 @@ export interface VhostPermission {
   read: string
 }
 
+export interface VhostTopicPermission {
+  user: string
+  vhost: string
+  exchange: string
+  write: string
+  read: string
+}
+
 export interface ConnectionsQuery {
   page: number
   pageSize: number
@@ -2004,6 +2012,25 @@ export async function fetchVhostPermissions(
     user: permission.user,
     vhost: permission.vhost,
     configure: permission.configure,
+    write: permission.write,
+    read: permission.read,
+  }))
+}
+
+export async function fetchVhostTopicPermissions(
+  token: string,
+  name: string,
+  signal?: AbortSignal
+): Promise<VhostTopicPermission[]> {
+  const permissions = await apiGet<ApiTopicPermission[]>(
+    `/api/vhosts/${enc(name)}/topic-permissions`,
+    token,
+    signal
+  )
+  return permissions.map((permission) => ({
+    user: permission.user,
+    vhost: permission.vhost,
+    exchange: permission.exchange,
     write: permission.write,
     read: permission.read,
   }))

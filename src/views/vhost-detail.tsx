@@ -17,6 +17,7 @@ import {
   VhostMessageCountsChart,
   VhostMessageRatesChart,
   VhostPermissionsFrame,
+  VhostTopicPermissionsFrame,
 } from "@/components/features/vhosts/details"
 import { useDialogs } from "@/components/dialogs/dialogs-provider"
 import { useCluster } from "@/store/cluster"
@@ -142,6 +143,7 @@ export function VhostDetailView() {
         main={
           <>
             <VhostPermissionsFrame vhost={vhost.name} />
+            <VhostTopicPermissionsFrame vhost={vhost.name} />
             <VhostMessageCountsChart
               detail={detail}
               range={range}

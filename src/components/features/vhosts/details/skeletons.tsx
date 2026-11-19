@@ -25,6 +25,9 @@ export function VhostDetailSkeleton({ title }: { title: string }) {
             <SectionFrame title="Permissions">
               <RegionSkeleton rows={3} />
             </SectionFrame>
+            <SectionFrame title="Topic permissions">
+              <RegionSkeleton rows={2} />
+            </SectionFrame>
           </>
         }
         side={

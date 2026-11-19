@@ -1034,6 +1034,24 @@ export async function handleMockRequest(req, res) {
         )
         return
       }
+      if (rest.length === 2 && rest[1] === "topic-permissions" && method === "GET") {
+        const vhost = state.vhosts.find((entry) => entry.name === name)
+        if (!vhost) return sendError(res, 404, "not_found", `vhost '${name}' not found`)
+        sendJson(
+          res,
+          200,
+          state.topicPermissions
+            .filter((permission) => permission.vhost === name)
+            .map((permission) => ({
+              vhost: permission.vhost,
+              user: permission.user,
+              exchange: permission.exchange,
+              write: permission.write,
+              read: permission.read,
+            }))
+        )
+        return
+      }
       if (rest.length === 1 && method === "PUT") {
         const body = await readJson(req)
         const existing = state.vhosts.find((entry) => entry.name === name)
@@ -1551,14 +1569,16 @@ export async function handleMockRequest(req, res) {
       if (rest.length === 2 && method === "PUT") {
         const body = await readJson(req)
         const exchangeName = String(body.exchange ?? "")
-        const exchange = state.exchanges.find(
-          (entry) => entry.vhost === vhost && entry.name === exchangeName
-        )
-        if (!exchange) {
-          return sendError(res, 400, "bad_request", `exchange '${exchangeName}' not found`)
-        }
-        if (exchange.type !== "topic") {
-          return sendError(res, 400, "bad_request", `exchange '${exchangeName}' is not a topic exchange`)
+        if (exchangeName) {
+          const exchange = state.exchanges.find(
+            (entry) => entry.vhost === vhost && entry.name === exchangeName
+          )
+          if (!exchange) {
+            return sendError(res, 400, "bad_request", `exchange '${exchangeName}' not found`)
+          }
+          if (exchange.type !== "topic") {
+            return sendError(res, 400, "bad_request", `exchange '${exchangeName}' is not a topic exchange`)
+          }
         }
         const existing = state.topicPermissions.find(
           (entry) =>
@@ -1582,6 +1602,14 @@ export async function handleMockRequest(req, res) {
         state.topicPermissions = state.topicPermissions.filter(
           (entry) =>
             !(entry.vhost === vhost && entry.user === name && entry.exchange === rest[2])
+        )
+        sendEmpty(res, 204)
+        return
+      }
+      if (rest.length === 2 && method === "DELETE") {
+        state.topicPermissions = state.topicPermissions.filter(
+          (entry) =>
+            !(entry.vhost === vhost && entry.user === name && entry.exchange === "")
         )
         sendEmpty(res, 204)
         return
