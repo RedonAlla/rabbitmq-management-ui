@@ -22,11 +22,13 @@ export function EditUserPermissionDialog({
   username,
   permission,
   onClose,
+  onSaved,
 }: {
   open: boolean
   username: string
   permission: UserPermission | null
   onClose: () => void
+  onSaved?: () => void
 }) {
   const { actions } = useCluster()
   const [configure, setConfigure] = useState(permission?.configure ?? "")
@@ -51,6 +53,7 @@ export function EditUserPermissionDialog({
         description: `${username} on ${permission.vhost}.`,
       })
       setError("")
+      onSaved?.()
       onClose()
     } catch (cause) {
       setError(
