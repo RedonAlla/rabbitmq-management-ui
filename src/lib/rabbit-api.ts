@@ -857,7 +857,8 @@ export interface CreateUserInput {
 export interface CreateVhostInput {
   name: string
   description: string
-  tracing: boolean
+  tags: string
+  defaultQueueType: "" | "classic" | "quorum" | "stream"
 }
 
 export type PublishHeaderValue = string | number | boolean
@@ -2258,8 +2259,12 @@ export async function createVhost(
   input: CreateVhostInput
 ): Promise<void> {
   await apiPut(`/api/vhosts/${enc(input.name)}`, token, {
+    name: input.name,
     description: input.description,
-    tracing: input.tracing,
+    tags: input.tags,
+    ...(input.defaultQueueType
+      ? { default_queue_type: input.defaultQueueType }
+      : {}),
   })
 }
 

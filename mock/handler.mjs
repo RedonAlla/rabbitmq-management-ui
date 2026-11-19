@@ -45,6 +45,12 @@ function sendError(res, status, error, reason) {
   sendJson(res, status, { error, reason }, extra)
 }
 
+function normalizeTags(value) {
+  if (Array.isArray(value)) return value
+  if (typeof value !== "string") return []
+  return value.split(",").map((tag) => tag.trim()).filter((tag) => tag.length > 0)
+}
+
 function decodeBase64(value) {
   if (typeof Buffer !== "undefined") {
     return Buffer.from(value, "base64").toString("utf8")
@@ -921,9 +927,9 @@ export async function handleMockRequest(req, res) {
         state.vhosts.push({
           name: body.name,
           description: body.description ?? "",
-          tags: body.tags ?? [],
+          tags: normalizeTags(body.tags),
           tracing: Boolean(body.tracing),
-          default_queue_type: "classic",
+          default_queue_type: body.default_queue_type ?? "classic",
           cluster_state: {},
         })
         sendEmpty(res, 201)
@@ -942,12 +948,14 @@ export async function handleMockRequest(req, res) {
         if (existing) {
           existing.description = body.description ?? existing.description
           existing.tracing = Boolean(body.tracing ?? existing.tracing)
-          existing.tags = body.tags ?? existing.tags
+          existing.tags = body.tags === undefined ? existing.tags : normalizeTags(body.tags)
+          existing.default_queue_type =
+            body.default_queue_type ?? existing.default_queue_type
         } else {
           state.vhosts.push({
             name,
             description: body.description ?? "",
-            tags: body.tags ?? [],
+            tags: normalizeTags(body.tags),
             tracing: Boolean(body.tracing),
             default_queue_type: body.default_queue_type ?? "classic",
             cluster_state: {},

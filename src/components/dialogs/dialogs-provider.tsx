@@ -14,7 +14,7 @@ import EditLimitsDialog from "@/views/limits/edit-limits-dialog"
 import AddPolicyDialog from "@/views/policies/add-policy-dialog"
 import { AddQueueDrawer } from "@/components/features/queues/list"
 import { AddUserDialog, EditUserDialog } from "@/components/features/users"
-import AddVhostDialog from "@/views/vhosts/add-vhost-dialog"
+import { AddVhostDrawer } from "@/components/features/vhosts/add-vhost-drawer"
 import type { User } from "@/data/types"
 
 export type DialogRequest =
@@ -65,7 +65,7 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
         user={dialog?.type === "edit-user" ? dialog.user : null}
         onClose={closeDialog}
       />
-      <AddVhostDialog
+      <AddVhostDrawer
         open={dialog?.type === "add-vhost"}
         onClose={closeDialog}
       />
