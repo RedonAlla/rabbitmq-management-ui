@@ -1,10 +1,5 @@
 import { useState } from "react"
-import {
-  GlobeIcon,
-  PencilIcon,
-  PlusIcon,
-  Trash2Icon,
-} from "lucide-react"
+import { GlobeIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/confirm-dialog"
@@ -23,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ConditionalRender } from "@/components/conditional-render"
+import { FilterBar } from "@/components/filters-bar"
 import { EditVhostTopicPermissionDialog } from "./edit-topic-permission-dialog"
 import { GrantVhostTopicPermissionDialog } from "./grant-topic-permission-dialog"
 import { useVhostTopicPermissions } from "@/hooks/use-vhost-topic-permissions"
@@ -30,12 +26,12 @@ import { useCluster } from "@/store/cluster"
 import type { VhostTopicPermission } from "@/lib/rabbit-api"
 
 export function VhostTopicPermissionsFrame({ vhost }: { vhost: string }) {
-  const { permissions, loading, error, retry } =
-    useVhostTopicPermissions(vhost)
+  const { permissions, loading, error, retry } = useVhostTopicPermissions(vhost)
   const { data, actions } = useCluster()
   const [editing, setEditing] = useState<VhostTopicPermission | null>(null)
   const [removing, setRemoving] = useState<VhostTopicPermission | null>(null)
   const [granting, setGranting] = useState(false)
+  const [query, setQuery] = useState("")
 
   if (loading) {
     return (
@@ -54,6 +50,12 @@ export function VhostTopicPermissionsFrame({ vhost }: { vhost: string }) {
   }
 
   const entries = permissions ?? []
+  const needle = query.trim().toLowerCase()
+  const visible = needle
+    ? entries.filter((permission) =>
+        permission.user.toLowerCase().includes(needle)
+      )
+    : entries
   const grantable = entries.map((permission) => permission.user)
   const candidates = data.users.filter(
     (user) => !grantable.includes(user.username)
@@ -72,16 +74,26 @@ export function VhostTopicPermissionsFrame({ vhost }: { vhost: string }) {
         }
         bodyClassName={entries.length ? "p-0" : undefined}
         actions={
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            aria-label="Grant topic permission"
-            disabled={!candidates.length}
-            onClick={() => setGranting(true)}
-          >
-            <PlusIcon aria-hidden="true" />
-          </Button>
+          <>
+            <ConditionalRender condition={entries.length > 0}>
+              <FilterBar
+                search={query}
+                onSearch={setQuery}
+                placeholder="Filter by user…"
+                className="w-40 sm:w-52"
+              />
+            </ConditionalRender>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label="Grant topic permission"
+              disabled={!candidates.length}
+              onClick={() => setGranting(true)}
+            >
+              <PlusIcon aria-hidden="true" />
+            </Button>
+          </>
         }
       >
         <ConditionalRender
@@ -106,59 +118,80 @@ export function VhostTopicPermissionsFrame({ vhost }: { vhost: string }) {
             />
           }
         >
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Exchange</TableHead>
-                <TableHead>Write</TableHead>
-                <TableHead>Read</TableHead>
-                <TableHead className="w-px text-right">
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {entries.map((permission) => (
-                <TableRow key={`${permission.user}|${permission.exchange}`}>
-                  <TableCell className="data-cell font-medium">
-                    {permission.user}
-                  </TableCell>
-                  <TableCell className="data-cell text-xs text-muted-foreground">
-                    {permission.exchange || "All exchanges"}
-                  </TableCell>
-                  <TableCell className="data-cell text-xs text-muted-foreground">
-                    {permission.write || "(empty)"}
-                  </TableCell>
-                  <TableCell className="data-cell text-xs text-muted-foreground">
-                    {permission.read || "(empty)"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-xs"
-                        aria-label={`Edit topic permission for ${permission.user}`}
-                        onClick={() => setEditing(permission)}
-                      >
-                        <PencilIcon aria-hidden="true" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon-xs"
-                        aria-label={`Remove topic permission for ${permission.user}`}
-                        onClick={() => setRemoving(permission)}
-                      >
-                        <Trash2Icon aria-hidden="true" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          <ConditionalRender
+            condition={visible.length > 0}
+            default={
+              <RegionEmpty
+                title="No matching users"
+                description={`No topic permission on this virtual host matches "${query}".`}
+                icon={<GlobeIcon />}
+                action={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setQuery("")}
+                  >
+                    Clear filter
+                  </Button>
+                }
+              />
+            }
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Exchange</TableHead>
+                  <TableHead>Write</TableHead>
+                  <TableHead>Read</TableHead>
+                  <TableHead className="w-px text-right">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {visible.map((permission) => (
+                  <TableRow key={`${permission.user}|${permission.exchange}`}>
+                    <TableCell className="data-cell font-medium">
+                      {permission.user}
+                    </TableCell>
+                    <TableCell className="data-cell text-xs text-muted-foreground">
+                      {permission.exchange || "All exchanges"}
+                    </TableCell>
+                    <TableCell className="data-cell text-xs text-muted-foreground">
+                      {permission.write || "(empty)"}
+                    </TableCell>
+                    <TableCell className="data-cell text-xs text-muted-foreground">
+                      {permission.read || "(empty)"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label={`Edit topic permission for ${permission.user}`}
+                          onClick={() => setEditing(permission)}
+                        >
+                          <PencilIcon aria-hidden="true" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon-xs"
+                          aria-label={`Remove topic permission for ${permission.user}`}
+                          onClick={() => setRemoving(permission)}
+                        >
+                          <Trash2Icon aria-hidden="true" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ConditionalRender>
         </ConditionalRender>
       </SectionFrame>
 
