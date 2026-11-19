@@ -1,16 +1,12 @@
 import { useState } from "react"
-import { UserXIcon } from "lucide-react"
 import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
-import { PageHeader } from "@/components/page-header"
-import { DetailLayout, SectionFrame } from "@/components/detail"
+import { DetailLayout } from "@/components/detail"
 import { ConfirmDialog } from "@/components/confirm-dialog"
-import { RegionEmpty, RegionError } from "@/components/region-states"
 import {
   AddUserPermissionDialog,
   AddUserTopicPermissionDialog,
   EditUserPermissionDialog,
-  UserBackButton,
+  ErrorPage,
   UserDetailHeader,
   UserDetailSkeleton,
   UserLimitsPanel,
@@ -40,37 +36,7 @@ export function UserDetailView() {
 
   if (error) {
     return (
-      <div className="flex min-w-0 flex-col gap-6">
-        <PageHeader
-          title={status === 404 ? "User not found" : username}
-          description={
-            status === 404
-              ? "The broker does not know this user anymore."
-              : "Could not load this user."
-          }
-          actions={<UserBackButton />}
-        />
-        <SectionFrame title="User">
-          {status === 404 ? (
-            <RegionEmpty
-              title="User not found"
-              description={`No internal user named ${username} exists on this cluster. Users authenticated elsewhere, such as over LDAP, do not appear here.`}
-              icon={<UserXIcon />}
-              action={
-                <Button
-                  variant="outline"
-                  nativeButton={false}
-                  render={<a href={routeHref("users")} />}
-                >
-                  Back to users
-                </Button>
-              }
-            />
-          ) : (
-            <RegionError message={error} onRetry={retry} />
-          )}
-        </SectionFrame>
-      </div>
+      <ErrorPage username={username} status={status} error={error} retry={retry} />
     )
   }
 

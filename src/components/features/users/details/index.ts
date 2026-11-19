@@ -7,3 +7,4 @@ export { UserDetailSkeleton } from "./skeletons"
 export { EditUserPermissionDialog } from "./edit-permission-dialog"
 export { AddUserPermissionDialog } from "./add-permission-dialog"
 export { AddUserTopicPermissionDialog } from "./add-topic-permission-dialog"
+export { ErrorPage } from './error-page'
