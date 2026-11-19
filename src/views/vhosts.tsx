@@ -1,12 +1,17 @@
 import { useCallback, useMemo, useState } from "react"
 import {
+  BoxesIcon,
   MoreHorizontalIcon,
   PlusIcon,
   Trash2Icon,
-  TriangleExclamationPoint,
 } from "lucide-react"
 import { toast } from "sonner"
-import { useTable, type ColumnDef } from "@tanstack/react-table"
+import {
+  type ColumnDef,
+  type OnChangeFn,
+  type PaginationState,
+  type SortingState,
+} from "@tanstack/react-table"
 import { Badge } from "@/components/reui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,60 +25,117 @@ import { FilterBar } from "@/components/filters-bar"
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import { useDialogs } from "@/components/dialogs/dialogs-provider"
 import { useCluster } from "@/store/cluster"
-import { fmtInt } from "@/lib/format"
-import { matchesText } from "@/lib/filtering"
+import { TagBadge } from "@/components/badges"
 import type { Vhost } from "@/data/types"
+import { useVhosts } from "@/hooks/use-vhosts"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header"
-import {
-  DataGrid,
-  dataGridFeatures,
-  type DataGridFeatures,
-} from "@/components/reui/data-grid/data-grid"
-import { Skeleton } from "@/components/ui/skeleton"
-import { numericMeta } from "@/components/table"
-import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants"
-import {
-  Frame,
-  FrameFooter,
-  FrameHeader,
-  FramePanel,
-} from "@/components/reui/frame"
-import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
-import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
-import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination"
-import GridEmptyState from "@/components/ui/empty-state"
+import { type DataGridFeatures } from "@/components/reui/data-grid/data-grid"
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants"
+import { ServerSideTable, fitMeta } from "@/components/table"
+
+const MAX_VISIBLE_TAGS = 2
+
+function ClusterStateBadge({ state }: { state: Record<string, string> }) {
+  const entries = Object.entries(state)
+  if (!entries.length) return <Badge variant="outline">Unknown</Badge>
+
+  const title = entries.map(([node, value]) => `${node}: ${value}`).join("\n")
+  const stopped = entries.some(([, value]) =>
+    ["stopped", "down", "unknown"].includes(value)
+  )
+  const partitioned = entries.some(([, value]) => value === "partitioned")
+
+  const [primaryNode] = entries[0]
+  const extraNodes = entries.length - 1
+
+  let label = "Running"
+  let variant: "success-light" | "warning-light" | "destructive-light" =
+    "success-light"
+  if (partitioned) {
+    label = "Partitioned"
+    variant = "destructive-light"
+  } else if (stopped) {
+    label = "Stopped"
+    variant = "destructive-light"
+  } else if (!entries.every(([, value]) => value === "running")) {
+    label = "Degraded"
+    variant = "warning-light"
+  }
+
+  return (
+    <div className="flex items-center gap-1.5" title={title}>
+      <span className="max-w-40 truncate text-xs text-muted-foreground">
+        {primaryNode}
+        {extraNodes > 0 ? ` +${extraNodes}` : ""}
+      </span>
+      <Badge variant={variant}>{label}</Badge>
+    </div>
+  )
+}
 
 export function VhostsView() {
-  const { data, status, error, actions } = useCluster()
+  const { actions } = useCluster()
   const { openDialog } = useDialogs()
   const [search, setSearch] = useState("")
+  const debouncedSearch = useDebouncedValue(search, 300)
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: DEFAULT_PAGE_SIZE,
+  })
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "name", desc: false },
+  ])
   const [pendingDelete, setPendingDelete] = useState<Vhost | null>(null)
 
-  const vhosts = useMemo(
-    () =>
-      data.vhosts.filter(
-        (vhost) =>
-          matchesText(vhost.name, search) ||
-          matchesText(vhost.description, search)
-      ),
-    [data.vhosts, search]
+  const listQuery = useMemo(
+    () => ({
+      pageIndex: pagination.pageIndex,
+      pageSize: pagination.pageSize,
+      search: debouncedSearch,
+      sorting,
+    }),
+    [pagination.pageIndex, pagination.pageSize, debouncedSearch, sorting]
   )
+
+  const { vhosts, filteredCount, pageCount, loading, error, retry } =
+    useVhosts(listQuery)
+
+  const resetPage = useCallback(() => {
+    setPagination((previous) =>
+      previous.pageIndex === 0 ? previous : { ...previous, pageIndex: 0 }
+    )
+  }, [])
+
+  const handleSearch = (value: string) => {
+    setSearch(value)
+    resetPage()
+  }
 
   const clearFilters = () => {
     setSearch("")
+    resetPage()
   }
 
-  const counts = useCallback(
-    (name: string) => ({
-      queues: data.queues.filter((queue) => queue.vhost === name).length,
-      exchanges: data.exchanges.filter((exchange) => exchange.vhost === name)
-        .length,
-      connections: data.connections.filter(
-        (connection) => connection.vhost === name
-      ).length,
-      limit: data.limits.find((limit) => limit.vhost === name),
-    }),
-    [data.queues, data.exchanges, data.connections, data.limits]
+  const handleSortingChange = useCallback<OnChangeFn<SortingState>>(
+    (updater) => {
+      setSorting(updater)
+      resetPage()
+    },
+    [resetPage]
+  )
+
+  const handlePaginationChange = useCallback<OnChangeFn<PaginationState>>(
+    (updater) => {
+      setPagination((previous) => {
+        const next = typeof updater === "function" ? updater(previous) : updater
+        if (next.pageSize !== previous.pageSize) {
+          return { pageIndex: 0, pageSize: next.pageSize }
+        }
+        return next
+      })
+    },
+    []
   )
 
   const columns = useMemo<ColumnDef<DataGridFeatures, Vhost>[]>(
@@ -81,53 +143,46 @@ export function VhostsView() {
       {
         accessorKey: "name",
         header: ({ column }) => (
-          <DataGridColumnHeader column={column} title="Virtual host" />
+          <DataGridColumnHeader column={column} title="Name" />
         ),
         cell: ({ row }) => (
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="data-cell font-medium">{row.original.name}</span>
-            <span className="truncate text-xs text-muted-foreground">
-              {row.original.description}
-            </span>
-          </div>
+          <span className="data-cell font-medium">{row.original.name}</span>
         ),
-        meta: { fillWidth: true, skeleton: <Skeleton className="h-4 w-20" /> },
+        meta: { fillWidth: true },
       },
       {
-        id: "queues",
-        header: () => <span>Queues</span>,
+        accessorKey: "description",
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Description" />
+        ),
         cell: ({ row }) => (
-          <span className="data-cell">
-            {fmtInt(counts(row.original.name).queues)}
-            {counts(row.original.name).limit ? (
-              <span className="text-xs text-muted-foreground">
-                {" "}
-                / {fmtInt(counts(row.original.name).limit?.maxQueues ?? 0)}
-              </span>
-            ) : null}
+          <span className="block max-w-72 truncate text-sm text-muted-foreground">
+            {row.original.description || "—"}
           </span>
         ),
-        meta: numericMeta,
       },
       {
-        id: "exchanges",
-        header: () => <span>Exchanges</span>,
-        cell: ({ row }) => (
-          <span className="data-cell">
-            {fmtInt(counts(row.original.name).exchanges)}
-          </span>
+        accessorKey: "defaultQueueType",
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Default queue type" />
         ),
-        meta: numericMeta,
+        cell: ({ row }) => (
+          <Badge variant="outline">{row.original.defaultQueueType}</Badge>
+        ),
+        meta: fitMeta,
       },
       {
-        id: "connections",
-        header: () => <span>Connections</span>,
-        cell: ({ row }) => (
-          <span className="data-cell">
-            {fmtInt(counts(row.original.name).connections)}
-          </span>
+        accessorKey: "protectedFromDeletion",
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Protected" />
         ),
-        meta: numericMeta,
+        cell: ({ row }) =>
+          row.original.protectedFromDeletion ? (
+            <Badge variant="warning-light">Protected</Badge>
+          ) : (
+            <Badge variant="outline">No</Badge>
+          ),
+        meta: fitMeta,
       },
       {
         accessorKey: "tracing",
@@ -140,7 +195,46 @@ export function VhostsView() {
           ) : (
             <Badge variant="outline">Off</Badge>
           ),
-        meta: { skeleton: <Skeleton className="h-4 w-20" /> },
+        meta: fitMeta,
+      },
+      {
+        accessorKey: "tags",
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Tags" />
+        ),
+        cell: ({ row }) => {
+          const tags = row.original.tags
+          if (!tags.length) {
+            return (
+              <span className="text-xs text-muted-foreground">None</span>
+            )
+          }
+          const visible = tags.slice(0, MAX_VISIBLE_TAGS)
+          const hidden = tags.length - visible.length
+          return (
+            <div className="flex flex-wrap items-center gap-1">
+              {visible.map((tag) => (
+                <TagBadge key={tag}>{tag}</TagBadge>
+              ))}
+              {hidden > 0 ? (
+                <Badge variant="outline">+{hidden}</Badge>
+              ) : null}
+            </div>
+          )
+        },
+        enableSorting: false,
+      },
+      {
+        id: "clusterState",
+        accessorFn: (vhost) => Object.values(vhost.clusterState).join(","),
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Cluster state" />
+        ),
+        cell: ({ row }) => (
+          <ClusterStateBadge state={row.original.clusterState} />
+        ),
+        enableSorting: false,
+        meta: fitMeta,
       },
       {
         id: "actions",
@@ -176,18 +270,30 @@ export function VhostsView() {
             </DropdownMenu>
           </div>
         ),
+        meta: fitMeta,
       },
     ],
-    [counts]
+    []
   )
 
-  const table = useTable({
-    features: dataGridFeatures,
-    defaultColumn: { size: 120, minSize: 80 },
-    data: vhosts,
-    columns,
-    initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
-  })
+  const confirmDelete = async () => {
+    if (!pendingDelete) return
+    const target = pendingDelete
+    setPendingDelete(null)
+    try {
+      await actions.deleteVhost(target.name)
+      toast.success("Virtual host deleted", {
+        description: `${target.name} was removed.`,
+      })
+    } catch (cause) {
+      toast.error("Virtual host was not deleted", {
+        description:
+          cause instanceof Error
+            ? cause.message
+            : "The management API did not respond.",
+      })
+    }
+  }
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -205,54 +311,36 @@ export function VhostsView() {
         }
       />
 
-      <DataGrid
-        table={table}
-        recordCount={vhosts.length}
-        isLoading={status === "loading"}
-        emptyMessage={
-          <GridEmptyState
-            icon={<TriangleExclamationPoint />}
-            error={error}
-            retry={actions.retry}
-            action={
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => clearFilters()}
-              >
-                Clear filters
-              </Button>
-            }
-            title="No virtual hosts match"
-            description="Adjust the search or create a new namespace."
+      <ServerSideTable
+        isLoading={loading}
+        data={vhosts}
+        columns={columns}
+        totalCount={filteredCount}
+        pageCount={pageCount}
+        state={{ pagination, sorting }}
+        emptyState={{
+          icon: <BoxesIcon />,
+          title: "No virtual hosts match",
+          description:
+            "Adjust the search or create a new namespace to get started.",
+          action: (
+            <Button variant="outline" size="sm" onClick={() => clearFilters()}>
+              Clear filters
+            </Button>
+          ),
+        }}
+        error={{ message: error, retry }}
+        actions={
+          <FilterBar
+            search={search}
+            onSearch={handleSearch}
+            placeholder="Search virtual hosts by name"
+            className="justify-end"
           />
         }
-        tableLayout={{
-          dense: true,
-          headerBorder: true,
-          width: "auto",
-        }}
-        tableClassNames={{ base: "min-w-[900px]" }}
-      >
-        <Frame spacing="sm" className="min-w-0">
-          <FrameHeader>
-            <FilterBar
-              search={search}
-              onSearch={setSearch}
-              placeholder="Search queues…"
-              className="justify-end"
-            />
-          </FrameHeader>
-          <FramePanel>
-            <DataGridScrollArea>
-              <DataGridTable />
-            </DataGridScrollArea>
-          </FramePanel>
-          <FrameFooter>
-            <DataGridPagination sizes={DEFAULT_PAGES_OPTIONS} />
-          </FrameFooter>
-        </Frame>
-      </DataGrid>
+        onPaginationChange={handlePaginationChange}
+        onSortingChange={handleSortingChange}
+      />
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}
@@ -261,29 +349,7 @@ export function VhostsView() {
         description={`${pendingDelete?.name ?? ""} is removed with its policies and limits. The cluster refuses the delete while queues, exchanges or connections remain.`}
         confirmLabel="Delete virtual host"
         tone="destructive"
-        onConfirm={() => {
-          if (!pendingDelete) return
-          const used =
-            data.queues.some((queue) => queue.vhost === pendingDelete.name) ||
-            data.connections.some(
-              (connection) => connection.vhost === pendingDelete.name
-            ) ||
-            data.exchanges.some(
-              (exchange) => exchange.vhost === pendingDelete.name
-            )
-          actions.deleteVhost(pendingDelete.name)
-          if (used) {
-            toast.error("Virtual host is not empty", {
-              description:
-                "Remove its queues, exchanges and connections first.",
-            })
-          } else {
-            toast.success("Virtual host deleted", {
-              description: `${pendingDelete.name} was removed.`,
-            })
-          }
-          setPendingDelete(null)
-        }}
+        onConfirm={() => void confirmDelete()}
       />
     </div>
   )

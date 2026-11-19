@@ -18,7 +18,11 @@ export type Stability = "stable" | "experimental"
 export interface Vhost {
   name: string
   description: string
+  defaultQueueType: QueueType
+  protectedFromDeletion: boolean
   tracing: boolean
+  tags: string[]
+  clusterState: Record<string, string>
 }
 
 export interface Queue {

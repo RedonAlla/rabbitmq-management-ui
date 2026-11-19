@@ -915,7 +915,19 @@ export async function handleMockRequest(req, res) {
 
     if (resource === "vhosts") {
       if (!rest.length && method === "GET") {
-        sendJson(res, 200, state.vhosts)
+        const sort = url.searchParams.get("sort") ?? ""
+        const reverse = url.searchParams.get("sort_reverse") === "true"
+        let items = state.vhosts
+        if (sort) {
+          items = [...items].sort((a, b) => {
+            const left = sortValue(a, sort)
+            const right = sortValue(b, sort)
+            if (typeof left === "number" && typeof right === "number") return left - right
+            return String(left).localeCompare(String(right))
+          })
+          if (reverse) items.reverse()
+        }
+        sendJson(res, 200, items)
         return
       }
       if (!rest.length && method === "POST") {

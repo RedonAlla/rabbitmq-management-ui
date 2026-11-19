@@ -325,7 +325,11 @@ interface ApiTopicPermission {
 interface ApiVhost {
   name: string
   description?: string
+  default_queue_type?: string
+  protected_from_deletion?: boolean
   tracing?: boolean
+  tags?: string[] | string
+  cluster_state?: Record<string, string>
 }
 
 interface ApiPolicy {
@@ -679,6 +683,23 @@ export interface QueuesQuery {
   pageSize: number
   name?: string
   vhost?: string
+  sort?: string
+  sortReverse?: boolean
+}
+
+export interface VhostsPage {
+  items: Vhost[]
+  totalCount: number
+  filteredCount: number
+  page: number
+  pageSize: number
+  pageCount: number
+}
+
+export interface VhostsQuery {
+  page: number
+  pageSize: number
+  name?: string
   sort?: string
   sortReverse?: boolean
 }
@@ -1209,11 +1230,28 @@ function mapUsers(users: ApiUser[], permissions: ApiPermission[]): User[] {
   }))
 }
 
+function parseVhostTags(tags: ApiVhost["tags"]): string[] {
+  if (Array.isArray(tags)) return tags.map(String)
+  if (typeof tags !== "string") return []
+  return tags
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+}
+
 function mapVhosts(vhosts: ApiVhost[]): Vhost[] {
   return vhosts.map((vhost) => ({
     name: vhost.name,
     description: vhost.description ?? "",
+    defaultQueueType:
+      vhost.default_queue_type === "quorum" ||
+      vhost.default_queue_type === "stream"
+        ? vhost.default_queue_type
+        : "classic",
+    protectedFromDeletion: Boolean(vhost.protected_from_deletion),
     tracing: Boolean(vhost.tracing),
+    tags: parseVhostTags(vhost.tags),
+    clusterState: vhost.cluster_state ?? {},
   }))
 }
 
@@ -1799,6 +1837,45 @@ export async function fetchQueues(
     page: page.page,
     pageSize: page.page_size,
     pageCount: page.page_count,
+  }
+}
+
+export async function fetchVhosts(
+  token: string,
+  query: VhostsQuery,
+  signal?: AbortSignal
+): Promise<VhostsPage> {
+  const params = new URLSearchParams()
+  if (query.sort) {
+    params.set("sort", query.sort)
+    params.set("sort_reverse", query.sortReverse ? "true" : "false")
+  }
+
+  const suffix = params.size ? `?${params.toString()}` : ""
+  const apiVhosts = await apiGet<ApiVhost[]>(
+    `/api/vhosts${suffix}`,
+    token,
+    signal
+  )
+
+  // RabbitMQ sorts /api/vhosts but rejects page/page_size and ignores name,
+  // so the remaining paging steps run here instead of on the broker.
+  const needle = query.name?.trim().toLowerCase() ?? ""
+  const filtered = needle
+    ? apiVhosts.filter((vhost) => vhost.name.toLowerCase().includes(needle))
+    : apiVhosts
+  const filteredCount = filtered.length
+  const pageCount = Math.max(1, Math.ceil(filteredCount / query.pageSize))
+  const page = Math.min(Math.max(1, query.page), pageCount)
+  const start = (page - 1) * query.pageSize
+
+  return {
+    items: mapVhosts(filtered.slice(start, start + query.pageSize)),
+    totalCount: apiVhosts.length,
+    filteredCount,
+    page,
+    pageSize: query.pageSize,
+    pageCount,
   }
 }
 
