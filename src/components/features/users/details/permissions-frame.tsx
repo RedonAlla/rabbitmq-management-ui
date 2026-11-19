@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { GlobeIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SectionFrame } from "@/components/detail"
@@ -11,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ConditionalRender } from "@/components/conditional-render"
+import { FilterBar } from "@/components/filters-bar"
 import { useCluster } from "@/store/cluster"
 import type { UserPermission } from "@/lib/rabbit-api"
 
@@ -26,10 +28,17 @@ export function UserPermissionsFrame({
   onRemove: (permission: UserPermission) => void
 }) {
   const { data } = useCluster()
+  const [query, setQuery] = useState("")
   const canAdd = data.vhosts.some(
     (vhost) =>
       !permissions.some((permission) => permission.vhost === vhost.name)
   )
+  const needle = query.trim().toLowerCase()
+  const visible = needle
+    ? permissions.filter((permission) =>
+        permission.vhost.toLowerCase().includes(needle)
+      )
+    : permissions
 
   return (
     <SectionFrame
@@ -39,16 +48,26 @@ export function UserPermissionsFrame({
       } configure, write and read access.`}
       bodyClassName={permissions.length ? "p-0" : undefined}
       actions={
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={!canAdd}
-          onClick={onAdd}
-        >
-          <PlusIcon data-icon="inline-start" aria-hidden="true" />
-          Add permission
-        </Button>
+        <>
+          <ConditionalRender condition={permissions.length > 0}>
+            <FilterBar
+              search={query}
+              onSearch={setQuery}
+              placeholder="Filter by vhost…"
+              className="w-44 sm:w-60"
+            />
+          </ConditionalRender>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            aria-label="Add permission"
+            disabled={!canAdd}
+            onClick={onAdd}
+          >
+            <PlusIcon aria-hidden="true" />
+          </Button>
+        </>
       }
     >
       <ConditionalRender
@@ -73,59 +92,80 @@ export function UserPermissionsFrame({
           />
         }
       >
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Virtual host</TableHead>
-              <TableHead>Configure</TableHead>
-              <TableHead>Write</TableHead>
-              <TableHead>Read</TableHead>
-              <TableHead className="w-px text-right">
-                <span className="sr-only">Actions</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {permissions.map((permission) => (
-              <TableRow key={permission.vhost}>
-                <TableCell className="data-cell font-medium">
-                  {permission.vhost}
-                </TableCell>
-                <TableCell className="data-cell text-xs text-muted-foreground">
-                  {permission.configure || "(empty)"}
-                </TableCell>
-                <TableCell className="data-cell text-xs text-muted-foreground">
-                  {permission.write || "(empty)"}
-                </TableCell>
-                <TableCell className="data-cell text-xs text-muted-foreground">
-                  {permission.read || "(empty)"}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      aria-label={`Edit permissions for ${permission.vhost}`}
-                      onClick={() => onEdit(permission)}
-                    >
-                      <PencilIcon aria-hidden="true" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon-xs"
-                      aria-label={`Remove permissions for ${permission.vhost}`}
-                      onClick={() => onRemove(permission)}
-                    >
-                      <Trash2Icon aria-hidden="true" />
-                    </Button>
-                  </div>
-                </TableCell>
+        <ConditionalRender
+          condition={visible.length > 0}
+          default={
+            <RegionEmpty
+              title="No matching virtual hosts"
+              description={`No virtual host permission for this user matches "${query}".`}
+              icon={<GlobeIcon />}
+              action={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setQuery("")}
+                >
+                  Clear filter
+                </Button>
+              }
+            />
+          }
+        >
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Virtual host</TableHead>
+                <TableHead>Configure</TableHead>
+                <TableHead>Write</TableHead>
+                <TableHead>Read</TableHead>
+                <TableHead className="w-px text-right">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {visible.map((permission) => (
+                <TableRow key={permission.vhost}>
+                  <TableCell className="data-cell font-medium">
+                    {permission.vhost}
+                  </TableCell>
+                  <TableCell className="data-cell text-xs text-muted-foreground">
+                    {permission.configure || "(empty)"}
+                  </TableCell>
+                  <TableCell className="data-cell text-xs text-muted-foreground">
+                    {permission.write || "(empty)"}
+                  </TableCell>
+                  <TableCell className="data-cell text-xs text-muted-foreground">
+                    {permission.read || "(empty)"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label={`Edit permissions for ${permission.vhost}`}
+                        onClick={() => onEdit(permission)}
+                      >
+                        <PencilIcon aria-hidden="true" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon-xs"
+                        aria-label={`Remove permissions for ${permission.vhost}`}
+                        onClick={() => onRemove(permission)}
+                      >
+                        <Trash2Icon aria-hidden="true" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </ConditionalRender>
       </ConditionalRender>
     </SectionFrame>
   )
