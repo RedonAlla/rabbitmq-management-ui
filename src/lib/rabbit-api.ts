@@ -332,6 +332,25 @@ interface ApiVhost {
   cluster_state?: Record<string, string>
 }
 
+interface ApiVhostDetail extends ApiVhost {
+  messages?: number
+  messages_ready?: number
+  messages_unacknowledged?: number
+  messages_details?: ApiRateDetails
+  messages_ready_details?: ApiRateDetails
+  messages_unacknowledged_details?: ApiRateDetails
+  message_stats?: {
+    publish?: number
+    publish_details?: ApiRateDetails
+    confirm?: number
+    confirm_details?: ApiRateDetails
+    return_unroutable?: number
+    return_unroutable_details?: ApiRateDetails
+    drop_unroutable?: number
+    drop_unroutable_details?: ApiRateDetails
+  }
+}
+
 interface ApiPolicy {
   name: string
   vhost: string
@@ -702,6 +721,40 @@ export interface VhostsQuery {
   name?: string
   sort?: string
   sortReverse?: boolean
+}
+
+export type VhostRateRange = 60 | 600 | 3600
+
+export type VhostLengthKey = "messages" | "ready" | "unacked"
+
+export type VhostRateKey =
+  | "publish"
+  | "confirm"
+  | "returnUnroutable"
+  | "dropUnroutable"
+
+export interface VhostDetail {
+  name: string
+  description: string
+  defaultQueueType: QueueType
+  protectedFromDeletion: boolean
+  tracing: boolean
+  tags: string[]
+  clusterState: Record<string, string>
+  messages: number
+  messagesReady: number
+  messagesUnacknowledged: number
+  published: number
+  lengths: Record<VhostLengthKey, ConnectionRate>
+  rates: Record<VhostRateKey, ConnectionRate>
+}
+
+export interface VhostPermission {
+  user: string
+  vhost: string
+  configure: string
+  write: string
+  read: string
 }
 
 export interface ConnectionsQuery {
@@ -1240,20 +1293,48 @@ function parseVhostTags(tags: ApiVhost["tags"]): string[] {
     .filter(Boolean)
 }
 
+function vhostQueueType(value: string | undefined): QueueType {
+  return value === "quorum" || value === "stream" ? value : "classic"
+}
+
 function mapVhosts(vhosts: ApiVhost[]): Vhost[] {
   return vhosts.map((vhost) => ({
     name: vhost.name,
     description: vhost.description ?? "",
-    defaultQueueType:
-      vhost.default_queue_type === "quorum" ||
-      vhost.default_queue_type === "stream"
-        ? vhost.default_queue_type
-        : "classic",
+    defaultQueueType: vhostQueueType(vhost.default_queue_type),
     protectedFromDeletion: Boolean(vhost.protected_from_deletion),
     tracing: Boolean(vhost.tracing),
     tags: parseVhostTags(vhost.tags),
     clusterState: vhost.cluster_state ?? {},
   }))
+}
+
+function mapVhostDetail(vhost: ApiVhostDetail): VhostDetail {
+  const stats = vhost.message_stats ?? {}
+  return {
+    name: vhost.name,
+    description: vhost.description ?? "",
+    defaultQueueType: vhostQueueType(vhost.default_queue_type),
+    protectedFromDeletion: Boolean(vhost.protected_from_deletion),
+    tracing: Boolean(vhost.tracing),
+    tags: parseVhostTags(vhost.tags),
+    clusterState: vhost.cluster_state ?? {},
+    messages: vhost.messages ?? 0,
+    messagesReady: vhost.messages_ready ?? 0,
+    messagesUnacknowledged: vhost.messages_unacknowledged ?? 0,
+    published: stats.publish ?? 0,
+    lengths: {
+      messages: mapRate(vhost.messages_details),
+      ready: mapRate(vhost.messages_ready_details),
+      unacked: mapRate(vhost.messages_unacknowledged_details),
+    },
+    rates: {
+      publish: mapRate(stats.publish_details),
+      confirm: mapRate(stats.confirm_details),
+      returnUnroutable: mapRate(stats.return_unroutable_details),
+      dropUnroutable: mapRate(stats.drop_unroutable_details),
+    },
+  }
 }
 
 function mapPolicy(policy: ApiPolicy): Policy {
@@ -1878,6 +1959,54 @@ export async function fetchVhosts(
     pageSize: query.pageSize,
     pageCount,
   }
+}
+
+const VHOST_RATE_INCR: Record<VhostRateRange, number> = {
+  60: 5,
+  600: 5,
+  3600: 60,
+}
+
+export async function fetchVhostDetail(
+  token: string,
+  name: string,
+  range: VhostRateRange = 3600,
+  signal?: AbortSignal
+): Promise<VhostDetail> {
+  const incr = String(VHOST_RATE_INCR[range])
+  const params = new URLSearchParams({
+    lengths_age: String(range),
+    lengths_incr: incr,
+    msg_rates_age: String(range),
+    msg_rates_incr: incr,
+    data_rates_age: String(range),
+    data_rates_incr: incr,
+  })
+  const detail = await apiGet<ApiVhostDetail>(
+    `/api/vhosts/${enc(name)}?${params.toString()}`,
+    token,
+    signal
+  )
+  return mapVhostDetail(detail)
+}
+
+export async function fetchVhostPermissions(
+  token: string,
+  name: string,
+  signal?: AbortSignal
+): Promise<VhostPermission[]> {
+  const permissions = await apiGet<ApiPermission[]>(
+    `/api/vhosts/${enc(name)}/permissions`,
+    token,
+    signal
+  )
+  return permissions.map((permission) => ({
+    user: permission.user,
+    vhost: permission.vhost,
+    configure: permission.configure,
+    write: permission.write,
+    read: permission.read,
+  }))
 }
 
 export async function fetchUsers(

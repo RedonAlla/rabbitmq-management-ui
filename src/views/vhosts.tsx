@@ -6,7 +6,6 @@ import {
   PlusIcon,
   Trash2Icon,
 } from "lucide-react"
-import { toast } from "sonner"
 import {
   type ColumnDef,
   type OnChangeFn,
@@ -24,9 +23,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { PageHeader } from "@/components/page-header"
 import { FilterBar } from "@/components/filters-bar"
-import { ConfirmDialog } from "@/components/confirm-dialog"
 import { useDialogs } from "@/components/dialogs/dialogs-provider"
-import { useCluster } from "@/store/cluster"
+import { useRoute, routeHref } from "@/lib/router"
 import { TagBadge } from "@/components/badges"
 import type { Vhost } from "@/data/types"
 import { useVhosts } from "@/hooks/use-vhosts"
@@ -35,49 +33,12 @@ import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-colu
 import { type DataGridFeatures } from "@/components/reui/data-grid/data-grid"
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants"
 import { ServerSideTable, fitMeta } from "@/components/table"
+import { ClusterStateBadge, DeleteVhostDialog } from "@/components/features/vhosts/details"
 
 const MAX_VISIBLE_TAGS = 2
 
-function ClusterStateBadge({ state }: { state: Record<string, string> }) {
-  const entries = Object.entries(state)
-  if (!entries.length) return <Badge variant="outline">Unknown</Badge>
-
-  const title = entries.map(([node, value]) => `${node}: ${value}`).join("\n")
-  const stopped = entries.some(([, value]) =>
-    ["stopped", "down", "unknown"].includes(value)
-  )
-  const partitioned = entries.some(([, value]) => value === "partitioned")
-
-  const [primaryNode] = entries[0]
-  const extraNodes = entries.length - 1
-
-  let label = "Running"
-  let variant: "success-light" | "warning-light" | "destructive-light" =
-    "success-light"
-  if (partitioned) {
-    label = "Partitioned"
-    variant = "destructive-light"
-  } else if (stopped) {
-    label = "Stopped"
-    variant = "destructive-light"
-  } else if (!entries.every(([, value]) => value === "running")) {
-    label = "Degraded"
-    variant = "warning-light"
-  }
-
-  return (
-    <div className="flex items-center gap-1.5" title={title}>
-      <span className="max-w-40 truncate text-xs text-muted-foreground">
-        {primaryNode}
-        {extraNodes > 0 ? ` +${extraNodes}` : ""}
-      </span>
-      <Badge variant={variant}>{label}</Badge>
-    </div>
-  )
-}
-
 export function VhostsView() {
-  const { actions } = useCluster()
+  const { navigate } = useRoute()
   const { openDialog } = useDialogs()
   const [search, setSearch] = useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
@@ -287,25 +248,6 @@ export function VhostsView() {
     [openDialog]
   )
 
-  const confirmDelete = async () => {
-    if (!pendingDelete) return
-    const target = pendingDelete
-    setPendingDelete(null)
-    try {
-      await actions.deleteVhost(target.name)
-      toast.success("Virtual host deleted", {
-        description: `${target.name} was removed.`,
-      })
-    } catch (cause) {
-      toast.error("Virtual host was not deleted", {
-        description:
-          cause instanceof Error
-            ? cause.message
-            : "The management API did not respond.",
-      })
-    }
-  }
-
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader
@@ -351,17 +293,10 @@ export function VhostsView() {
         }
         onPaginationChange={handlePaginationChange}
         onSortingChange={handleSortingChange}
+        onRowClick={(row: Vhost) => navigate(routeHref("vhost", row.name))}
       />
 
-      <ConfirmDialog
-        open={Boolean(pendingDelete)}
-        onOpenChange={(open) => (open ? undefined : setPendingDelete(null))}
-        title="Delete virtual host?"
-        description={`${pendingDelete?.name ?? ""} is removed with its policies and limits. The cluster refuses the delete while queues, exchanges or connections remain.`}
-        confirmLabel="Delete virtual host"
-        tone="destructive"
-        onConfirm={() => void confirmDelete()}
-      />
+      <DeleteVhostDialog pendingDelete={pendingDelete} setPendingDelete={setPendingDelete} />
     </div>
   )
 }

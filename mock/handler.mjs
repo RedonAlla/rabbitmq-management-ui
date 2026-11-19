@@ -574,6 +574,68 @@ function exchangeDetail(exchange, url) {
   }
 }
 
+function vhostDetail(vhost, url) {
+  const params = url.searchParams
+  const age = (key, fallback) =>
+    Math.max(60, Number(params.get(`${key}_age`) ?? fallback) || fallback)
+  const incr = (key, fallback) =>
+    Math.max(5, Number(params.get(`${key}_incr`) ?? fallback) || fallback)
+
+  const msgAge = age("msg_rates", 600)
+  const msgIncr = incr("msg_rates", 5)
+  const lengthAge = age("lengths", msgAge)
+  const lengthIncr = incr("lengths", msgIncr)
+
+  const queues = state.queues.filter((queue) => queue.vhost === vhost.name)
+  const ready = queues.reduce((sum, queue) => sum + queue.messages_ready, 0)
+  const unacked = queues.reduce(
+    (sum, queue) => sum + queue.messages_unacknowledged,
+    0
+  )
+  const messages = ready + unacked
+  const publishRate = queues.reduce(
+    (sum, queue) => sum + (queue.message_stats?.publish_details?.rate ?? 0),
+    0
+  )
+  const deliverRate = queues.reduce(
+    (sum, queue) => sum + (queue.message_stats?.deliver_details?.rate ?? 0),
+    0
+  )
+  const confirmRate = Math.min(publishRate, deliverRate)
+  const publish = Math.round(publishRate * 3600)
+  const confirm = Math.round(confirmRate * 3600)
+
+  return {
+    ...vhost,
+    messages,
+    messages_details: lengthDetails(messages, publishRate, lengthAge, lengthIncr),
+    messages_ready: ready,
+    messages_ready_details: lengthDetails(
+      ready,
+      publishRate,
+      lengthAge,
+      lengthIncr
+    ),
+    messages_unacknowledged: unacked,
+    messages_unacknowledged_details: lengthDetails(
+      unacked,
+      deliverRate,
+      lengthAge,
+      lengthIncr
+    ),
+    message_stats: {
+      publish,
+      publish_details: rateDetails(publish, publishRate, msgAge, msgIncr),
+      confirm,
+      confirm_details: rateDetails(confirm, confirmRate, msgAge, msgIncr),
+      return_unroutable: 0,
+      return_unroutable_details: rateDetails(0, 0, msgAge, msgIncr),
+      drop_unroutable: 0,
+      drop_unroutable_details: rateDetails(0, 0, msgAge, msgIncr),
+    },
+  }
+}
+
 function recalcConsumers() {
   for (const channel of state.channels) {
     channel.consumer_count = state.consumers.filter(
@@ -951,7 +1013,25 @@ export async function handleMockRequest(req, res) {
       if (rest.length === 1 && method === "GET") {
         const vhost = state.vhosts.find((entry) => entry.name === name)
         if (!vhost) return sendError(res, 404, "not_found", `vhost '${name}' not found`)
-        sendJson(res, 200, vhost)
+        sendJson(res, 200, vhostDetail(vhost, url))
+        return
+      }
+      if (rest.length === 2 && rest[1] === "permissions" && method === "GET") {
+        const vhost = state.vhosts.find((entry) => entry.name === name)
+        if (!vhost) return sendError(res, 404, "not_found", `vhost '${name}' not found`)
+        sendJson(
+          res,
+          200,
+          state.permissions
+            .filter((permission) => permission.vhost === name)
+            .map((permission) => ({
+              vhost: permission.vhost,
+              user: permission.user,
+              configure: permission.configure,
+              write: permission.write,
+              read: permission.read,
+            }))
+        )
         return
       }
       if (rest.length === 1 && method === "PUT") {
