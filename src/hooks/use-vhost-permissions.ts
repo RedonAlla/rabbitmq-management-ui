@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react"
-import { ApiError } from "@/lib/api"
 import {
   fetchVhostPermissions,
   type VhostPermission,
