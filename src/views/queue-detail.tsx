@@ -15,6 +15,7 @@ import {
   QueueDetailsPanel,
   QueueKpis,
   QueueLifecyclePanel,
+  QueueMessagesFrame,
   QueueStoragePanel,
   ReductionsChart,
 } from "@/components/features/queues/details"
@@ -175,6 +176,12 @@ export function QueueDetailView() {
         loading={loading}
         error={error}
         onRetry={retryDetail}
+      />
+
+      <QueueMessagesFrame
+        vhost={queue.vhost}
+        queue={queue.name}
+        ready={detail?.messagesReady ?? queue.ready}
       />
 
       <DetailLayout

@@ -542,6 +542,161 @@ function queueDetail(queue, url) {
   }
 }
 
+function sampleMessageBody(queueName, index) {
+  const serial = 48210 + index * 37
+  const producedAt = new Date(Date.now() - index * 7000).toISOString()
+  const traceId = `trc_${(index * 7919 + queueName.length * 104729)
+    .toString(16)
+    .padStart(8, "0")}`
+
+  if (queueName.includes("order") || queueName.includes("dead-letter")) {
+    return {
+      schema_version: 3,
+      event: queueName.includes("dead-letter")
+        ? "order.dead_lettered"
+        : "order.created",
+      order_id: `ORD-${serial}`,
+      customer_id: `acct_${(index % 47) + 118}`,
+      total_cents: 1284 + index * 53,
+      currency: "EUR",
+      items: 1 + (index % 4),
+      produced_at: producedAt,
+      trace_id: traceId,
+    }
+  }
+
+  if (queueName.includes("payment")) {
+    return {
+      event: "payment.authorized",
+      payment_id: `pay_${serial.toString(36)}`,
+      order_id: `ORD-${serial - 12}`,
+      amount_cents: 899 + index * 41,
+      currency: "EUR",
+      method: ["card", "sepa", "paypal"][index % 3],
+      produced_at: producedAt,
+      trace_id: traceId,
+    }
+  }
+
+  if (queueName.includes("notification")) {
+    const push = queueName.includes("push")
+    return {
+      event: push ? "notification.push" : "notification.email",
+      notification_id: `ntf_${serial}`,
+      recipient: `user-${(index % 23) + 4}@example.com`,
+      template: push ? "order-shipped" : "welcome-series",
+      produced_at: producedAt,
+      trace_id: traceId,
+    }
+  }
+
+  if (queueName.includes("inventory")) {
+    return {
+      event: "inventory.sync",
+      sku: `SKU-${String(1040 + index * 3).padStart(6, "0")}`,
+      warehouse: ["fra-01", "ams-02", "mad-03"][index % 3],
+      delta: (index % 5) - 2,
+      produced_at: producedAt,
+      trace_id: traceId,
+    }
+  }
+
+  if (queueName.includes("search") || queueName.includes("analytics") || queueName.includes("metrics")) {
+    return {
+      event: "page.view",
+      session_id: `ses_${serial.toString(36)}`,
+      path: ["/", "/pricing", "/docs/queues", "/checkout"][index % 4],
+      referrer: ["direct", "search", "newsletter"][index % 3],
+      produced_at: producedAt,
+      trace_id: traceId,
+    }
+  }
+
+  if (queueName.includes("audit") || queueName.includes("session")) {
+    return {
+      event: "audit.access",
+      actor: ["admin", "app_worker", "analytics_etl"][index % 3],
+      action: ["publish", "configure", "read"][index % 3],
+      resource: queueName,
+      produced_at: producedAt,
+      trace_id: traceId,
+    }
+  }
+
+  if (queueName.includes("image")) {
+    return {
+      event: "image.resize",
+      asset_id: `img_${serial}`,
+      width: [320, 640, 1280][index % 3],
+      height: [240, 480, 960][index % 3],
+      format: "webp",
+      produced_at: producedAt,
+      trace_id: traceId,
+    }
+  }
+
+  if (queueName.includes("billing")) {
+    return {
+      event: "invoice.issued",
+      invoice_id: `INV-2026-${String(1200 + index).padStart(4, "0")}`,
+      account_id: `acct_${(index % 31) + 210}`,
+      amount_cents: 4900 + index * 125,
+      due_in_days: 14,
+      produced_at: producedAt,
+      trace_id: traceId,
+    }
+  }
+
+  return {
+    event: "message.published",
+    sequence: serial,
+    produced_at: producedAt,
+    trace_id: traceId,
+  }
+}
+
+function sampleMessageHeaders(index) {
+  return {
+    "x-tenant": ["acme", "globex", "initech", "umbrella"][index % 4],
+    "x-retry-count": index % 4,
+    "x-origin": "rabbitmq-ui-demo",
+  }
+}
+
+function queueMessages(queue, count) {
+  const binding = state.bindings.find(
+    (entry) => entry.vhost === queue.vhost && entry.destination === queue.name
+  )
+  const available = Math.max(0, queue.messages_ready ?? 0)
+  const total = Math.min(Math.max(0, count), available)
+  const nowSeconds = Math.floor(Date.now() / 1000)
+  const encoder = new TextEncoder()
+
+  return Array.from({ length: total }, (_, index) => {
+    const payload = JSON.stringify(sampleMessageBody(queue.name, index))
+    return {
+      payload,
+      payload_bytes: encoder.encode(payload).length,
+      payload_encoding: "string",
+      exchange: binding?.source ?? queue.name.split(".")[0],
+      routing_key: binding?.routing_key ?? queue.name,
+      redelivered: index % 9 === 0,
+      message_count: Math.max(0, available - index - 1),
+      properties: {
+        content_type: "application/json",
+        content_encoding: "utf-8",
+        delivery_mode: 2,
+        priority: 0,
+        message_id: `${queue.name}-${(48210 + index * 37).toString(36)}`,
+        timestamp: nowSeconds - index * 7,
+        type: queue.name,
+        app_id: "rabbitmq-ui-demo",
+        headers: sampleMessageHeaders(index),
+      },
+    }
+  })
+}
+
 function exchangeDetail(exchange, url) {
   const params = url.searchParams
   const age = Math.max(60, Number(params.get("msg_rates_age") ?? 600) || 600)
@@ -1166,6 +1321,13 @@ export async function handleMockRequest(req, res) {
         if (!queue) return sendError(res, 404, "not_found", `queue '${name}' in vhost '${vhost}' not found`)
         queue.messages_ready = 0
         sendEmpty(res, 204)
+        return
+      }
+      if (rest.length === 3 && action === "get" && method === "POST") {
+        if (!queue) return sendError(res, 404, "not_found", `queue '${name}' in vhost '${vhost}' not found`)
+        const body = await readJson(req)
+        const count = Math.min(Math.max(Number(body.count) || 10, 1), 100)
+        sendJson(res, 200, queueMessages(queue, count))
         return
       }
     }

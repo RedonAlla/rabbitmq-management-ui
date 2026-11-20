@@ -10,6 +10,7 @@ export { QueueCountersPanel } from "./counters-panel"
 export { QueueStoragePanel } from "./storage-panel"
 export { QueueDetailSkeleton } from "./skeletons"
 export { QueueConsumersTable } from './consumers-table'
+export { QueueMessagesFrame } from './messages-frame'
 export { QueueBindingsFrame } from './bindings-frame'
 export {
   QueueArgumentsFrame,

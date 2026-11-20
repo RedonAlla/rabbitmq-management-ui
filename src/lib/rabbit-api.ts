@@ -216,6 +216,17 @@ interface ApiQueueDetail extends ApiQueue {
   garbage_collection?: ApiGarbageCollection
 }
 
+interface ApiQueueMessage {
+  payload?: string
+  payload_bytes?: number
+  payload_encoding?: string
+  exchange?: string
+  routing_key?: string
+  redelivered?: boolean
+  message_count?: number
+  properties?: Record<string, unknown>
+}
+
 interface ApiExchange {
   name: string
   vhost: string
@@ -624,6 +635,20 @@ export interface QueueDetail {
   rates: Record<QueueRateKey, QueueRate>
   consumerDetails: QueueConsumer[]
   garbageCollection: QueueGarbageCollection | null
+}
+
+export type QueueMessageCount = 10 | 25 | 50
+
+export interface QueueMessage {
+  payload: string
+  payloadBytes: number
+  payloadEncoding: string
+  exchange: string
+  routingKey: string
+  redelivered: boolean
+  messageCount: number
+  properties: Record<string, unknown>
+  headers: Record<string, unknown>
 }
 
 export type ExchangeRateRange = 60 | 600 | 3600
@@ -2256,6 +2281,44 @@ export async function fetchQueueDetail(
     signal
   )
   return mapQueueDetail(detail)
+}
+
+export async function fetchQueueMessages(
+  token: string,
+  vhost: string,
+  name: string,
+  count: QueueMessageCount,
+  signal?: AbortSignal
+): Promise<QueueMessage[]> {
+  const rows = await apiPost<ApiQueueMessage[]>(
+    `/api/queues/${enc(vhost)}/${enc(name)}/get`,
+    token,
+    {
+      count,
+      ackmode: "ack_requeue_true",
+      encoding: "auto",
+      truncate: 50_000,
+    },
+    signal
+  )
+  return (rows ?? []).map((row) => {
+    const properties = row.properties ?? {}
+    const headers = properties.headers
+    return {
+      payload: row.payload ?? "",
+      payloadBytes: row.payload_bytes ?? (row.payload?.length ?? 0),
+      payloadEncoding: row.payload_encoding ?? "string",
+      exchange: row.exchange ?? "",
+      routingKey: row.routing_key ?? "",
+      redelivered: row.redelivered ?? false,
+      messageCount: row.message_count ?? 0,
+      properties,
+      headers:
+        headers !== null && typeof headers === "object" && !Array.isArray(headers)
+          ? (headers as Record<string, unknown>)
+          : {},
+    }
+  })
 }
 
 interface ApiConnectionChannel {

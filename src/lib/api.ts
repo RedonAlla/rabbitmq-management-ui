@@ -88,7 +88,8 @@ async function sendJson<T>(
   path: string,
   token: string,
   method: "POST" | "PUT",
-  body?: unknown
+  body?: unknown,
+  signal?: AbortSignal
 ): Promise<T | null> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
@@ -97,6 +98,7 @@ async function sendJson<T>(
       ...(body === undefined ? {} : { "Content-Type": "application/json" }),
     },
     body: body === undefined ? undefined : JSON.stringify(body),
+    signal,
   })
 
   if (!response.ok) throw await failure(response, path)
@@ -106,9 +108,10 @@ async function sendJson<T>(
 export function apiPost<T = unknown>(
   path: string,
   token: string,
-  body?: unknown
+  body?: unknown,
+  signal?: AbortSignal
 ): Promise<T | null> {
-  return sendJson<T>(path, token, "POST", body)
+  return sendJson<T>(path, token, "POST", body, signal)
 }
 
 export function apiPut<T = unknown>(
