@@ -11,6 +11,7 @@ import {
   PublishDrawer
 } from "@/components/features/exchanges/list"
 import EditLimitsDialog from "@/views/limits/edit-limits-dialog"
+import EditUserLimitsDialog from "@/views/limits/edit-user-limits-dialog"
 import AddPolicyDrawer from "@/views/policies/add-policy-drawer"
 import { AddQueueDrawer } from "@/components/features/queues/list"
 import { AddUserDialog, EditUserDialog } from "@/components/features/users"
@@ -29,6 +30,7 @@ export type DialogRequest =
   | { type: "add-operator-policy" }
   | { type: "edit-operator-policy"; policy: Policy }
   | { type: "edit-limits"; vhost?: string }
+  | { type: "edit-user-limits"; user?: string }
   | { type: "publish"; exchange?: string; vhost?: string }
   | { type: "shortcuts" }
 
@@ -113,9 +115,26 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
         initialVhost={dialog?.type === "publish" ? dialog.vhost : undefined}
       />
       <EditLimitsDialog
+        key={
+          dialog?.type === "edit-limits"
+            ? `vhost-limits-${dialog.vhost ?? "new"}`
+            : "vhost-limits-closed"
+        }
         open={dialog?.type === "edit-limits"}
         onClose={closeDialog}
         initialVhost={dialog?.type === "edit-limits" ? dialog.vhost : undefined}
+      />
+      <EditUserLimitsDialog
+        key={
+          dialog?.type === "edit-user-limits"
+            ? `user-limits-${dialog.user ?? "new"}`
+            : "user-limits-closed"
+        }
+        open={dialog?.type === "edit-user-limits"}
+        onClose={closeDialog}
+        initialUser={
+          dialog?.type === "edit-user-limits" ? dialog.user : undefined
+        }
       />
       <ShortcutsDialog
         open={dialog?.type === "shortcuts"}

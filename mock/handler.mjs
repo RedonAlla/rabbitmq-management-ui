@@ -731,6 +731,7 @@ function definitionsDocument() {
     })),
     bindings: state.bindings,
     vhost_limits: state.vhostLimits,
+    user_limits: state.userLimits,
   }
 }
 
@@ -856,6 +857,12 @@ function mergeDefinitions(document) {
     document.vhost_limits,
     (entry) => entry.vhost,
     (entry) => ({ vhost: entry.vhost, value: entry.value ?? {} })
+  )
+  replaceBy(
+    state.userLimits,
+    document.user_limits,
+    (entry) => entry.user,
+    (entry) => ({ user: entry.user, value: entry.value ?? {} })
   )
   recalcConsumers()
 }
@@ -1526,6 +1533,7 @@ export async function handleMockRequest(req, res) {
         state.users = state.users.filter((candidate) => candidate.name !== name)
         state.permissions = state.permissions.filter((permission) => permission.user !== name)
         state.topicPermissions = state.topicPermissions.filter((permission) => permission.user !== name)
+        state.userLimits = state.userLimits.filter((limit) => limit.user !== name)
         sendEmpty(res, 204)
         return
       }
@@ -1676,6 +1684,33 @@ export async function handleMockRequest(req, res) {
         else delete entry.value[limit]
         if (!Object.keys(entry.value).length) {
           state.vhostLimits = state.vhostLimits.filter((candidate) => candidate.vhost !== vhost)
+        }
+        sendEmpty(res, method === "PUT" ? 201 : 204)
+        return
+      }
+    }
+
+    if (resource === "user-limits") {
+      if (!rest.length && method === "GET") {
+        sendJson(res, 200, state.userLimits)
+        return
+      }
+      const [user, limit] = rest
+      if (rest.length === 1 && method === "GET") {
+        sendJson(res, 200, state.userLimits.filter((entry) => entry.user === user))
+        return
+      }
+      if (rest.length === 2 && (method === "PUT" || method === "DELETE")) {
+        const body = method === "PUT" ? await readJson(req) : {}
+        let entry = state.userLimits.find((candidate) => candidate.user === user)
+        if (!entry) {
+          entry = { user, value: {} }
+          state.userLimits.push(entry)
+        }
+        if (method === "PUT") entry.value[limit] = Number(body.value ?? body)
+        else delete entry.value[limit]
+        if (!Object.keys(entry.value).length) {
+          state.userLimits = state.userLimits.filter((candidate) => candidate.user !== user)
         }
         sendEmpty(res, method === "PUT" ? 201 : 204)
         return

@@ -627,6 +627,11 @@ export function createState() {
     { vhost: "analytics", value: { "max-connections": 512, "max-queues": 1024 } },
   ]
 
+  const userLimits = [
+    { user: "app_worker", value: { "max-connections": 128, "max-channels": 256 } },
+    { user: "analytics_etl", value: { "max-connections": 64, "max-channels": 128 } },
+  ]
+
   const featureFlags = [
     featureFlag("rabbitmq_management", true, "stable", "Management plugin and HTTP API"),
     featureFlag(
@@ -739,6 +744,7 @@ export function createState() {
     policies,
     operatorPolicies,
     vhostLimits,
+    userLimits,
     featureFlags,
     deprecatedFeatures,
   }

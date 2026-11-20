@@ -149,8 +149,14 @@ export interface Policy {
 
 export interface VhostLimit {
   vhost: string
-  maxConnections: number
-  maxQueues: number
+  maxConnections: number | null
+  maxQueues: number | null
+}
+
+export interface UserLimit {
+  user: string
+  maxConnections: number | null
+  maxChannels: number | null
 }
 
 export interface FeatureFlag {
@@ -240,6 +246,7 @@ export interface ClusterSnapshot {
   policies: Policy[]
   operatorPolicies: Policy[]
   limits: VhostLimit[]
+  userLimits: UserLimit[]
   flags: FeatureFlag[]
   deprecatedFeatures: DeprecatedFeature[]
 }

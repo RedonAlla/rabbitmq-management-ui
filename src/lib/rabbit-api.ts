@@ -18,6 +18,7 @@ import type {
   QueueType,
   Stability,
   User,
+  UserLimit,
   Vhost,
   VhostLimit,
   WebContext,
@@ -363,6 +364,11 @@ interface ApiPolicy {
 
 interface ApiVhostLimit {
   vhost: string
+  value: Record<string, unknown> | string
+}
+
+interface ApiUserLimit {
+  user: string
   value: Record<string, unknown> | string
 }
 
@@ -890,6 +896,7 @@ export interface RabbitSnapshot {
   policies: Policy[]
   operatorPolicies: Policy[]
   limits: VhostLimit[]
+  userLimits: UserLimit[]
   flags: FeatureFlag[]
   deprecatedFeatures: DeprecatedFeature[]
   totals: ClusterTotals
@@ -1365,18 +1372,19 @@ function mapPolicy(policy: ApiPolicy): Policy {
 function limitValue(
   value: Record<string, unknown> | string | undefined,
   key: string
-): number {
+): number | null {
   let record = value
   if (typeof value === "string") {
     try {
       record = JSON.parse(value) as Record<string, unknown>
     } catch {
-      return 0
+      return null
     }
   }
   const raw = (record as Record<string, unknown> | undefined)?.[key]
+  if (raw === undefined || raw === null) return null
   const parsed = Number(raw)
-  return Number.isFinite(parsed) ? parsed : 0
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 function mapVhostLimits(limits: ApiVhostLimit[]): VhostLimit[] {
@@ -1384,6 +1392,14 @@ function mapVhostLimits(limits: ApiVhostLimit[]): VhostLimit[] {
     vhost: limit.vhost,
     maxConnections: limitValue(limit.value, "max-connections"),
     maxQueues: limitValue(limit.value, "max-queues"),
+  }))
+}
+
+function mapUserLimits(limits: ApiUserLimit[]): UserLimit[] {
+  return limits.map((limit) => ({
+    user: limit.user,
+    maxConnections: limitValue(limit.value, "max-connections"),
+    maxChannels: limitValue(limit.value, "max-channels"),
   }))
 }
 
@@ -1767,6 +1783,7 @@ export async function fetchRabbitSnapshot(
     apiPolicies,
     apiOperatorPolicies,
     apiLimits,
+    apiUserLimits,
     apiFlags,
     apiDeprecated,
     deprecatedUsed,
@@ -1784,6 +1801,7 @@ export async function fetchRabbitSnapshot(
     apiGet<ApiPolicy[]>("/api/policies", token, signal),
     apiGet<ApiPolicy[]>("/api/operator-policies", token, signal),
     apiGet<ApiVhostLimit[]>("/api/vhost-limits", token, signal),
+    apiGet<ApiUserLimit[]>("/api/user-limits", token, signal),
     apiGet<ApiFeatureFlag[]>("/api/feature-flags", token, signal),
     apiGet<ApiDeprecatedFeature[]>("/api/deprecated-features", token, signal),
     apiGet<unknown>("/api/deprecated-features/used", token, signal),
@@ -1808,6 +1826,7 @@ export async function fetchRabbitSnapshot(
     policies: apiPolicies.map(mapPolicy),
     operatorPolicies: apiOperatorPolicies.map(mapPolicy),
     limits: mapVhostLimits(apiLimits),
+    userLimits: mapUserLimits(apiUserLimits),
     flags: mapFeatureFlags(apiFlags),
     deprecatedFeatures: mapDeprecatedFeatures(apiDeprecated, deprecatedUsed),
     totals: mapTotals(overview, queues),
@@ -2561,15 +2580,38 @@ export async function deletePolicy(
 export async function updateVhostLimits(
   token: string,
   vhost: string,
-  maxConnections: number,
-  maxQueues: number
+  maxConnections: number | null,
+  maxQueues: number | null
 ): Promise<void> {
-  await apiPut(`/api/vhost-limits/${enc(vhost)}/max-connections`, token, {
-    value: maxConnections,
+  await applyLimit(token, "vhost-limits", vhost, {
+    "max-connections": maxConnections,
+    "max-queues": maxQueues,
   })
-  await apiPut(`/api/vhost-limits/${enc(vhost)}/max-queues`, token, {
-    value: maxQueues,
+}
+
+export async function updateUserLimits(
+  token: string,
+  user: string,
+  maxConnections: number | null,
+  maxChannels: number | null
+): Promise<void> {
+  await applyLimit(token, "user-limits", user, {
+    "max-connections": maxConnections,
+    "max-channels": maxChannels,
   })
+}
+
+async function applyLimit(
+  token: string,
+  resource: string,
+  id: string,
+  limits: Record<string, number | null>
+): Promise<void> {
+  for (const [key, value] of Object.entries(limits)) {
+    const path = `/api/${resource}/${enc(id)}/${key}`
+    if (value === null) await apiDelete(path, token)
+    else await apiPut(path, token, { value })
+  }
 }
 
 export async function enableFeatureFlag(

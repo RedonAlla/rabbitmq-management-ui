@@ -17,6 +17,13 @@ import { Input } from "@/components/ui/input"
 import VhostSelect from "@/components/ui/vhost-select"
 import { useCluster } from "@/store/cluster"
 
+function parseLimit(raw: string): number | null | "invalid" {
+  if (!raw.trim()) return null
+  const value = Number(raw)
+  if (!Number.isInteger(value) || value < 0) return "invalid"
+  return value
+}
+
 export default function EditLimitsDialog({
   open,
   onClose,
@@ -32,20 +39,23 @@ export default function EditLimitsDialog({
   )
   const current = data.limits.find((limit) => limit.vhost === vhost)
   const [connections, setConnections] = useState(
-    String(current?.maxConnections ?? 1024)
+    String(current?.maxConnections ?? "")
   )
-  const [queues, setQueues] = useState(String(current?.maxQueues ?? 2048))
+  const [queues, setQueues] = useState(String(current?.maxQueues ?? ""))
   const [error, setError] = useState("")
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    const maxConnections = Number(connections)
-    const maxQueues = Number(queues)
-    if (!Number.isFinite(maxConnections) || maxConnections < 1) {
-      return setError("Max connections must be a positive number.")
+    const maxConnections = parseLimit(connections)
+    const maxQueues = parseLimit(queues)
+    if (maxConnections === "invalid") {
+      return setError("Max connections must be a non-negative integer.")
     }
-    if (!Number.isFinite(maxQueues) || maxQueues < 1) {
-      return setError("Max queues must be a positive number.")
+    if (maxQueues === "invalid") {
+      return setError("Max queues must be a non-negative integer.")
+    }
+    if (maxConnections === null && maxQueues === null) {
+      return setError("Set at least one limit.")
     }
     actions.updateLimit({ vhost, maxConnections, maxQueues })
     toast.success("Limits updated", {
@@ -74,25 +84,35 @@ export default function EditLimitsDialog({
                   const limit = data.limits.find(
                     (entry) => entry.vhost === value
                   )
-                  setConnections(String(limit?.maxConnections ?? 1024))
-                  setQueues(String(limit?.maxQueues ?? 2048))
+                  setConnections(String(limit?.maxConnections ?? ""))
+                  setQueues(String(limit?.maxQueues ?? ""))
                 }}
               />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Max connections" htmlFor="limit-connections">
+              <Field
+                label="Max connections"
+                htmlFor="limit-connections"
+                info="Concurrent client connections this virtual host allows. Leave empty to remove the limit; 0 blocks new connections."
+              >
                 <Input
                   id="limit-connections"
                   value={connections}
                   onChange={(event) => setConnections(event.target.value)}
+                  placeholder="No limit"
                   inputMode="numeric"
                 />
               </Field>
-              <Field label="Max queues" htmlFor="limit-queues">
+              <Field
+                label="Max queues"
+                htmlFor="limit-queues"
+                info="Queues this virtual host can declare. Leave empty to remove the limit; 0 blocks new queues."
+              >
                 <Input
                   id="limit-queues"
                   value={queues}
                   onChange={(event) => setQueues(event.target.value)}
+                  placeholder="No limit"
                   inputMode="numeric"
                 />
               </Field>

@@ -80,6 +80,7 @@ function emptyData(): ClusterSnapshot {
     policies: [],
     operatorPolicies: [],
     limits: [],
+    userLimits: [],
     flags: [],
     deprecatedFeatures: [],
   }
@@ -165,8 +166,14 @@ function createInitialState(): ClusterState {
 
 export interface LimitInput {
   vhost: string
-  maxConnections: number
-  maxQueues: number
+  maxConnections: number | null
+  maxQueues: number | null
+}
+
+export interface UserLimitInput {
+  user: string
+  maxConnections: number | null
+  maxChannels: number | null
 }
 
 export interface ClusterActions {
@@ -206,6 +213,7 @@ export interface ClusterActions {
     operator?: boolean
   ) => Promise<void>
   updateLimit: (input: LimitInput) => Promise<void>
+  updateUserLimit: (input: UserLimitInput) => Promise<void>
   enableFlag: (name: string) => Promise<void>
   importDefinitions: (file: File, overwrite: boolean) => Promise<void>
 }
@@ -339,6 +347,15 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
             input.vhost,
             input.maxConnections,
             input.maxQueues
+          )
+        ),
+      updateUserLimit: (input) =>
+        run((current) =>
+          rabbit.updateUserLimits(
+            current,
+            input.user,
+            input.maxConnections,
+            input.maxChannels
           )
         ),
       enableFlag: (name) =>
