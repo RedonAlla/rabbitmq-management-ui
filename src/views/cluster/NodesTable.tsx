@@ -15,8 +15,7 @@ import { Frame, FrameHeader, FramePanel } from "@/components/reui/frame"
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
 import GridEmptyState from "@/components/ui/empty-state"
-import { numericMeta } from "@/components/table"
-import { Skeleton } from "@/components/ui/skeleton"
+import { fitMeta, numericMeta } from "@/components/table"
 
 type Props = {
   nodes: NodeInfo[]
@@ -41,7 +40,7 @@ export default function NodesTable({ nodes, loading, error, onRetry }: Props) {
             <Badge variant="outline">{row.original.type}</Badge>
           </div>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-30" /> },
+        meta: fitMeta
       },
       {
         accessorKey: "uptime",
@@ -78,7 +77,7 @@ export default function NodesTable({ nodes, loading, error, onRetry }: Props) {
             </div>
           )
         },
-        meta: { skeleton: <Skeleton className="h-4 w-30" /> },
+        meta: fitMeta
       },
       {
         id: "disk",
@@ -106,6 +105,7 @@ export default function NodesTable({ nodes, loading, error, onRetry }: Props) {
             </div>
           )
         },
+        meta: fitMeta
       },
       {
         accessorKey: "fd",
@@ -145,7 +145,7 @@ export default function NodesTable({ nodes, loading, error, onRetry }: Props) {
           ) : (
             <Badge variant="destructive-light">Stopped</Badge>
           ),
-        meta: { skeleton: <Skeleton className="h-4 w-12" /> },
+        meta: fitMeta
       },
     ],
     []

@@ -44,31 +44,34 @@ export function ClusterView() {
 
       {error ? <RegionError message={error} onRetry={actions.retry} /> : null}
 
-      <FactPanel
-        title="Cluster identity"
-        description="Reported by the management API."
-        facts={[
-          { label: "Cluster", value: data.cluster.name, mono: true },
-          { label: "Version", value: data.cluster.version },
-          { label: "Erlang", value: data.cluster.erlang },
-          { label: "First node", value: data.cluster.node, mono: true },
-          {
-            label: "Started",
-            value: `${fmtDate(data.cluster.startedAt)} · ${fmtAgo(data.cluster.startedAt, new Date().getTime())}`,
-          },
-          { label: "Members", value: `${data.nodes.length} nodes` },
-          { label: "Listeners", value: `${data.ports.length} ports` },
-        ]}
-      />
+      <div className="grid min-w-0 gap-3  xl:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] xl:items-start">
+        <FactPanel
+          title="Cluster identity"
+          description="Reported by the management API."
+          facts={[
+            { label: "Cluster", value: data.cluster.name, mono: true },
+            { label: "Version", value: data.cluster.version },
+            { label: "Erlang", value: data.cluster.erlang },
+            { label: "First node", value: data.cluster.node, mono: true },
+            {
+              label: "Started",
+              value: `${fmtDate(data.cluster.startedAt)} · ${fmtAgo(data.cluster.startedAt, new Date().getTime())}`,
+            },
+            { label: "Members", value: `${data.nodes.length} nodes` },
+            { label: "Listeners", value: `${data.ports.length} ports` },
+          ]}
+        />
+
+        <ListenersTable
+          ports={data.ports}
+          loading={status === "loading"}
+          error={error}
+          onRetry={actions.retry}
+        />
+      </div>
 
       <NodesTable
         nodes={data.nodes}
-        loading={status === "loading"}
-        error={error}
-        onRetry={actions.retry}
-      />
-      <ListenersTable
-        ports={data.ports}
         loading={status === "loading"}
         error={error}
         onRetry={actions.retry}

@@ -14,8 +14,7 @@ import GridEmptyState from "@/components/ui/empty-state"
 import { Frame, FrameHeader, FramePanel } from "@/components/reui/frame"
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
-import { Skeleton } from "@/components/ui/skeleton"
-import { numericMeta } from "@/components/table"
+import { fitMeta, numericMeta } from "@/components/table"
 
 type Props = {
   ports: PortInfo[]
@@ -40,7 +39,7 @@ export default function ListenersTable({
         cell: ({ row }) => (
           <span className="data-cell font-medium">{row.original.port}</span>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-12" /> },
+        meta: fitMeta
       },
       {
         accessorKey: "protocol",
@@ -50,7 +49,7 @@ export default function ListenersTable({
         cell: ({ row }) => (
           <span className="text-sm">{row.original.protocol}</span>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-12" /> },
+        meta: fitMeta
       },
       {
         accessorKey: "tls",
@@ -58,7 +57,7 @@ export default function ListenersTable({
           <DataGridColumnHeader column={column} title="TLS" />
         ),
         cell: ({ row }) => <TlsBadge ssl={row.original.tls} />,
-        meta: { skeleton: <Skeleton className="h-4 w-12" /> },
+        meta: fitMeta
       },
       {
         accessorKey: "nodes",
@@ -80,7 +79,7 @@ export default function ListenersTable({
             {row.original.context}
           </span>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-12" /> },
+        meta: fitMeta
       },
     ],
     []

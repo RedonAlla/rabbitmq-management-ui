@@ -9,5 +9,5 @@ export const numericMeta = {
 export const fitMeta = {
   headerClassName: "w-px whitespace-nowrap",
   cellClassName: "w-px whitespace-nowrap",
-  skeleton: <Skeleton className="ms-auto h-4 w-12" />,
+  skeleton: <Skeleton className="ms-auto h-4 w-10" />,
 }
