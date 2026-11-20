@@ -10,8 +10,8 @@ import {
   AddExchangeDrawer,
   PublishDrawer
 } from "@/components/features/exchanges/list"
-import EditLimitsDialog from "@/views/limits/edit-limits-dialog"
-import EditUserLimitsDialog from "@/views/limits/edit-user-limits-dialog"
+import EditLimitsDialog from "@/components/features/limits/edit-limits-dialog"
+import EditUserLimitsDialog from "@/components/features/limits/edit-user-limits-dialog"
 import AddPolicyDrawer from "@/views/policies/add-policy-drawer"
 import { AddQueueDrawer } from "@/components/features/queues/list"
 import { AddUserDialog, EditUserDialog } from "@/components/features/users"

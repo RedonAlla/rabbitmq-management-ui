@@ -16,7 +16,7 @@ export function LimitsView() {
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader
         title="Limits"
-        description="Connection and queue caps per virtual host, and connection and channel caps per user."
+        description="Connection, queue and channel caps for virtual hosts and users."
         actions={
           <Button
             type="button"

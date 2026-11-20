@@ -19,6 +19,7 @@ import { Frame, FrameFooter, FramePanel } from "@/components/reui/frame"
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination"
+import { fitMeta } from "@/components/table"
 
 export function VhostLimitsTable() {
   const { data, status, error, actions } = useCluster()
@@ -47,7 +48,7 @@ export function VhostLimitsTable() {
             {row.original.limit.vhost}
           </span>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-25" /> },
+        meta: fitMeta,
       },
       {
         id: "connections",
@@ -59,7 +60,7 @@ export function VhostLimitsTable() {
             label={`Connection usage for ${row.original.limit.vhost}`}
           />
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-25" /> },
+        meta: fitMeta
       },
       {
         id: "queues",
@@ -71,7 +72,7 @@ export function VhostLimitsTable() {
             label={`Queue usage for ${row.original.limit.vhost}`}
           />
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-25" /> },
+        meta: fitMeta
       },
       {
         id: "status",
@@ -90,7 +91,7 @@ export function VhostLimitsTable() {
             )
           return <Badge variant={worst.variant}>{worst.label}</Badge>
         },
-        meta: { skeleton: <Skeleton className="h-4 w-25" /> },
+        meta: fitMeta
       },
       {
         id: "actions",
@@ -113,7 +114,7 @@ export function VhostLimitsTable() {
             </Button>
           </div>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-25" /> },
+        meta: fitMeta
       },
     ],
     [openDialog]
