@@ -66,8 +66,11 @@ export default function OperatorPolicies() {
   )
 
   const columns = useMemo(
-    () => policyColumns(applied, setPendingDelete),
-    [applied]
+    () =>
+      policyColumns(applied, setPendingDelete, (policy) =>
+        openDialog({ type: "edit-operator-policy", policy })
+      ),
+    [applied, openDialog]
   )
 
   const table = useTable({

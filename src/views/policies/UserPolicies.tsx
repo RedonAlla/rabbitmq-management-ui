@@ -53,8 +53,11 @@ export default function UserPolicies() {
   )
 
   const columns = useMemo(
-    () => policyColumns(applied, setPendingDelete),
-    [applied]
+    () =>
+      policyColumns(applied, setPendingDelete, (policy) =>
+        openDialog({ type: "edit-policy", policy })
+      ),
+    [applied, openDialog]
   )
 
   const visible = useCallback(

@@ -1,4 +1,4 @@
-import { MoreHorizontalIcon, Trash2Icon } from "lucide-react"
+import { MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/reui/badge"
 import { Button } from "@/components/ui/button"
@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { definitionSummary, fmtInt } from "@/lib/format"
@@ -16,7 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export function policyColumns(
   applied: (policy: Policy) => number,
-  onDelete: (policy: Policy) => void
+  onDelete: (policy: Policy) => void,
+  onEdit: (policy: Policy) => void
 ): ColumnDef<DataGridFeatures, Policy>[] {
   return [
     {
@@ -102,6 +104,11 @@ export function policyColumns(
               <MoreHorizontalIcon aria-hidden="true" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem onClick={() => onEdit(row.original)}>
+                <PencilIcon aria-hidden="true" />
+                Edit policy
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 variant="destructive"
                 onClick={() => onDelete(row.original)}
