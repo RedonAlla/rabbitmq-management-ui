@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { Boxes, TriangleAlertIcon } from "lucide-react"
+import { ArrowRightIcon, Boxes, TriangleAlertIcon } from "lucide-react"
 import { useTable, type ColumnDef } from "@tanstack/react-table"
 import { Alert, AlertDescription, AlertTitle } from "@/components/reui/alert"
 import { Badge } from "@/components/reui/badge"
@@ -7,7 +7,11 @@ import { PageHeader } from "@/components/page-header"
 import { FilterBar, SelectFilter } from "@/components/filters-bar"
 import { useCluster } from "@/store/cluster"
 import { matchesText } from "@/lib/filtering"
-import type { DeprecatedFeature, DeprecationPhase } from "@/data/types"
+import type {
+  DeprecatedFeature,
+  DeprecatedFeatureState,
+  DeprecationPhase,
+} from "@/data/types"
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header"
 import {
   DataGrid,
@@ -48,6 +52,14 @@ const PHASE_OPTIONS = (Object.keys(PHASES) as DeprecationPhase[]).map(
   })
 )
 
+const STATE_BADGE: Record<
+  DeprecatedFeatureState,
+  { label: string; variant: "outline" | "destructive-light" }
+> = {
+  permitted: { label: "Permitted", variant: "outline" },
+  denied: { label: "Denied", variant: "destructive-light" },
+}
+
 export function DeprecatedFeaturesView() {
   const { data, status, error, actions } = useCluster()
   const [search, setSearch] = useState("")
@@ -63,7 +75,8 @@ export function DeprecatedFeaturesView() {
       data.deprecatedFeatures.filter(
         (feature) =>
           (matchesText(feature.name, search) ||
-            matchesText(feature.desc, search)) &&
+            matchesText(feature.desc, search) ||
+            matchesText(feature.providedBy, search)) &&
           (phase === "all" || feature.phase === phase)
       ),
     [data.deprecatedFeatures, search, phase]
@@ -77,9 +90,31 @@ export function DeprecatedFeaturesView() {
           <DataGridColumnHeader column={column} title="Feature" />
         ),
         cell: ({ row }) => (
-          <span className="data-cell font-medium">{row.original.name}</span>
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <span className="data-cell text-mono font-medium">
+                {row.original.name}
+              </span>
+              {row.original.docUrl ? (
+                <a
+                  href={row.original.docUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Documentation for ${row.original.name}`}
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <ArrowRightIcon className="size-3.5" aria-hidden="true" />
+                </a>
+              ) : null}
+            </div>
+            {row.original.desc ? (
+              <span className="max-w-2xl text-xs text-muted-foreground">
+                {row.original.desc}
+              </span>
+            ) : null}
+          </div>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-20" /> },
+        meta: { fillWidth: true, skeleton: <Skeleton className="h-4 w-40" /> },
       },
       {
         accessorKey: "phase",
@@ -89,6 +124,17 @@ export function DeprecatedFeaturesView() {
         cell: ({ row }) => {
           const meta = PHASES[row.original.phase]
           return <Badge variant={meta.variant}>{meta.label}</Badge>
+        },
+        meta: { skeleton: <Skeleton className="h-4 w-20" /> },
+      },
+      {
+        accessorKey: "state",
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="State" />
+        ),
+        cell: ({ row }) => {
+          const state = STATE_BADGE[row.original.state]
+          return <Badge variant={state.variant}>{state.label}</Badge>
         },
         meta: { skeleton: <Skeleton className="h-4 w-20" /> },
       },
@@ -104,14 +150,17 @@ export function DeprecatedFeaturesView() {
         meta: { skeleton: <Skeleton className="h-4 w-20" /> },
       },
       {
-        id: "description",
-        header: () => <span>Description</span>,
-        cell: ({ row }) => (
-          <span className="block max-w-2xl text-xs text-muted-foreground">
-            {row.original.desc}
-          </span>
+        accessorKey: "providedBy",
+        header: ({ column }) => (
+          <DataGridColumnHeader column={column} title="Provided by" />
         ),
-        meta: { fillWidth: true, skeleton: <Skeleton className="h-4 w-20" /> },
+        cell: ({ row }) =>
+          row.original.providedBy ? (
+            <Badge variant="outline">{row.original.providedBy}</Badge>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
+        meta: { skeleton: <Skeleton className="h-4 w-28" /> },
       },
     ],
     []
@@ -181,7 +230,7 @@ export function DeprecatedFeaturesView() {
           headerBorder: true,
           width: "auto",
         }}
-        tableClassNames={{ base: "min-w-[900px]" }}
+        tableClassNames={{ base: "min-w-[880px]" }}
       >
         <Frame spacing="sm" className="min-w-0">
           <FrameHeader>

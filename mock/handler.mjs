@@ -1699,7 +1699,7 @@ export async function handleMockRequest(req, res) {
 
     if (resource === "deprecated-features" && method === "GET") {
       if (rest[0] === "used") {
-        sendJson(res, 200, state.deprecatedFeatures.filter((entry) => entry.name === "ram_node_type"))
+        sendJson(res, 200, state.deprecatedFeatures.filter((entry) => entry.name === "management_metrics_collection"))
         return
       }
       sendJson(res, 200, state.deprecatedFeatures)

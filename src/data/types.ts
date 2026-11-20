@@ -164,10 +164,15 @@ export interface FeatureFlag {
 export type DeprecationPhase =
   "permitted_by_default" | "denied_by_default" | "disconnect" | "removed"
 
+export type DeprecatedFeatureState = "permitted" | "denied"
+
 export interface DeprecatedFeature {
   name: string
   phase: DeprecationPhase
+  state: DeprecatedFeatureState
   desc: string
+  docUrl: string
+  providedBy: string
   inUse: boolean
 }
 

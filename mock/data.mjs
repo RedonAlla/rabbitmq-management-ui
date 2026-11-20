@@ -647,34 +647,52 @@ export function createState() {
 
   const deprecatedFeatures = [
     deprecated(
-      "amqp_address_v1",
+      "queue_master_locator",
       "denied_by_default",
-      "The version 1 AMQP 0-9-1 address format is denied by default. Use AMQP address v2."
-    ),
-    deprecated(
-      "classic_queue_mirroring",
-      "removed",
-      "Classic mirrored queues were removed in RabbitMQ 4.0. Use quorum queues or streams for replication."
+      "The queue master locator argument is denied by default."
     ),
     deprecated(
       "global_qos",
-      "removed",
-      "Global QoS was removed in RabbitMQ 4.0. Set prefetch per consumer instead."
+      "denied_by_default",
+      "Global QoS is denied by default. Set prefetch per consumer instead.",
+      "https://blog.rabbitmq.com/posts/2021/08/4.0-deprecation-announcements/#removal-of-global-qos"
+    ),
+    deprecated(
+      "transient_nonexcl_queues",
+      "denied_by_default",
+      "Queues that are both non-durable and non-exclusive are denied by default. Use durable queues with a TTL.",
+      "https://blog.rabbitmq.com/posts/2021/08/4.0-deprecation-announcements/#removal-of-transient-non-exclusive-queues"
+    ),
+    deprecated(
+      "amqp_filter_set_bug",
+      "denied_by_default",
+      "The AMQP 0-9-1 filter set bug compatibility mode is denied by default.",
+      "https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-filter-set"
+    ),
+    deprecated(
+      "amqp_address_v1",
+      "denied_by_default",
+      "The version 1 AMQP 0-9-1 address format is denied by default. Use AMQP address v2.",
+      "https://www.rabbitmq.com/docs/amqp#addresses"
     ),
     deprecated(
       "management_metrics_collection",
       "permitted_by_default",
-      "Legacy management metrics collection is deprecated in favour of the Prometheus plugin."
+      "Legacy management metrics collection is deprecated in favour of the Prometheus plugin.",
+      "https://blog.rabbitmq.com/posts/2021/08/4.0-deprecation-announcements/#disable-metrics-delivery-via-the-management-api--ui",
+      "rabbitmq_management_agent"
+    ),
+    deprecated(
+      "classic_queue_mirroring",
+      "removed",
+      "Classic mirrored queues were removed in RabbitMQ 4.0. Use quorum queues or streams for replication.",
+      "https://blog.rabbitmq.com/posts/2021/08/4.0-deprecation-announcements/#removal-of-classic-queue-mirroring"
     ),
     deprecated(
       "ram_node_type",
-      "permitted_by_default",
-      "RAM nodes are deprecated. Use disk nodes only."
-    ),
-    deprecated(
-      "transient_nonexcl_queues",
-      "permitted_by_default",
-      "Queues that are both non-durable and non-exclusive are deprecated. Use durable queues with a TTL."
+      "removed",
+      "RAM nodes were removed in RabbitMQ 4.0. Use disk nodes only.",
+      "https://blog.rabbitmq.com/posts/2021/08/4.0-deprecation-announcements/#removal-of-ram-nodes"
     ),
   ]
 
@@ -834,6 +852,19 @@ function featureFlag(name, enabled, stability, desc, docUrl = "", providedBy = "
   }
 }
 
-function deprecated(name, state, desc) {
-  return { name, state, desc }
+function deprecated(
+  name,
+  deprecationPhase,
+  desc,
+  docUrl = "",
+  providedBy = "rabbit"
+) {
+  return {
+    name,
+    state: deprecationPhase === "permitted_by_default" ? "permitted" : "denied",
+    desc,
+    deprecation_phase: deprecationPhase,
+    doc_url: docUrl,
+    provided_by: providedBy,
+  }
 }

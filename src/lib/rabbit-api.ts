@@ -379,7 +379,10 @@ interface ApiDeprecatedFeature {
   name: string
   state?: string
   phase?: string
+  deprecation_phase?: string
   desc?: string
+  doc_url?: string
+  provided_by?: string
 }
 
 interface ApiConnection {
@@ -1443,8 +1446,11 @@ function mapDeprecatedFeatures(
 
   return features.map((feature) => ({
     name: feature.name,
-    phase: phase(feature.phase ?? feature.state),
+    phase: phase(feature.deprecation_phase ?? feature.phase),
+    state: feature.state === "permitted" ? "permitted" : "denied",
     desc: feature.desc ?? "",
+    docUrl: feature.doc_url ?? "",
+    providedBy: feature.provided_by ?? "",
     inUse: inUse.has(feature.name),
   }))
 }
