@@ -2622,6 +2622,13 @@ async function applyLimit(
   }
 }
 
+export async function changeClusterName(
+  token: string,
+  name: string
+): Promise<void> {
+  await apiPut("/api/cluster-name", token, { name })
+}
+
 export async function enableFeatureFlag(
   token: string,
   name: string

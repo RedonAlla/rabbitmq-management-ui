@@ -1,7 +1,10 @@
+import { PencilIcon } from "lucide-react"
 import { Badge } from "@/components/reui/badge"
 import { PageHeader } from "@/components/page-header"
 import { RegionError } from "@/components/region-states"
 import { FactPanel } from "@/components/detail"
+import { Button } from "@/components/ui/button"
+import { useDialogs } from "@/components/dialogs/dialogs-provider"
 import { useCluster } from "@/store/cluster"
 import { fmtAgo, fmtDate } from "@/lib/format"
 import NodesTable from "./cluster/NodesTable"
@@ -9,11 +12,21 @@ import ListenersTable from "./cluster/ListenersTable"
 
 export function ClusterView() {
   const { data, status, error, actions } = useCluster()
+  const { openDialog } = useDialogs()
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader
         title="Cluster"
+        actions={
+          <Button
+            type="button"
+            onClick={() => openDialog({ type: "edit-cluster-name" })}
+          >
+            <PencilIcon data-icon="inline-start" aria-hidden="true" />
+            Change name
+          </Button>
+        }
         eyebrow={
           <>
             <Badge variant="success-light">Online</Badge>

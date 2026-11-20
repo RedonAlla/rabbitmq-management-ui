@@ -1741,6 +1741,15 @@ export async function handleMockRequest(req, res) {
       return
     }
 
+    if (resource === "cluster-name" && method === "PUT") {
+      const body = await readJson(req)
+      const name = String(body.name ?? "").trim()
+      if (!name) return sendError(res, 400, "bad_request", "cluster name cannot be empty")
+      state.overview.cluster_name = name
+      sendEmpty(res, 204)
+      return
+    }
+
     if (resource === "definitions" && method === "GET") {
       sendJson(res, 200, definitionsDocument())
       return

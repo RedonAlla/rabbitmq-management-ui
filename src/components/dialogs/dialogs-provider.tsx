@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react"
 import ShortcutsDialog from "@/components/layout/shortcuts-dialog"
+import EditClusterNameDialog from "@/components/features/cluster/edit-cluster-name-dialog"
 import {
   AddExchangeDrawer,
   PublishDrawer
@@ -17,6 +18,7 @@ import { AddQueueDrawer } from "@/components/features/queues/list"
 import { AddUserDialog, EditUserDialog } from "@/components/features/users"
 import { AddVhostDrawer } from "@/components/features/vhosts/add-vhost-drawer"
 import type { Policy, User, Vhost } from "@/data/types"
+import { useCluster } from "@/store/cluster"
 
 export type DialogRequest =
   | { type: "add-queue"; onCreated?: () => void }
@@ -31,6 +33,7 @@ export type DialogRequest =
   | { type: "edit-operator-policy"; policy: Policy }
   | { type: "edit-limits"; vhost?: string }
   | { type: "edit-user-limits"; user?: string }
+  | { type: "edit-cluster-name" }
   | { type: "publish"; exchange?: string; vhost?: string }
   | { type: "shortcuts" }
 
@@ -43,6 +46,8 @@ interface DialogsContextValue {
 const DialogsContext = createContext<DialogsContextValue | null>(null)
 
 export function DialogsProvider({ children }: { children: ReactNode }) {
+  const { data } = useCluster()
+  const cluster = data.cluster
   const [dialog, setDialog] = useState<DialogRequest | null>(null)
   const closeDialog = () => setDialog(null)
 
@@ -135,6 +140,16 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
         initialUser={
           dialog?.type === "edit-user-limits" ? dialog.user : undefined
         }
+      />
+      <EditClusterNameDialog
+        key={
+          dialog?.type === "edit-cluster-name"
+            ? `cluster-name-${cluster.name}`
+            : "cluster-name-closed"
+        }
+        open={dialog?.type === "edit-cluster-name"}
+        initialName={cluster.name}
+        onClose={closeDialog}
       />
       <ShortcutsDialog
         open={dialog?.type === "shortcuts"}

@@ -214,6 +214,7 @@ export interface ClusterActions {
   ) => Promise<void>
   updateLimit: (input: LimitInput) => Promise<void>
   updateUserLimit: (input: UserLimitInput) => Promise<void>
+  renameCluster: (name: string) => Promise<void>
   enableFlag: (name: string) => Promise<void>
   importDefinitions: (file: File, overwrite: boolean) => Promise<void>
 }
@@ -360,6 +361,8 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
         ),
       enableFlag: (name) =>
         run((current) => rabbit.enableFeatureFlag(current, name)),
+      renameCluster: (name) =>
+        run((current) => rabbit.changeClusterName(current, name)),
       importDefinitions: (file, overwrite) =>
         run((current) => rabbit.uploadDefinitions(current, file, overwrite)),
     }),
