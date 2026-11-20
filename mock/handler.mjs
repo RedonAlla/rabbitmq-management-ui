@@ -1688,10 +1688,10 @@ export async function handleMockRequest(req, res) {
         return
       }
       const name = rest[0]
-      if (rest.length === 2 && method === "POST" && (rest[1] === "enable" || rest[1] === "disable")) {
+      if (rest.length === 2 && method === "PUT" && rest[1] === "enable") {
         const flag = state.featureFlags.find((entry) => entry.name === name)
         if (!flag) return sendError(res, 404, "not_found", `feature flag '${name}' not found`)
-        flag.state = rest[1] === "enable" ? "enabled" : "disabled"
+        flag.state = "enabled"
         sendJson(res, 200, flag)
         return
       }

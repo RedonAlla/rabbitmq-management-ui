@@ -3,7 +3,6 @@ import type {
   ExchangeType,
   QueueState,
   QueueType,
-  Stability,
 } from "@/data/types"
 
 export function StateBadge({ state }: { state: QueueState | string }) {
@@ -22,12 +21,6 @@ export function TypeBadge({
   type: QueueType | ExchangeType | string
 }) {
   return <Badge variant="outline">{type || "default"}</Badge>
-}
-
-export function StabilityBadge({ stability }: { stability: Stability }) {
-  if (stability === "stable")
-    return <Badge variant="success-light">Stable</Badge>
-  return <Badge variant="warning-light">Experimental</Badge>
 }
 
 export function TagBadge({ children }: { children: string }) {

@@ -13,7 +13,12 @@ export type ExchangeArgumentValue =
   | number
   | boolean
   | Array<string | number | boolean>
-export type Stability = "stable" | "experimental"
+export type Stability = "required" | "stable" | "experimental"
+export type FeatureFlagState =
+  | "enabled"
+  | "disabled"
+  | "state_changing"
+  | "unsupported"
 
 export interface Vhost {
   name: string
@@ -149,9 +154,11 @@ export interface VhostLimit {
 
 export interface FeatureFlag {
   name: string
-  enabled: boolean
+  state: FeatureFlagState
   stability: Stability
   desc: string
+  docUrl: string
+  providedBy: string
 }
 
 export type DeprecationPhase =

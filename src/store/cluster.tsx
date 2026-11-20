@@ -206,7 +206,7 @@ export interface ClusterActions {
     operator?: boolean
   ) => Promise<void>
   updateLimit: (input: LimitInput) => Promise<void>
-  toggleFlag: (name: string, enabled: boolean) => Promise<void>
+  enableFlag: (name: string) => Promise<void>
   importDefinitions: (file: File, overwrite: boolean) => Promise<void>
 }
 
@@ -341,8 +341,8 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
             input.maxQueues
           )
         ),
-      toggleFlag: (name, enabled) =>
-        run((current) => rabbit.setFeatureFlag(current, name, enabled)),
+      enableFlag: (name) =>
+        run((current) => rabbit.enableFeatureFlag(current, name)),
       importDefinitions: (file, overwrite) =>
         run((current) => rabbit.uploadDefinitions(current, file, overwrite)),
     }),

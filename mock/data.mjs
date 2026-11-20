@@ -629,7 +629,13 @@ export function createState() {
 
   const featureFlags = [
     featureFlag("rabbitmq_management", true, "stable", "Management plugin and HTTP API"),
-    featureFlag("rabbitmq_quorum_queue", true, "stable", "Replicated, durable queues for critical workloads"),
+    featureFlag(
+      "rabbitmq_quorum_queue",
+      true,
+      "required",
+      "Replicated, durable queues for critical workloads",
+      "https://www.rabbitmq.com/docs/quorum-queues"
+    ),
     featureFlag("rabbitmq_stream", true, "stable", "Stream protocol and stream queues"),
     featureFlag("rabbitmq_stream_management", true, "stable", "Management integration for stream queues"),
     featureFlag("rabbitmq_shovels", true, "stable", "Move messages between brokers"),
@@ -817,8 +823,15 @@ function policy(name, vhost, pattern, applyTo, priority, definition) {
   return { name, vhost, pattern, "apply-to": applyTo, priority, definition }
 }
 
-function featureFlag(name, enabled, stability, desc) {
-  return { name, state: enabled ? "enabled" : "disabled", stability, desc }
+function featureFlag(name, enabled, stability, desc, docUrl = "", providedBy = "rabbit") {
+  return {
+    name,
+    state: enabled ? "enabled" : "disabled",
+    stability,
+    desc,
+    doc_url: docUrl,
+    provided_by: providedBy,
+  }
 }
 
 function deprecated(name, state, desc) {

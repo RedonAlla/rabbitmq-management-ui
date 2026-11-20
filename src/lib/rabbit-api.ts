@@ -10,6 +10,7 @@ import type {
   ExchangeArgumentValue,
   ExchangeType,
   FeatureFlag,
+  FeatureFlagState,
   NodeInfo,
   Policy,
   PortInfo,
@@ -367,9 +368,11 @@ interface ApiVhostLimit {
 
 interface ApiFeatureFlag {
   name: string
-  state: string | boolean
+  state?: string | boolean
   stability?: string
   desc?: string
+  doc_url?: string
+  provided_by?: string
 }
 
 interface ApiDeprecatedFeature {
@@ -1381,16 +1384,30 @@ function mapVhostLimits(limits: ApiVhostLimit[]): VhostLimit[] {
   }))
 }
 
-function mapFeatureFlags(flags: ApiFeatureFlag[]): FeatureFlag[] {
-  const stability = (value: string | undefined): Stability =>
-    value === "experimental" ? "experimental" : "stable"
+function featureFlagStability(value: string | undefined): Stability {
+  if (value === "required" || value === "experimental") return value
+  return "stable"
+}
 
+function featureFlagState(value: string | boolean | undefined): FeatureFlagState {
+  if (typeof value === "boolean") return value ? "enabled" : "disabled"
+  if (
+    value === "enabled" ||
+    value === "state_changing" ||
+    value === "unsupported"
+  )
+    return value
+  return "disabled"
+}
+
+function mapFeatureFlags(flags: ApiFeatureFlag[]): FeatureFlag[] {
   return flags.map((flag) => ({
     name: flag.name,
-    enabled:
-      typeof flag.state === "boolean" ? flag.state : flag.state === "enabled",
-    stability: stability(flag.stability),
+    state: featureFlagState(flag.state),
+    stability: featureFlagStability(flag.stability),
     desc: flag.desc ?? "",
+    docUrl: flag.doc_url ?? "",
+    providedBy: flag.provided_by ?? "",
   }))
 }
 
@@ -2549,15 +2566,11 @@ export async function updateVhostLimits(
   })
 }
 
-export async function setFeatureFlag(
+export async function enableFeatureFlag(
   token: string,
-  name: string,
-  enabled: boolean
+  name: string
 ): Promise<void> {
-  await apiPost(
-    `/api/feature-flags/${enc(name)}/${enabled ? "enable" : "disable"}`,
-    token
-  )
+  await apiPut(`/api/feature-flags/${enc(name)}/enable`, token, { name })
 }
 
 export async function fetchDefinitions(
