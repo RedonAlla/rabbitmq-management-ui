@@ -1,8 +1,23 @@
-import { useMemo } from "react"
-import { PencilIcon, PlusIcon, UserRound } from "lucide-react"
+import { useMemo, useState } from "react"
+import {
+  MoreHorizontalIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
+  UserRound,
+} from "lucide-react"
+import { toast } from "sonner"
 import { useTable, type ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/reui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ConfirmDialog } from "@/components/confirm-dialog"
 import { useDialogs } from "@/components/dialogs/dialogs-provider"
 import { useCluster } from "@/store/cluster"
 import { limitStatus, worstLimitStatus } from "@/lib/limits"
@@ -12,17 +27,19 @@ import {
   dataGridFeatures,
   type DataGridFeatures,
 } from "@/components/reui/data-grid/data-grid"
-import { Skeleton } from "@/components/ui/skeleton"
 import GridEmptyState from "@/components/ui/empty-state"
 import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants"
 import { Frame, FrameFooter, FramePanel } from "@/components/reui/frame"
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination"
+import { fitMeta } from "@/components/table"
+import type { UserLimit } from "@/data/types"
 
 export function UserLimitsTable() {
   const { data, status, error, actions } = useCluster()
   const { openDialog } = useDialogs()
+  const [pendingDelete, setPendingDelete] = useState<UserLimit | null>(null)
 
   const rows = useMemo(
     () =>
@@ -48,7 +65,7 @@ export function UserLimitsTable() {
             {row.original.limit.user}
           </span>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-25" /> },
+        meta: fitMeta,
       },
       {
         id: "connections",
@@ -60,7 +77,7 @@ export function UserLimitsTable() {
             label={`Connection usage for ${row.original.limit.user}`}
           />
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-25" /> },
+        meta: fitMeta,
       },
       {
         id: "channels",
@@ -72,7 +89,7 @@ export function UserLimitsTable() {
             label={`Channel usage for ${row.original.limit.user}`}
           />
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-25" /> },
+        meta: fitMeta,
       },
       {
         id: "status",
@@ -94,30 +111,51 @@ export function UserLimitsTable() {
             )
           return <Badge variant={worst.variant}>{worst.label}</Badge>
         },
-        meta: { skeleton: <Skeleton className="h-4 w-25" /> },
+        meta: fitMeta,
       },
       {
         id: "actions",
         header: () => <span className="sr-only">Actions</span>,
         cell: ({ row }) => (
           <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                openDialog({
-                  type: "edit-user-limits",
-                  user: row.original.limit.user,
-                })
-              }
-            >
-              <PencilIcon data-icon="inline-start" aria-hidden="true" />
-              Edit
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label={`Actions for ${row.original.limit.user}`}
+                  />
+                }
+              >
+                <MoreHorizontalIcon aria-hidden="true" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem
+                  onClick={() =>
+                    openDialog({
+                      type: "edit-user-limits",
+                      user: row.original.limit.user,
+                    })
+                  }
+                >
+                  <PencilIcon aria-hidden="true" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => setPendingDelete(row.original.limit)}
+                >
+                  <Trash2Icon aria-hidden="true" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         ),
-        meta: { skeleton: <Skeleton className="h-4 w-25" /> },
+        meta: fitMeta,
       },
     ],
     [openDialog]
@@ -132,45 +170,82 @@ export function UserLimitsTable() {
   })
 
   return (
-    <DataGrid
-      table={table}
-      recordCount={rows.length}
-      isLoading={status === "loading"}
-      emptyMessage={
-        <GridEmptyState
-          icon={<UserRound />}
-          title="No user limits"
-          description="Cap connections and channels for a user."
-          error={error}
-          retry={actions.retry}
-          action={
-            <Button
-              type="button"
-              onClick={() => openDialog({ type: "edit-user-limits" })}
-            >
-              <PlusIcon data-icon="inline-start" aria-hidden="true" />
-              Add limits
-            </Button>
+    <>
+      <DataGrid
+        table={table}
+        recordCount={rows.length}
+        isLoading={status === "loading"}
+        emptyMessage={
+          <GridEmptyState
+            icon={<UserRound />}
+            title="No user limits"
+            description="Cap connections and channels for a user."
+            error={error}
+            retry={actions.retry}
+            action={
+              <Button
+                type="button"
+                onClick={() => openDialog({ type: "edit-user-limits" })}
+              >
+                <PlusIcon data-icon="inline-start" aria-hidden="true" />
+                Add limits
+              </Button>
+            }
+          />
+        }
+        tableLayout={{
+          dense: true,
+          headerBorder: true,
+          width: "auto",
+        }}
+        tableClassNames={{ base: "min-w-[900px]" }}
+      >
+        <Frame spacing="sm" className="min-w-0">
+          <FramePanel>
+            <DataGridScrollArea>
+              <DataGridTable />
+            </DataGridScrollArea>
+          </FramePanel>
+          <FrameFooter>
+            <DataGridPagination sizes={DEFAULT_PAGES_OPTIONS} />
+          </FrameFooter>
+        </Frame>
+      </DataGrid>
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        onOpenChange={(open) => (open ? undefined : setPendingDelete(null))}
+        title="Delete user limits?"
+        description={
+          pendingDelete
+            ? `${pendingDelete.user} loses its connection and channel caps immediately. Existing connections and channels are not closed.`
+            : ""
+        }
+        confirmLabel="Delete limits"
+        tone="destructive"
+        onConfirm={async () => {
+          if (!pendingDelete) return
+          const limit = pendingDelete
+          setPendingDelete(null)
+          try {
+            await actions.updateUserLimit({
+              user: limit.user,
+              maxConnections: null,
+              maxChannels: null,
+            })
+            toast.success("Limits deleted", {
+              description: `${limit.user} no longer caps connections or channels.`,
+            })
+          } catch (cause) {
+            toast.error("Limits were not deleted", {
+              description:
+                cause instanceof Error
+                  ? cause.message
+                  : "The management API did not respond.",
+            })
           }
-        />
-      }
-      tableLayout={{
-        dense: true,
-        headerBorder: true,
-        width: "auto",
-      }}
-      tableClassNames={{ base: "min-w-[900px]" }}
-    >
-      <Frame spacing="sm" className="min-w-0">
-        <FramePanel>
-          <DataGridScrollArea>
-            <DataGridTable />
-          </DataGridScrollArea>
-        </FramePanel>
-        <FrameFooter>
-          <DataGridPagination sizes={DEFAULT_PAGES_OPTIONS} />
-        </FrameFooter>
-      </Frame>
-    </DataGrid>
+        }}
+      />
+    </>
   )
 }

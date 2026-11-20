@@ -1388,19 +1388,27 @@ function limitValue(
 }
 
 function mapVhostLimits(limits: ApiVhostLimit[]): VhostLimit[] {
-  return limits.map((limit) => ({
-    vhost: limit.vhost,
-    maxConnections: limitValue(limit.value, "max-connections"),
-    maxQueues: limitValue(limit.value, "max-queues"),
-  }))
+  return limits
+    .map((limit) => ({
+      vhost: limit.vhost,
+      maxConnections: limitValue(limit.value, "max-connections"),
+      maxQueues: limitValue(limit.value, "max-queues"),
+    }))
+    .filter(
+      (limit) => limit.maxConnections !== null || limit.maxQueues !== null
+    )
 }
 
 function mapUserLimits(limits: ApiUserLimit[]): UserLimit[] {
-  return limits.map((limit) => ({
-    user: limit.user,
-    maxConnections: limitValue(limit.value, "max-connections"),
-    maxChannels: limitValue(limit.value, "max-channels"),
-  }))
+  return limits
+    .map((limit) => ({
+      user: limit.user,
+      maxConnections: limitValue(limit.value, "max-connections"),
+      maxChannels: limitValue(limit.value, "max-channels"),
+    }))
+    .filter(
+      (limit) => limit.maxConnections !== null || limit.maxChannels !== null
+    )
 }
 
 function featureFlagStability(value: string | undefined): Stability {
