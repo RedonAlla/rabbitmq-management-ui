@@ -199,7 +199,7 @@ export interface ClusterActions {
   deleteUser: (username: string) => Promise<void>
   addVhost: (input: rabbit.CreateVhostInput) => Promise<void>
   deleteVhost: (name: string) => Promise<void>
-  addPolicy: (policy: Policy, operator?: boolean) => Promise<void>
+  savePolicy: (policy: Policy, operator?: boolean) => Promise<void>
   deletePolicy: (
     vhost: string,
     name: string,
@@ -328,7 +328,7 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
       addVhost: (input) => run((current) => rabbit.createVhost(current, input)),
       deleteVhost: (name) =>
         run((current) => rabbit.deleteVhost(current, name)),
-      addPolicy: (policy, operator = false) =>
+      savePolicy: (policy, operator = false) =>
         run((current) => rabbit.savePolicy(current, policy, operator)),
       deletePolicy: (vhost, name, operator = false) =>
         run((current) => rabbit.deletePolicy(current, vhost, name, operator)),

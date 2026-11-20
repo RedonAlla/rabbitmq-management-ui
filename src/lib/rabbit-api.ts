@@ -1358,7 +1358,7 @@ function mapPolicy(policy: ApiPolicy): Policy {
     pattern: policy.pattern,
     applyTo: policy["apply-to"] ?? "queues",
     priority: policy.priority ?? 0,
-    definition: plainArguments(policy.definition),
+    definition: plainExchangeArguments(policy.definition),
   }
 }
 

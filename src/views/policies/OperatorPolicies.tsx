@@ -205,6 +205,10 @@ export default function OperatorPolicies() {
         onOpenChange={setDrawerOpen}
         applied={selected ? applied(selected) : 0}
         kind="operator"
+        onEdit={(policy) => {
+          setDrawerOpen(false)
+          openDialog({ type: "edit-operator-policy", policy })
+        }}
         onDelete={(policy) => {
           setDrawerOpen(false)
           setPendingDelete(policy)

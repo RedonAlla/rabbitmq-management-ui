@@ -2,6 +2,7 @@ import type {
   BindingArgumentValue,
   ClusterInfo,
   HistoryPoint,
+  PolicyDefinitionValue,
   RangeKey,
 } from "@/data/types"
 
@@ -120,7 +121,7 @@ export function initials(name: string): string {
 }
 
 export function definitionSummary(
-  definition: Record<string, string | number>
+  definition: Record<string, PolicyDefinitionValue>
 ): string {
   return Object.entries(definition)
     .map(([key, value]) => `${key}=${value}`)

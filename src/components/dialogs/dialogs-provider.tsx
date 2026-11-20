@@ -11,11 +11,11 @@ import {
   PublishDrawer
 } from "@/components/features/exchanges/list"
 import EditLimitsDialog from "@/views/limits/edit-limits-dialog"
-import AddPolicyDialog from "@/views/policies/add-policy-dialog"
+import AddPolicyDrawer from "@/views/policies/add-policy-drawer"
 import { AddQueueDrawer } from "@/components/features/queues/list"
 import { AddUserDialog, EditUserDialog } from "@/components/features/users"
 import { AddVhostDrawer } from "@/components/features/vhosts/add-vhost-drawer"
-import type { User, Vhost } from "@/data/types"
+import type { Policy, User, Vhost } from "@/data/types"
 
 export type DialogRequest =
   | { type: "add-queue"; onCreated?: () => void }
@@ -25,7 +25,9 @@ export type DialogRequest =
   | { type: "add-vhost" }
   | { type: "edit-vhost"; vhost: Vhost }
   | { type: "add-policy" }
+  | { type: "edit-policy"; policy: Policy }
   | { type: "add-operator-policy" }
+  | { type: "edit-operator-policy"; policy: Policy }
   | { type: "edit-limits"; vhost?: string }
   | { type: "publish"; exchange?: string; vhost?: string }
   | { type: "shortcuts" }
@@ -76,14 +78,31 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
         vhost={dialog?.type === "edit-vhost" ? dialog.vhost : null}
         onClose={closeDialog}
       />
-      <AddPolicyDialog
-        open={dialog?.type === "add-policy"}
+      <AddPolicyDrawer
+        key={
+          dialog?.type === "edit-policy"
+            ? `edit-${dialog.policy.vhost}/${dialog.policy.name}`
+            : "add-policy"
+        }
+        open={dialog?.type === "add-policy" || dialog?.type === "edit-policy"}
         onClose={closeDialog}
+        policy={dialog?.type === "edit-policy" ? dialog.policy : null}
       />
-      <AddPolicyDialog
-        open={dialog?.type === "add-operator-policy"}
+      <AddPolicyDrawer
+        key={
+          dialog?.type === "edit-operator-policy"
+            ? `edit-operator-${dialog.policy.vhost}/${dialog.policy.name}`
+            : "add-operator-policy"
+        }
+        open={
+          dialog?.type === "add-operator-policy" ||
+          dialog?.type === "edit-operator-policy"
+        }
         onClose={closeDialog}
         operator
+        policy={
+          dialog?.type === "edit-operator-policy" ? dialog.policy : null
+        }
       />
       <PublishDrawer
         open={dialog?.type === "publish"}

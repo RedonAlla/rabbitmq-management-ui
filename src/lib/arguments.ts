@@ -160,7 +160,8 @@ export function parseJsonToRows(
 
 export function parseArgumentsJson(
   text: string,
-  reservedKeys: string[] = []
+  reservedKeys: string[] = [],
+  label = "Arguments"
 ): {
   args: Record<string, ArgumentValue>
   error: string | null
@@ -170,10 +171,10 @@ export function parseArgumentsJson(
   try {
     parsed = JSON.parse(text)
   } catch {
-    return { args: {}, error: "Arguments must be valid JSON." }
+    return { args: {}, error: `${label} must be valid JSON.` }
   }
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    return { args: {}, error: "Arguments must be a JSON object." }
+    return { args: {}, error: `${label} must be a JSON object.` }
   }
   const args: Record<string, ArgumentValue> = {}
   for (const [key, value] of Object.entries(parsed)) {
@@ -202,7 +203,7 @@ export function parseArgumentsJson(
     }
     return {
       args,
-      error: `Argument ${key} must be a string, number, boolean, or list.`,
+      error: `${label} ${key} must be a string, number, boolean, or list.`,
     }
   }
   return { args, error: null }

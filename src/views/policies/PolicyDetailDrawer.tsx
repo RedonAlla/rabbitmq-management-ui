@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { Trash2Icon } from "lucide-react"
+import { PencilIcon, Trash2Icon } from "lucide-react"
 import { Badge } from "@/components/reui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -44,6 +44,7 @@ type Props = {
   onOpenChange: (open: boolean) => void
   applied: number
   kind: "user" | "operator"
+  onEdit: (policy: Policy) => void
   onDelete: (policy: Policy) => void
 }
 
@@ -53,6 +54,7 @@ export default function PolicyDetailDrawer({
   onOpenChange,
   applied,
   kind,
+  onEdit,
   onDelete,
 }: Props) {
   return (
@@ -105,7 +107,7 @@ export default function PolicyDetailDrawer({
               </div>
             </div>
 
-            <SheetFooter className="border-t sm:flex-row sm:justify-end">
+            <SheetFooter className="flex-col-reverse border-t sm:flex-row sm:justify-between">
               <Button
                 type="button"
                 variant="destructive"
@@ -113,6 +115,10 @@ export default function PolicyDetailDrawer({
               >
                 <Trash2Icon data-icon="inline-start" aria-hidden="true" />
                 Delete {kind === "operator" ? "operator policy" : "policy"}
+              </Button>
+              <Button type="button" onClick={() => onEdit(policy)}>
+                <PencilIcon data-icon="inline-start" aria-hidden="true" />
+                Edit {kind === "operator" ? "operator policy" : "policy"}
               </Button>
             </SheetFooter>
           </div>

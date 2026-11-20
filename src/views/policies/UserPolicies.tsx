@@ -204,6 +204,10 @@ export default function UserPolicies() {
         onOpenChange={setDrawerOpen}
         applied={selected ? applied(selected) : 0}
         kind="user"
+        onEdit={(policy) => {
+          setDrawerOpen(false)
+          openDialog({ type: "edit-policy", policy })
+        }}
         onDelete={(policy) => {
           setDrawerOpen(false)
           setPendingDelete(policy)

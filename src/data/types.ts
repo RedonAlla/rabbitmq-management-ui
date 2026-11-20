@@ -13,6 +13,7 @@ export type ExchangeArgumentValue =
   | number
   | boolean
   | Array<string | number | boolean>
+export type PolicyDefinitionValue = ExchangeArgumentValue
 export type Stability = "required" | "stable" | "experimental"
 export type FeatureFlagState =
   | "enabled"
@@ -143,7 +144,7 @@ export interface Policy {
   pattern: string
   applyTo: string
   priority: number
-  definition: Record<string, string | number>
+  definition: Record<string, PolicyDefinitionValue>
 }
 
 export interface VhostLimit {
