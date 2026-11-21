@@ -27,7 +27,6 @@ import {
   dataGridFeatures,
   type DataGridFeatures,
 } from "@/components/reui/data-grid/data-grid"
-import { Skeleton } from "@/components/ui/skeleton"
 import GridEmptyState from "@/components/ui/empty-state"
 import { DEFAULT_PAGE_SIZE, DEFAULT_PAGES_OPTIONS } from "@/lib/constants"
 import { Frame, FrameFooter, FramePanel } from "@/components/reui/frame"
